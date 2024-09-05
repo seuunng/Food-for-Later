@@ -31,6 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  table_calendar: ^3.0.6
+
   # Firebase 관련 패키지
   firebase_core: ^2.15.1
   cloud_firestore: ^4.8.0   # Firestore DB 사용
@@ -64,7 +66,6 @@ dependencies:
 
   # 애니메이션 및 효과
   animations: ^2.0.5 # 애니메이션 효과 추가
-
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
