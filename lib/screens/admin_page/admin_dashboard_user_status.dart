@@ -1,5 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/admin_page/user_status_chart/user_age.dart';
+import 'package:food_for_later/screens/admin_page/user_status_chart/user_statistics.dart';
+import 'package:food_for_later/screens/admin_page/user_status_chart/user_time.dart';
 
 class AdminDashboardUserStatus extends StatefulWidget {
   @override
@@ -32,6 +35,11 @@ class _AdminDashboardUserStatusState extends State<AdminDashboardUserStatus> {
               Spacer(), // 텍스트와 드롭다운 사이 간격
             ],
           ),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            height: 200,
+            child: UserStatistics(),
+          ),
           Row(
             children: [
               SizedBox(width: 16),
@@ -45,32 +53,7 @@ class _AdminDashboardUserStatusState extends State<AdminDashboardUserStatus> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             height: 200,
-            child: BarChart(BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: 100,
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (double value, TitleMeta meta) {
-                      return Text(labels_age[value.toInt()]);
-                    },
-                  ),
-                ),
-              ),
-              barGroups: points_age.asMap().entries.map((entry) {
-                int idx = entry.key;
-                double value = entry.value;
-                return BarChartGroupData(
-                  x: idx,
-                  barRods: [
-                    BarChartRodData(toY: value, color: Colors.pinkAccent),
-                  ],
-                );
-              }).toList(),
-            )),
+            child: UserAge(),
           ),
           Row(
             children: [
@@ -82,36 +65,10 @@ class _AdminDashboardUserStatusState extends State<AdminDashboardUserStatus> {
               Spacer(), // 텍스트와 드롭다운 사이 간격
             ],
           ),
-
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             height: 200,
-            child: BarChart(BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: 600,
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (double value, TitleMeta meta) {
-                      return Text(labels_time[value.toInt()]);
-                    },
-                  ),
-                ),
-              ),
-              barGroups: points_time.asMap().entries.map((entry) {
-                int idx = entry.key;
-                double value = entry.value;
-                return BarChartGroupData(
-                  x: idx,
-                  barRods: [
-                    BarChartRodData(toY: value, color: Colors.pinkAccent),
-                  ],
-                );
-              }).toList(),
-            )),
+            child: UserTime(),
           ),
           Row(
             children: [
