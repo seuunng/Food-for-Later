@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/foods/manage_categories.dart';
 
 class AppUsageSettings extends StatefulWidget {
   @override
@@ -11,9 +12,20 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
   String _selectedCategory_fridgeCategory = '냉장'; // 기본 선택값
   final List<String> _categories_fridgeCategory = ['냉장', '냉동', '상온']; // 카테고리 리스트
   String _selectedCategory_foods = '입고일 기준'; // 기본 선택값
-  final List<String> _categories_foods = ['식품별 소비기한 기준', '입고일 기준']; // 카테고리 리스트
+  final List<String> _categories_foods = ['소비기한 기준', '입고일 기준']; // 카테고리 리스트
   String _selectedCategory_records = '앨범형'; // 기본 선택값
   final List<String> _categories_records = ['앨범형', '달력형', '목록형']; // 카테고리 리스트
+
+  void _saveSettings() {
+    // 저장할 데이터를 여기서 처리
+    print('Fridge: $_selectedCategory_fridge');
+    print('Fridge Category: $_selectedCategory_fridgeCategory');
+    print('Foods: $_selectedCategory_foods');
+    print('Records: $_selectedCategory_records');
+
+    // 저장 후 메인 페이지로 이동
+    Navigator.pop(context); // 이전 화면(메인 페이지)으로 돌아가기
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +33,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
       appBar: AppBar(
         title: Text('어플 사용 설정'),
       ),
-      body: Column(
+      body: ListView(
         children: [
           Row(
             children: [
@@ -114,7 +126,10 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               Spacer(), // 텍스트와 드롭다운 사이 간격
               ElevatedButton(
                 onPressed: () {
-                  // 로그아웃 로직 추가
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ManageCategories()), // 계정 정보 페이지로 이동
+                  );
                 },
                 child: Text('수정'),
               ),
@@ -130,7 +145,10 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               Spacer(), // 텍스트와 드롭다운 사이 간격
               ElevatedButton(
                 onPressed: () {
-                  // 로그아웃 로직 추가
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ManageCategories()), // 계정 정보 페이지로 이동
+                  );
                 },
                 child: Text('수정'),
               ),
@@ -164,6 +182,13 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
             ],
           ),
         ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _saveSettings,
+          child: Text('저장'),
+        ),
       ),
     );
   }

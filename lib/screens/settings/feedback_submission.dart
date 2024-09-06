@@ -44,8 +44,7 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             // 드롭다운 카테고리 선택
             Row(
@@ -99,15 +98,16 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
               maxLines: 5, // 여러 줄 입력 가능
             ),
             SizedBox(height: 16),
-            Center(
-              child: ElevatedButton(
-                onPressed: _submitFeedback,
-                child: Text('의견 보내기'),
-              ),
-            ),
           ],
         ),
       ),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton(
+            onPressed: _submitFeedback,
+            child: Text('의견 보내기'),
+          ),
+        ),
     );
   }
 }

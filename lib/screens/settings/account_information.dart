@@ -57,7 +57,10 @@ class _AccountInformationState extends State<AccountInformation> {
                   style: TextStyle(fontSize: 16),
                 ),
                 Spacer(),
-                SizedBox(width: 70, height: 50,)
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                )
               ],
             ),
             Text(
@@ -82,16 +85,14 @@ class _AccountInformationState extends State<AccountInformation> {
                 Spacer(),
                 ElevatedButton(
                   onPressed: () {
-                    // 로그아웃 로직 추가
-                    _logout();
+                    _withdrawAlertDialog();
                   },
                   child: Text('회원탈퇴'),
                 ),
                 SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: () {
-                    // 로그아웃 로직 추가
-                    _logout();
+                    _logoutAlertDialog();
                   },
                   child: Text('로그아웃'),
                 ),
@@ -111,7 +112,8 @@ class _AccountInformationState extends State<AccountInformation> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('임의의 비밀번호 받기'),
+          title: Text('비밀번호 보내기'),
+          content: Text('임의의 비밀번호를 등록된 이메일로 보냅니다.'),
           actions: [
             TextButton(
               child: Text('취소'),
@@ -120,7 +122,7 @@ class _AccountInformationState extends State<AccountInformation> {
               },
             ),
             TextButton(
-              child: Text('임시비밀번호 보내기'),
+              child: Text('보내기'),
               onPressed: () {
                 // 비밀번호 변경 로직 처리
                 Navigator.pop(context);
@@ -131,6 +133,7 @@ class _AccountInformationState extends State<AccountInformation> {
       },
     );
   }
+
   Future<void> _showNicknameChangeDialog() async {
     TextEditingController _passwordController = TextEditingController();
     await showDialog<String>(
@@ -162,9 +165,57 @@ class _AccountInformationState extends State<AccountInformation> {
       },
     );
   }
+
   // 로그아웃 처리
-  void _logout() {
-    // 로그아웃 로직 (예: Firebase Auth 사용시)
-    // Navigator.popUntil(context, ModalRoute.withName('/login'));
+  void _logoutAlertDialog() async {
+    await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('로그아웃을 진행할까요?'),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: Text('로그아웃'),
+              onPressed: () {
+                // 로그아웃 로직 처리
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _withdrawAlertDialog() async {
+    await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('탈퇴를 진행할까요?'),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: Text('탈퇴'),
+              onPressed: () {
+                // 회원탈퇴 로직 처리
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

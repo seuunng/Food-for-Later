@@ -12,14 +12,22 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
   String _selectedCategory_font = 'Arial'; // 기본 선택값
   final List<String> _categories_font = ['Arial', 'Roboto', 'Times New Roman']; // 카테고리 리스트
 
+  void _saveSettings() {
+    // 저장할 데이터를 여기서 처리
+    print('Fridge: $_selectedCategory_them');
+    print('Fridge Category: $_selectedCategory_font');
+
+    // 저장 후 메인 페이지로 이동
+    Navigator.pop(context); // 이전 화면(메인 페이지)으로 돌아가기
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('어플 환경 설정'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
         children: [
           // 드롭다운 카테고리 선택
           Row(
@@ -77,6 +85,13 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
             ],
           ),
         ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _saveSettings,
+          child: Text('저장'),
+        ),
       ),
     );
   }
