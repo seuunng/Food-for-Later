@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/admin_page/app_setting_categories_table/foods_table.dart';
 
 class AdminAppSettingsManagement extends StatefulWidget {
   @override
@@ -27,25 +28,9 @@ class _AdminAppSettingsManagementState
             tabs: myTabs,
           ),
         ),
-        body: TabBarView(
-          children: myTabs.map((Tab tab) {
-            final String label = tab.text!.toLowerCase();
-            return DataTable(columns: [
-              DataColumn(label: Text('이름')),
-              DataColumn(label: Text('출생년도'), numeric: true),
-              DataColumn(label: Text('성별')),
-              DataColumn(label: Text('최종학력')),
-              DataColumn(label: Text('고향')),
-            ], rows: [
-              DataRow(cells: [
-                DataCell(Text('철수')),
-                DataCell(Text('1977')),
-                DataCell(Text('남')),
-                DataCell(Text('학사')),
-                DataCell(Text('부산')),
-              ]),
-            ]);
-          }).toList(),
+        body: Container(
+          padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 20),
+          child: FoodsTable(),
         ),
       ),
     );
