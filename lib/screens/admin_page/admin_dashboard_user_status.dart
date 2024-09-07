@@ -17,7 +17,6 @@ class _AdminDashboardUserStatusState extends State<AdminDashboardUserStatus> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('사용자 현황'),
       ),
       body: ListView(
         children: [
