@@ -32,7 +32,7 @@ class _FoodsTableState extends State<FoodsTable> {
       '유통기한': 10,
     },
     {
-      '연번': 3,
+      '연번': 2,
       '카테고리': '육류',
       '식품명': '닭고기',
       '냉장고카테고리': '냉장',
@@ -43,7 +43,7 @@ class _FoodsTableState extends State<FoodsTable> {
     {
       '연번': 3,
       '카테고리': '조미료',
-      '식품명': '새우젖',
+      '식품명': '새우젓',
       '냉장고카테고리': '냉동',
       '장보기카테고리': '조미료',
       '소비기한': 30,
@@ -53,10 +53,13 @@ class _FoodsTableState extends State<FoodsTable> {
 // 추가할 때 사용할 입력 필드 컨트롤러들
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _foodNameController = TextEditingController();
-  final TextEditingController _fridgeCategoryController = TextEditingController();
+  final TextEditingController _fridgeCategoryController =
+      TextEditingController();
   final TextEditingController _shelfLifeController = TextEditingController();
-  final TextEditingController _expirationDateController = TextEditingController();
-  final TextEditingController _shoppingListCategoryController = TextEditingController();
+  final TextEditingController _expirationDateController =
+      TextEditingController();
+  final TextEditingController _shoppingListCategoryController =
+      TextEditingController();
 
   // 사용자 데이터를 추가하는 함수
   void _addFood() {
@@ -81,6 +84,20 @@ class _FoodsTableState extends State<FoodsTable> {
     });
   }
 
+// 데이터 수정 버튼 클릭 시 호출할 함수
+  void _editFood(int index) {
+    setState(() {
+      // 수정할 데이터 필드로 값 가져오기
+      Map<String, dynamic> selectedFood = userData[index];
+      _categoryController.text = selectedFood['카테고리'];
+      _foodNameController.text = selectedFood['식품명'];
+      _fridgeCategoryController.text = selectedFood['냉장고카테고리'];
+      _shelfLifeController.text = selectedFood['소비기한'].toString();
+      _expirationDateController.text = selectedFood['유통기한'].toString();
+      _shoppingListCategoryController.text = selectedFood['장보기카테고리'];
+    });
+  }
+
   void _sortBy(String columnName, SortState currentState) {
     setState(() {
       // 열의 정렬 상태를 업데이트
@@ -89,8 +106,8 @@ class _FoodsTableState extends State<FoodsTable> {
           column['state'] = currentState == SortState.none
               ? SortState.ascending
               : (currentState == SortState.ascending
-              ? SortState.descending
-              : SortState.none);
+                  ? SortState.descending
+                  : SortState.none);
         } else {
           column['state'] = SortState.none;
         }
@@ -116,119 +133,243 @@ class _FoodsTableState extends State<FoodsTable> {
       scrollDirection: Axis.horizontal,
       child: Column(
         children: [
-          // 테이블의 제목 셀
-          DataTable(
-            columns: columns.map((column) {
-              return DataColumn(
-                label: GestureDetector(
-                  onTap: () => _sortBy(column['name'], column['state']),
-                  child: Row(
-                    children: [
-                      Text(column['name']),
-                      Icon(
-                        column['state'] == SortState.ascending
-                            ? Icons.arrow_upward
-                            : column['state'] == SortState.descending
-                            ? Icons.arrow_downward
-                            : Icons.sort,
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-            rows: [], // 여기는 데이터가 없으므로 빈 리스트 유지
-          ),
-
-          // 입력 필드들이 들어간 행
-          Row(
+          // 제목이 있는 행
+          Table(
+            border: TableBorder(
+              horizontalInside: BorderSide(width: 1, color: Colors.black),
+            ),
+            columnWidths: const {
+              0: FixedColumnWidth(60),
+              1: FixedColumnWidth(100),
+              2: FixedColumnWidth(100),
+              3: FixedColumnWidth(120),
+              4: FixedColumnWidth(80),
+              5: FixedColumnWidth(80),
+              6: FixedColumnWidth(120),
+              7: FixedColumnWidth(80),
+            },
             children: [
-              Container(
-                width: 60,
-                child: Text('자동'), // 연번 자동으로 증가하므로 입력 X
+              TableRow(
+                children: columns.map((column) {
+                  return TableCell(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                              width: 1, color: Colors.black), // 셀 아래 테두리 추가
+                        ),
+                      ),
+                      child: GestureDetector(
+                        onTap: () => _sortBy(column['name'], column['state']),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(column['name']),
+                              if (column['state'] == SortState.ascending)
+                                Icon(Icons.arrow_upward, size: 12),
+                              if (column['state'] == SortState.descending)
+                                Icon(Icons.arrow_downward, size: 12),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-              Container(
-                width: 100,
-                child: TextField(
-                  controller: _categoryController,
-                  decoration: InputDecoration(
-                    hintText: '카테고리',
-                    border: OutlineInputBorder(),
+            ],
+          ),
+          // 입력 필드들이 들어간 행
+          Table(
+            border: TableBorder(
+              horizontalInside: BorderSide(width: 1, color: Colors.black),
+            ),
+            columnWidths: const {
+              0: FixedColumnWidth(60),
+              1: FixedColumnWidth(100),
+              2: FixedColumnWidth(100),
+              3: FixedColumnWidth(120),
+              4: FixedColumnWidth(80),
+              5: FixedColumnWidth(80),
+              6: FixedColumnWidth(120),
+              7: FixedColumnWidth(80),
+            },
+            children: [
+              TableRow(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                        width: 1, color: Colors.black), // 셀 아래 테두리 추가
                   ),
                 ),
-              ),
-              Container(
-                width: 100,
-                child: TextField(
-                  controller: _foodNameController,
-                  decoration: InputDecoration(
-                    hintText: '식품명',
-                    border: OutlineInputBorder(),
+                children: [
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text('no'))),
+                  TableCell(
+                    child: TextField(
+                      controller: _categoryController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '카테고리',
+                        hintStyle: TextStyle(
+                          fontSize: 12, // 글씨 크기 줄이기
+                          color: Colors.grey, // 글씨 색상 회색으로
+                        ),
+                        filled: true, // 배경색 추가
+                        fillColor: Colors.grey[200],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Container(
-                width: 120,
-                child: TextField(
-                  controller: _fridgeCategoryController,
-                  decoration: InputDecoration(
-                    hintText: '냉장고 카테고리',
-                    border: OutlineInputBorder(),
+                  TableCell(
+                    child: TextField(
+                      controller: _foodNameController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '식품명',
+                        hintStyle: TextStyle(
+                          fontSize: 12, // 글씨 크기 줄이기
+                          color: Colors.grey, // 글씨 색상 회색으로
+                        ),
+                        filled: true, // 배경색 추가
+                        fillColor: Colors.grey[200],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Container(
-                width: 80,
-                child: TextField(
-                  controller: _shelfLifeController,
-                  decoration: InputDecoration(
-                    hintText: '소비기한',
-                    border: OutlineInputBorder(),
+                  TableCell(
+                    child: TextField(
+                      controller: _fridgeCategoryController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '냉장고 카테고리',
+                        hintStyle: TextStyle(
+                          fontSize: 12, // 글씨 크기 줄이기
+                          color: Colors.grey, // 글씨 색상 회색으로
+                        ),
+                        filled: true, // 배경색 추가
+                        fillColor: Colors.grey[200],
+                      ),
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              Container(
-                width: 80,
-                child: TextField(
-                  controller: _expirationDateController,
-                  decoration: InputDecoration(
-                    hintText: '유통기한',
-                    border: OutlineInputBorder(),
+                  TableCell(
+                    child: TextField(
+                      controller: _shelfLifeController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '소비기한',
+                        hintStyle: TextStyle(
+                          fontSize: 12, // 글씨 크기 줄이기
+                          color: Colors.grey, // 글씨 색상 회색으로
+                        ),
+                        filled: true, // 배경색 추가
+                        fillColor: Colors.grey[200],
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              Container(
-                width: 120,
-                child: TextField(
-                  controller: _shoppingListCategoryController,
-                  decoration: InputDecoration(
-                    hintText: '장보기 카테고리',
-                    border: OutlineInputBorder(),
+                  TableCell(
+                    child: TextField(
+                      controller: _expirationDateController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '유통기한',
+                        hintStyle: TextStyle(
+                          fontSize: 12, // 글씨 크기 줄이기
+                          color: Colors.grey, // 글씨 색상 회색으로
+                        ),
+                        filled: true, // 배경색 추가
+                        fillColor: Colors.grey[200],
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: _addFood,
-                child: Text('추가'),
+                  TableCell(
+                    child: TextField(
+                      controller: _shoppingListCategoryController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '장보기 카테고리',
+                        hintStyle: TextStyle(
+                          fontSize: 12, // 글씨 크기 줄이기
+                          color: Colors.grey, // 글씨 색상 회색으로
+                        ),
+                        filled: true, // 배경색 추가
+                        fillColor: Colors.grey[200],
+                      ),
+                    ),
+                  ),
+                  TableCell(
+                    verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: SizedBox(
+                        width: 60, // 버튼의 너비를 설정
+                        height: 30, // 버튼의 높이를 설정
+                        child: ElevatedButton(
+                          onPressed: _addFood,
+                          child: Text('추가'),
+                        ),
+                      ),
+                  ),
+                ],
               ),
             ],
           ),
 
           // 데이터가 추가되는 테이블
-          DataTable(
-            columns: columns.map((column) {
-              return DataColumn(
-                label: Text(column['name']), // 여기는 반드시 이름 지정
-              );
-            }).toList(),
-            rows: userData.map((row) {
-              return DataRow(
-                cells: columns.map((column) {
-                  return DataCell(Text(row[column['name']].toString()));
-                }).toList(),
+          Table(
+            border: TableBorder(
+
+              horizontalInside: BorderSide(width: 1, color: Colors.black),
+            ),
+            columnWidths: const {
+              0: FixedColumnWidth(60),
+              1: FixedColumnWidth(100),
+              2: FixedColumnWidth(100),
+              3: FixedColumnWidth(120),
+              4: FixedColumnWidth(80),
+              5: FixedColumnWidth(80),
+              6: FixedColumnWidth(120),
+              7: FixedColumnWidth(80),
+            },
+            children: userData.map((row) {
+              return TableRow(
+                children: [
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                          height: 40,
+                          child: Center(child: Text(row['연번'].toString())))),
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text(row['카테고리']))),
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text(row['식품명']))),
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text(row['냉장고카테고리']))),
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text(row['소비기한'].toString()))),
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text(row['유통기한'].toString()))),
+                  TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Center(child: Text(row['장보기카테고리']))),
+                  TableCell(
+                    verticalAlignment: TableCellVerticalAlignment.middle,
+                    child: SizedBox(
+                      width: 60, // 버튼의 너비를 설정
+                      height: 30, // 버튼의 높이를 설정
+                      child: ElevatedButton(
+                      onPressed: () => _editFood(row['연번']), // 수정 버튼 클릭 시
+                      child: Text('수정'),
+                    ),
+                    ),
+                  ),
+                ],
               );
             }).toList(),
           ),
