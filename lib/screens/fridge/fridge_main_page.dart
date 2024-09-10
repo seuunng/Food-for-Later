@@ -10,7 +10,6 @@ class FridgeMainPage extends StatefulWidget {
 }
 
 class _FridgeMainPageState extends State<FridgeMainPage> {
-
   static const List<String> fridgeName = ['기본냉장고', '김치냉장고', '오빠네냉장고'];
   String? selectedFridge = '기본냉장고';
 
@@ -87,35 +86,35 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   // 물건을 추가할 수 있는 그리드
   Widget _buildGrid(List<String> items) {
     return GridView.builder(
-        shrinkWrap: true, // GridView의 크기를 콘텐츠에 맞게 줄임
-        physics: NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.all(8.0),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 5, // 한 줄에 5칸
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
-        ),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onLongPress: () {
-              // 물건 삭제 다이얼로그
-              _deleteItemDialog(items, index);
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: Center(
-                child: Text(
-                  items[index],
-                  style: TextStyle(color: Colors.white),
-                ),
+      shrinkWrap: true, // GridView의 크기를 콘텐츠에 맞게 줄임
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(8.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5, // 한 줄에 5칸
+        crossAxisSpacing: 8.0,
+        mainAxisSpacing: 8.0,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return GestureDetector(
+          onLongPress: () {
+            // 물건 삭제 다이얼로그
+            _deleteItemDialog(items, index);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Center(
+              child: Text(
+                items[index],
+                style: TextStyle(color: Colors.white),
               ),
             ),
-          );
-        },
+          ),
+        );
+      },
     );
   }
 
@@ -127,26 +126,25 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           children: [
             Text('냉장고 관리'),
             Spacer(),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: selectedFridge,
-            items: fridgeName.map((section) {
-              return DropdownMenuItem(
-                value: section,
-                child: Text(section),
-              );
-            }).toList(), // 반복문을 통해 DropdownMenuItem 생성
-            onChanged: (value) {
-              setState(() {
-                selectedFridge = value!;
-              });
-            },
-            decoration: InputDecoration(
-              labelText: '냉장고 선택',
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: selectedFridge,
+                items: fridgeName.map((section) {
+                  return DropdownMenuItem(
+                    value: section,
+                    child: Text(section),
+                  );
+                }).toList(), // 반복문을 통해 DropdownMenuItem 생성
+                onChanged: (value) {
+                  setState(() {
+                    selectedFridge = value!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: '냉장고 선택',
+                ),
+              ),
             ),
-          ),
-        ),
-
           ],
         ),
       ),
