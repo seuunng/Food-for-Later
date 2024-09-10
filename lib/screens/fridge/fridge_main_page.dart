@@ -1,83 +1,23 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/fridge/add_iItem.dart';
+import 'package:food_for_later/screens/fridge/fridge_keyword_search.dart';
 
 class FridgeMainPage extends StatefulWidget {
   @override
   _FridgeMainPageState createState() => _FridgeMainPageState();
+}
 
-  }
+class _FridgeMainPageState extends State<FridgeMainPage> {
 
-  class _FridgeMainPageState extends State<FridgeMainPage> {
-  List<String> fridgeItems = [];
-  List<String> freezerItems = [];
-  List<String> roomTempItems = [];
+  static const List<String> fridgeName = ['기본냉장고', '김치냉장고', '오빠네냉장고'];
+  String? selectedFridge = '기본냉장고';
 
-  // 물건을 추가할 수 있는 다이얼로그 호출
-  Future<void> _addItemDialog() async {
-    String? selectedSection;
-    String newItem = '';
+  static const List<String> storageSections = ['냉장', '냉동', '상온'];
+  String? selectedSection;
 
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('새 물건 추가'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: selectedSection,
-                items: ['냉장칸', '냉동칸', '상온칸'].map((section) {
-                  return DropdownMenuItem(
-                    value: section,
-                    child: Text(section),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedSection = value!;
-                  });
-                },
-                decoration: InputDecoration(
-                  labelText: '구역 선택',
-                ),
-              ),
-              TextField(
-                onChanged: (value) {
-                  newItem = value;
-                },
-                decoration: InputDecoration(hintText: '물건 이름을 입력하세요'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text('취소'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: Text('추가'),
-              onPressed: () {
-                if (selectedSection != null && newItem.isNotEmpty) {
-                  setState(() {
-                    if (selectedSection == '냉장칸') {
-                      fridgeItems.add(newItem);
-                    } else if (selectedSection == '냉동칸') {
-                      freezerItems.add(newItem);
-                    } else if (selectedSection == '상온칸') {
-                      roomTempItems.add(newItem);
-                    }
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  List<List<String>> itemLists = [[], [], []];
 
   // 물건 삭제 다이얼로그
   Future<void> _deleteItemDialog(List<String> items, int index) async {
@@ -109,21 +49,46 @@ class FridgeMainPage extends StatefulWidget {
     );
   }
 
+  Widget _buildSections() {
+    return Column(
+      children: List.generate(storageSections.length, (index) {
+        return Column(
+          children: [
+            _buildSectionTitle(storageSections[index]), // 섹션 타이틀
+            _buildGrid(itemLists[index]), //
+          ],
+        );
+      }),
+    );
+  }
+
   // 각 섹션의 타이틀 빌드
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Text(
-        title,
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(width: 10), // 제목과 수평선 사이 간격
+          Expanded(
+            child: Divider(
+              thickness: 2, // 수평선 두께
+              color: Colors.grey, // 수평선 색상
+            ),
+          ),
+        ],
       ),
     );
   }
 
   // 물건을 추가할 수 있는 그리드
   Widget _buildGrid(List<String> items) {
-    return Expanded(
-      child: GridView.builder(
+    return GridView.builder(
+        shrinkWrap: true, // GridView의 크기를 콘텐츠에 맞게 줄임
+        physics: NeverScrollableScrollPhysics(),
         padding: EdgeInsets.all(8.0),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 5, // 한 줄에 5칸
@@ -151,7 +116,6 @@ class FridgeMainPage extends StatefulWidget {
             ),
           );
         },
-      ),
     );
   }
 
@@ -159,30 +123,47 @@ class FridgeMainPage extends StatefulWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('냉장고 관리'),
+        title: Row(
+          children: [
+            Text('냉장고 관리'),
+            Spacer(),
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: selectedFridge,
+            items: fridgeName.map((section) {
+              return DropdownMenuItem(
+                value: section,
+                child: Text(section),
+              );
+            }).toList(), // 반복문을 통해 DropdownMenuItem 생성
+            onChanged: (value) {
+              setState(() {
+                selectedFridge = value!;
+              });
+            },
+            decoration: InputDecoration(
+              labelText: '냉장고 선택',
+            ),
+          ),
+        ),
+
+          ],
+        ),
       ),
-      body: Column(
-        children: [
-          // 냉장칸 섹션
-          _buildSectionTitle('냉장칸'),
-          _buildGrid(fridgeItems),
-          Divider(),
-
-          // 냉동칸 섹션
-          _buildSectionTitle('냉동칸'),
-          _buildGrid(freezerItems),
-          Divider(),
-
-          // 상온칸 섹션
-          _buildSectionTitle('상온칸'),
-          _buildGrid(roomTempItems),
-        ],
+      body: SingleChildScrollView(
+        child: _buildSections(), // 섹션 동적으로 생성
       ),
 
       // 물건 추가 버튼
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _addItemDialog();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddIitem(),
+              fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
+            ),
+          );
         },
         child: Icon(Icons.add),
       ),
