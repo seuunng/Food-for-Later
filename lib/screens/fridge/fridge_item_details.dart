@@ -99,7 +99,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
     if (basicFoodsCategories.contains(widget.categoryName)) {
       selectedFoodsCategory = widget.categoryName; // 유효한 경우 카테고리 설정
     } else {
-      selectedFoodsCategory = null; // 유효하지 않으면 null로 설정
+      selectedFoodsCategory = null;
     }
     // 선택된 값이 itemsByCategory에서 정확하게 있는지 확인 후 없으면 null 설정
     selectedFoods = itemsByCategory[widget.categoryName]?.contains(widget.categoryFoodsName) == true
@@ -108,7 +108,6 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
     expirationDays = widget.expirationDays;
     consumptionDays = widget.consumptionDays;
     dateController.text = widget.registrationDate;
-    print(widget.categoryFoodsName);
   }
 
   // 날짜 선택 함수

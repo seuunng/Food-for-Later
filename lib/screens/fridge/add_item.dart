@@ -3,41 +3,41 @@ import 'package:food_for_later/screens/foods/add_item_to_category.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:intl/intl.dart';
 
-class AddIitem extends StatefulWidget {
+class AddItem extends StatefulWidget {
+  final String pageTitle;
+  final String addButton;
+  final List<String> basicFoodsCategories;
+  final Map<String, List<String>> itemsByCategory;
+  final String fridgeFieldIndex;
+
+  AddItem({
+    required this.pageTitle,
+    required this.basicFoodsCategories,
+    required this.itemsByCategory,
+    required this.addButton,
+    required this.fridgeFieldIndex,
+  });
+
   @override
-  _AddIitemState createState() => _AddIitemState();
+  _AddItemState createState() => _AddItemState();
 }
 
-class _AddIitemState extends State<AddIitem> {
-// 상수 리스트로 처리
-  static const List<String> basicFoodsCategories = [
-    '육류',
-    '수산물',
-    '채소',
-    '과일',
-    '견과'
-  ];
-
+class _AddItemState extends State<AddItem> {
   String? selectedCategory;
+  String? selectedSection;
   String searchKeyword = '';
+  String? selectedItem;
+  int expirationDays = 7;
   bool isDeleteMode = false; // 삭제 모드 여부
+  List<String> deletedItems = [];
 
-  // 각 카테고리별 아이템 리스트 (예시 데이터)
-  Map<String, List<String>> itemsByCategory = {
-    '육류': ['소고기', '돼지고기', '닭고기'],
-    '수산물': ['연어', '참치', '고등어'],
-    '채소': ['양파', '당근', '감자'],
-    '과일': [
-      '사과', '바나나', '포도', '메론', '자몽', '블루베리', '라즈베리', '딸기', '체리', '오렌지', '골드키위', '참외', '수박', '감',
-      '복숭아', '앵두', '자두', '배', '코코넛', '리치', '망고', '망고스틴', '아보카도', '복분자', '샤인머스캣', '용과', '라임', '레몬', '천도복숭아', '파인애플', '애플망고', '잭프릇', '람보탄', '아사히베리', ''
-    ],
-    '견과': ['아몬드', '호두', '캐슈넛'],
-  };
+  // 유통기한을 위한 컨트롤러 및 함수 추가
+  TextEditingController expirationDaysController = TextEditingController();
 
   // 아이템 목록에서 중복된 값이 있는지 확인 후 제거
   void removeDuplicates() {
-    itemsByCategory.forEach((category, items) {
-      itemsByCategory[category] = items.toSet().toList();
+    widget.itemsByCategory.forEach((category, items) {
+      widget.itemsByCategory[category] = items.toSet().toList();
     });
   }
 
@@ -51,6 +51,16 @@ class _AddIitemState extends State<AddIitem> {
   // 현재 날짜
   DateTime currentDate = DateTime.now();
 
+  // 냉장고 섹션 이름들
+  static const List<String> storageSections = ['냉장', '냉동', '상온'];
+
+  // 각 섹션별로 물건을 저장할 리스트
+  List<List<Map<String, int>>> itemLists = [
+    [],
+    [],
+    []
+  ];
+
   // 냉장고에 추가된 아이템 리스트
   List<String> fridgeItems = [];
 
@@ -60,17 +70,33 @@ class _AddIitemState extends State<AddIitem> {
   // 검색된 아이템 상태를 관리할 리스트
   List<String> filteredItems = [];
 
-  // 물건 추가 다이얼로그 (더블 클릭으로 추가)
+  // 물건 추가 다이얼로그
   Future<void> _addItemsToFridge() async {
+    print('추가 함수 실행');
     setState(() {
+      int fridgeFieldIndex = 0;
+      // int sectionIndex = storageSections.indexOf(selectedSection!);
+      int sectionIndex = selectedSection != null
+          ? storageSections.indexOf(selectedSection!)
+          : 0;
+      itemLists[sectionIndex].addAll(
+          selectedItems.map((item) => {item: 7}) // 예시로 유통기한 7일 설정
+      );
       fridgeItems
           .addAll(selectedItems.where((item) => !fridgeItems.contains(item)));
-      selectedItems.clear(); // 선택된 아이템 목록 초기화
-
+      selectedItems.clear();
+      // Navigator.pop(context, {
+      //   'category': selectedCategory,
+      //   'item': selectedItem,
+      //   'expirationDays': expirationDays,
+      //   'sectionIndex': sectionIndex
+      // });
     });
     // 화면 닫기 (AddItem 끄기)
     Future.delayed(Duration(seconds: 1), () {
-      Navigator.pop(context); // AddItem 화면을 종료
+      if (mounted) { // mounted 상태를 확인하여 위젯이 아직 활성화된 상태일 때만 pop을 호출
+        Navigator.pop(context); // AddItem 화면을 종료
+      }
     });
   }
 
@@ -79,7 +105,7 @@ class _AddIitemState extends State<AddIitem> {
     List<String> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
-      itemsByCategory.forEach((category, items) {
+      widget.itemsByCategory.forEach((category, items) {
         tempFilteredItems.addAll(
           items.where((item) => item.toLowerCase().contains(searchKeyword)),
         );
@@ -87,26 +113,26 @@ class _AddIitemState extends State<AddIitem> {
       filteredItems = tempFilteredItems;
     });
     }
-    // 카테고리별 아이템을 출력하는 그리드
+
     Widget _buildFilteredItemsGrid() {
       return GridView.builder(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
         padding: EdgeInsets.all(8.0),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 5, // 한 줄에 4칸
+          crossAxisCount: 5,
           crossAxisSpacing: 8.0,
           mainAxisSpacing: 8.0,
           childAspectRatio: 1,
         ),
-        itemCount: filteredItems.length + 1, // 입력된 검색어로 항목 추가
+          itemCount: filteredItems.length + (filteredItems.contains(searchKeyword) ? 0 : 1),
         itemBuilder: (context, index) {
-          if (index == filteredItems.length) {
+          if (index == filteredItems.length ) {
             // 마지막 그리드 항목에 "검색어로 새 항목 추가" 항목 표시
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  if (!selectedItems.contains(searchKeyword)) {
+                  if (!selectedItems.contains(searchKeyword) ) {
                     selectedItems.add(searchKeyword); // 검색어로 새로운 항목 추가
                   } else {
                     selectedItems.remove(searchKeyword); // 선택 취소
@@ -129,6 +155,7 @@ class _AddIitemState extends State<AddIitem> {
             );
           } else {
             String currentItem = filteredItems[index];
+            //키워드 검색 결과 그리드 렌더링
             return GestureDetector(
               onTap: () {
                 // 아이템 클릭 시 처리
@@ -162,7 +189,9 @@ class _AddIitemState extends State<AddIitem> {
     void _deleteSelectedItems() {
       setState(() {
         if (selectedCategory != null) {
-          itemsByCategory[selectedCategory!]!.removeWhere(
+          deletedItems.addAll(selectedItems);
+
+          widget.itemsByCategory[selectedCategory!]!.removeWhere(
                   (item) => selectedItems.contains(item));
         }
         selectedItems.clear(); // 선택된 아이템 목록 초기화
@@ -222,9 +251,10 @@ class _AddIitemState extends State<AddIitem> {
           mainAxisSpacing: 8.0,
           childAspectRatio: 1,
         ),
-        itemCount: basicFoodsCategories.length,
+        itemCount: widget.basicFoodsCategories.length,
         itemBuilder: (context, index) {
-          String category = basicFoodsCategories[index];
+          String category = widget.basicFoodsCategories[index];
+          // 카테고리 그리드 렌더링
           return GestureDetector(
             onTap: () {
               setState(() {
@@ -232,7 +262,7 @@ class _AddIitemState extends State<AddIitem> {
                   selectedCategory = null;
                 } else {
                   selectedCategory = category;
-                  filteredItems = itemsByCategory[category] ?? []; // null 확인
+                  // filteredItems = widget.itemsByCategory[category] ?? []; // null 확인
                 }
               });
             },
@@ -256,12 +286,11 @@ class _AddIitemState extends State<AddIitem> {
         },
       );
     }
-
-// 카테고리별 아이템을 출력하는 그리드
+    // 카테고리별 아이템을 출력하는 그리드
     Widget _buildCategoryItemsGrid() {
       List<String> items = filteredItems.isNotEmpty
           ? filteredItems
-          : itemsByCategory[selectedCategory!] ?? [];
+          : widget.itemsByCategory[selectedCategory!] ?? [];
 
       return GridView.builder(
         shrinkWrap: true,
@@ -275,9 +304,11 @@ class _AddIitemState extends State<AddIitem> {
           childAspectRatio: 1,
         ),
         itemCount: items.length + 1,
+
         itemBuilder: (context, index) {
+
           if (index == items.length) {
-            //+아이콘 그리드 렌더링
+            //아이템 그리드 마지막에 +아이콘 그리드 렌더링
             return GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -304,8 +335,8 @@ class _AddIitemState extends State<AddIitem> {
           } else {
             String currentItem = items[index];
             bool isSelected = selectedItems.contains(currentItem);
-            bool isAddedToFridge = fridgeItems.contains(currentItem);
-            // 기존 아이템 렌더링
+            bool isDeleted = fridgeItems.contains(currentItem);
+            // 기존 아이템 그리드 렌더링
             return GestureDetector(
               onTap: () {
                 setState(() {
@@ -325,28 +356,25 @@ class _AddIitemState extends State<AddIitem> {
                         FridgeItemDetails(
                           categoryName: selectedCategory ?? '기타',
                           categoryFoodsName: currentItem,
-                          // 현재 아이템을 전달
                           expirationDays: 1,
-                          // 예시 값
                           consumptionDays: 1,
-                          // 예시 값
                           registrationDate: DateFormat('yyyy-MM-dd').format(
                               DateTime.now()), // 예시 값
                         ),
-                    fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
                   ),
                 );
               },
               onLongPress: () {
                 setState(() {
                   _toggleDeleteMode();
-                  selectedItems.add(currentItem); // 첫 번째 아이템 선택
+                  selectedItems.add(currentItem);
+
                 });
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: isAddedToFridge
-                      ? Colors.orange // 냉장고에 추가된 아이템은 오렌지색
+                  color: isDeleted
+                      ? Colors.grey // 삭제된 아이템은 회색
                       : (isSelected ? Colors.orange : Colors.blueAccent),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
@@ -358,6 +386,7 @@ class _AddIitemState extends State<AddIitem> {
                   ),
                 ),
               ),
+
             );
           }
         },
@@ -370,7 +399,7 @@ class _AddIitemState extends State<AddIitem> {
 
       return Scaffold(
         appBar: AppBar(
-          title: Text('냉장고 아이템 추가'),
+          title: Text(widget.pageTitle),
           actions: [
             if (isDeleteMode)
               IconButton(
@@ -419,7 +448,6 @@ class _AddIitemState extends State<AddIitem> {
               ),
               ] else ...[
               _buildCategoryGrid(),
-
               if (selectedCategory != null) ...[
                 Divider(thickness: 2),
 
@@ -442,7 +470,7 @@ class _AddIitemState extends State<AddIitem> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: isDeleteMode ? _confirmDeleteItems : _addItemsToFridge,
-              child: Text(isDeleteMode ? '삭제 하기' : '냉장고에 추가'),
+              child: Text(isDeleteMode ? '삭제 하기' : widget.addButton),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 textStyle: TextStyle(fontSize: 20),

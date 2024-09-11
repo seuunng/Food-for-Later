@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:food_for_later/screens/fridge/add_iItem.dart';
+import 'package:food_for_later/screens/fridge/add_item.dart';
+import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
+import 'package:food_for_later/screens/home_screen.dart';
 
 class ShoppingListMainPage extends StatefulWidget {
   @override
@@ -7,6 +9,23 @@ class ShoppingListMainPage extends StatefulWidget {
 }
 
 class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
+
+  int _selectedIndex = 0;
+
+  // 각 페이지를 저장하는 리스트
+  List<Widget> _pages = <Widget>[
+    FridgeMainPage(), // 냉장고 페이지
+    ShoppingListMainPage(), // 예시로 장보기 페이지
+  ];
+
+  void _onItemTapped(int index) {
+    if (index < _pages.length) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+  }
+
   static const List<String> fridgeName = ['기본냉장고', '김치냉장고', '오빠네냉장고'];
   String? selectedFridge = '기본냉장고';
 
@@ -24,6 +43,13 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     [false, false, false], // 육류/수산 섹션 체크박스 상태
     [false, false, false], // 공산품 섹션 체크박스 상태
   ];
+  List<List<bool>> strikeThroughItems = [
+    [false, false, false], // 신선 섹션 텍스트 취소선 상태
+    [false, false, false], // 육류/수산 섹션 텍스트 취소선 상태
+    [false, false, false], // 공산품 섹션 텍스트 취소선 상태
+  ];
+  bool showCheckBoxes = false;
+
   Widget _buildSections() {
     return Column(
       children: List.generate(storageSections.length, (index) {
@@ -67,34 +93,50 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       padding: EdgeInsets.all(8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1, // 한 줄에 5칸
-        crossAxisSpacing: 8.0,
-        mainAxisSpacing: 8.0,
+        crossAxisSpacing: 1.0,
+        mainAxisSpacing: 1.0,
+        childAspectRatio: 9,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         return GestureDetector(
+          onTap: () {
+            setState(() {
+              strikeThroughItems[sectionIndex][index] =
+                  !strikeThroughItems[sectionIndex][index];
+            });
+          },
           onLongPress: () {
+            setState(() {
+              showCheckBoxes = true;
+              _selectStrikeThroughItems(); // 취소선이 있는 아이템 체크박스 true
+            });
           },
           child: Container(
             padding: EdgeInsets.all(8.0),
             decoration: BoxDecoration(
-              color: Colors.blueAccent,
               borderRadius: BorderRadius.circular(8.0),
             ),
             child: Row(
               children: [
-                Checkbox(
-                  value: checkedItems[sectionIndex][index], // 체크 상태
-                  onChanged: (bool? value) {
-                    setState(() {
-                      checkedItems[sectionIndex][index] = value!;
-                    });
-                  },
-                ),
+                if (showCheckBoxes)
+                  Checkbox(
+                    value: checkedItems[sectionIndex][index], // 체크 상태
+                    onChanged: (bool? value) {
+                      setState(() {
+                        checkedItems[sectionIndex][index] = value!;
+                      });
+                    },
+                  ),
                 Expanded(
                   child: Text(
                     items[index],
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      // 취소선 적용 여부
+                      decoration: strikeThroughItems[sectionIndex][index]
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                    ),
                   ),
                 ),
               ],
@@ -104,11 +146,55 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       },
     );
   }
+
+  // 취소선이 있는 아이템들은 자동으로 체크박스가 true
+  void _selectStrikeThroughItems() {
+    for (int section = 0; section < strikeThroughItems.length; section++) {
+      for (int index = 0; index < strikeThroughItems[section].length; index++) {
+        if (strikeThroughItems[section][index]) {
+          checkedItems[section][index] = true;
+        }
+      }
+    }
+  }
+
+// 냉장고로 이동 버튼이 나타나는 조건
+  bool shouldShowMoveToFridgeButton() {
+    for (var section in checkedItems) {
+      if (section.contains(true)) return true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('장보기 목록'),
+        title: Row(
+          children: [
+            Text('장보기 목록'),
+            SizedBox(width: 20),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: selectedFridge,
+                items: fridgeName.map((section) {
+                  return DropdownMenuItem(
+                    value: section,
+                    child: Text(section),
+                  );
+                }).toList(), // 반복문을 통해 DropdownMenuItem 생성
+                onChanged: (value) {
+                  setState(() {
+                    selectedFridge = value!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: '냉장고 선택',
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         child: _buildSections(), // 섹션 동적으로 생성
@@ -116,17 +202,68 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
 
       // 물건 추가 버튼
       floatingActionButton: FloatingActionButton(
+        heroTag: 'shopping_add_button',
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddIitem(),
+              builder: (context) => AddItem(
+                pageTitle: '장보기목록에 추가',
+                addButton: '장보기목록에 추가',
+                fridgeFieldIndex: '기본냉장고',
+                basicFoodsCategories: [
+                  '육류',
+                  '수산물',
+                  '채소',
+                  '과일',
+                  '견과'
+                ],
+                itemsByCategory:{
+              '육류': ['소고기', '돼지고기', '닭고기'],
+              '수산물': ['연어', '참치', '고등어'],
+              '채소': ['양파', '당근', '감자'],
+              '과일': [
+              '사과', '바나나', '포도', '메론', '자몽', '블루베리', '라즈베리', '딸기', '체리', '오렌지', '골드키위', '참외', '수박', '감',
+              '복숭아', '앵두', '자두', '배', '코코넛', '리치', '망고', '망고스틴', '아보카도', '복분자', '샤인머스캣', '용과', '라임', '레몬', '천도복숭아', '파인애플', '애플망고', '잭프릇', '람보탄', '아사히베리', ''
+              ],
+              '견과': ['아몬드', '호두', '캐슈넛'],
+              }, // 원하는 카테고리 리스트
+              ),
               fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
             ),
           );
         },
         child: Icon(Icons.add),
       ),
+      bottomNavigationBar: showCheckBoxes && shouldShowMoveToFridgeButton()
+          ? Container(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      // BottomNavigationBarItem(icon: Icon(Icons.kitchen), label: '냉장고'),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  HomeScreen()), // FridgeScreen은 냉장고로 이동할 화면
+                        );
+                      },
+                      child: Text('냉장고로 이동'),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                    },
+                    child: Text('삭제'),
+                  ),
+                ],
+              ),
+            )
+          : null,
     );
   }
 }
