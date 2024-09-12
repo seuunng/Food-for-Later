@@ -277,7 +277,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
                     // 스크랩 아이콘 클릭 시 실행할 동작
                   },
                 ),
-                Text('|'),
                 IconButton(
                   visualDensity: const VisualDensity(horizontal: -4),
                   icon:
@@ -293,14 +292,29 @@ class _ReadRecipeState extends State<ReadRecipe> {
                     // 스크랩 아이콘 클릭 시 실행할 동작
                   },
                 ),
+                SizedBox(width: 4),
+                Text('|'),
+                SizedBox(width: 4),
                 Container(
                     child: TextButton(
-                        onPressed: () {}, child: Text('수정')),
-                        width: 50),
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero, // 버튼 패딩을 없앰
+                          minimumSize: Size(40, 30), // 최소 크기 설정
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap, // 터치 영역 최소화
+                        ),
+                        child: Text('수정')),
+                ),
                 Container(
                     child: TextButton(
-                        onPressed: () {}, child: Text('삭제')),
-                        width: 50),
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero, // 버튼 패딩을 없앰
+                          minimumSize: Size(40, 30), // 최소 크기 설정
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap, // 터치 영역 최소화
+                        ),
+                        child: Text('삭제')),
+                ),
               ],
             ),
             RecipeReview(),

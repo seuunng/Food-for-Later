@@ -6,27 +6,27 @@ class RecipeReview extends StatefulWidget {
 }
 
 class _RecipeReviewState extends State<RecipeReview> {
-  List<Map<String, String>> recipeReviews = [
+  List<Map<String, dynamic>> recipeReviews = [
     {
       'nickname': '승희네',
       'contents': '맛있었습니다!',
-      'date': '2024-05-17',
-      'ratings': '★★★',
-      'image': 'assets/step1.jpeg'
+      'date': '2024-05-17 12:00',
+      'ratings': '★★★☆☆',
+      'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
     },
     {
       'nickname': '지환네',
       'contents': '맛있었습니다!',
-      'date': '2024-05-17',
-      'ratings': '★★★★',
-      'image': 'assets/step2.jpeg'
+      'date': '2024-05-17 11:59',
+      'ratings': '★★★★☆',
+      'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
     },
     {
       'nickname': '옥정네',
       'contents': '맛있었습니다!',
-      'date': '2024-05-17',
+      'date': '2024-05-17 10:30',
       'ratings': '★★★★★',
-      'image': 'assets/step3.jpeg'
+      'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
     },
   ];
 
@@ -38,75 +38,119 @@ class _RecipeReviewState extends State<RecipeReview> {
         children: [
           Text('리뷰',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: recipeReviews.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ListTile(
-                  leading: Column(
-                    mainAxisSize: MainAxisSize.min, // 아이콘과 닉네임의 높이를 최소화
-                    children: [
-                      CircleAvatar(
-                          child: Icon(Icons.person)), // 아이콘과 닉네임 사이의 간격
-                      Text(
-                        recipeReviews[index]['nickname']!,
-                        style: TextStyle(fontSize: 12), // 닉네임 폰트 크기 설정
-                      ),
-                    ],
-                  ),
-                  // title: Text(recipeReviews[index]['nickname']!),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Column(
-                            children: [
-                              Text(recipeReviews[index]['contents']!),
-                              Row(
-                                children: [
-                                  Text(recipeReviews[index]['date']!),
-                                  Container(
-                                      alignment: Alignment.bottomRight,
-                                      child: TextButton(
-                                          onPressed: () {}, child: Text('수정')),
-                                      width: 50),
-                                  Container(
-                                      child: TextButton(
-                                          onPressed: () {}, child: Text('삭제')),
-                                      width: 50),
-                                ],
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: recipeReviews[index]['image'] != null
-                                ? Image.asset(
-                                    recipeReviews[index]['image']!,
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    width: 80,
-                                    height: 80,
-                                    color: Colors.grey,
-                                    child:
-                                        Icon(Icons.image, color: Colors.white),
+          SizedBox(
+            height: 500,
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: recipeReviews.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(child: Icon(Icons.person)),
+                            SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      recipeReviews[index]['nickname']!,
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text('|'),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      recipeReviews[index]['date']!,
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  recipeReviews[index]['ratings']!,
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                            Spacer(),
+                            Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    // 여기에 동작을 추가하세요.
+                                  },
+                                  child: Icon(Icons.thumb_up_alt_outlined,
+                                      size: 12),
+                                ),
+                                SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: () {
+                                    // 여기에 동작을 추가하세요.
+                                  },
+                                  child:
+                                      Icon(Icons.feedback_outlined, size: 12),
+                                ),
+                                SizedBox(width: 10),
+                                Text('|'),
+                                TextButton(
+                                  onPressed: () {},
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size(30, 20),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                                  child: Text('수정',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                TextButton(
+                                  onPressed: () {},
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size(30, 20),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text('삭제',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                SizedBox(width: 5),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          recipeReviews[index]['contents']!,
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8.0,
+                          runSpacing: 4.0,
+                          children: recipeReviews[index]['images'] != null
+                              ? List.generate(
+                                  recipeReviews[index]['images'].length,
+                                  (imgIndex) => Image.asset(
+                                    recipeReviews[index]['images'][imgIndex],
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : [Container()], // images가 null일 경우 빈 컨테이너를 표시
+                        ),
+                      ]),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -115,14 +159,11 @@ class _RecipeReviewState extends State<RecipeReview> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      // 스크롤을 위해 감싸기
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildReviewsSection(),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildReviewsSection(),
+      ],
     );
   }
 }
