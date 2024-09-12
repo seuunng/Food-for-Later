@@ -274,7 +274,7 @@ class _AddItemState extends State<AddItem> {
                 borderRadius: BorderRadius.circular(8.0),
               ), // 카테고리 버튼 크기 설정
               height: 60,
-              margin: EdgeInsets.symmetric(vertical: 8.0),
+              // margin: EdgeInsets.symmetric(vertical: 8.0),
               child: Center(
                 child: Text(
                   category,
