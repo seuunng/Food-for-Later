@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid_theme.dart';
+import 'package:food_for_later/screens/recipe/view_research_list.dart';
 
 class RecipeMainPage extends StatefulWidget {
+  final List<String> category;
+  RecipeMainPage({
+    required this.category,
+  });
   @override
   _RecipeMainPageState createState() => _RecipeMainPageState();
 }
@@ -54,6 +59,8 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     ],
     '견과': ['아몬드', '호두', '캐슈넛'],
   };
+
+
   final List<Tab> myTabs = <Tab>[
     Tab(text: '재료별'),
     Tab(text: '테마별'),
@@ -75,12 +82,14 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     List<String> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
-      itemsByCategory.forEach((category, items) {
-        tempFilteredItems.addAll(
-          items.where((item) => item.toLowerCase().contains(searchKeyword)),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ViewResearchList(
+              category: [searchKeyword],  // 필터링된 결과를 category로 넘김
+            ),
+          ),
         );
-      });
-      filteredItems = tempFilteredItems;
     });
   }
 
@@ -107,9 +116,20 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                     onChanged: (value) {
                       _searchItems(value); // 검색어 입력 시 아이템 필터링
                     },
+                    onSubmitted: (value) {
+                      // 엔터 키를 눌렀을 때 ViewResearchList로 이동
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ViewResearchList(
+                              category: [searchKeyword], // 필터링된 결과 전달
+                            ),
+                          ),
+                        );
+
+                    },
                   ),
                 ),
-                // SizedBox(width: 10),
                 IconButton(
                   icon: Icon(Icons.bookmark, size: 60), // 스크랩 아이콘 크기 조정
                   onPressed: () {
@@ -177,7 +197,25 @@ class _RecipeMainPageState extends State<RecipeMainPage>
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed:(){
+                  if (widget.category.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewResearchList(
+                          category: widget.category,
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Handle the case where category is empty
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('카테고리를 입력해주세요.'),
+                      ),
+                    );
+                  }
+                },
                 child: Text('냉장고 재료 레시피 추천'),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 20),

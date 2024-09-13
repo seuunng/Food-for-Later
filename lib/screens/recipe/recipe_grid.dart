@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/recipe/view_research_list.dart';
 
 class RecipeGrid extends StatefulWidget {
   final List<String> categories;
@@ -97,7 +98,14 @@ class _RecipeGridState extends State<RecipeGrid> {
           // 기존 아이템 그리드 렌더링
           return GestureDetector(
             onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                  builder: (context) =>
+                  ViewResearchList(
+                    category: [currentItem],
 
+                  )));
             },
             child: Container(
               decoration: BoxDecoration(

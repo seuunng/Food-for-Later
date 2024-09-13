@@ -46,7 +46,7 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
                 MaterialPageRoute(
                 builder: (context) =>
               ViewResearchList(
-                  category: category,
+                  category: [category],
 
               ))
             );

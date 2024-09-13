@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 
 class RecipeReview extends StatefulWidget {
   @override
@@ -29,7 +30,18 @@ class _RecipeReviewState extends State<RecipeReview> {
       'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
     },
   ];
+  bool isNiced = false; // 이미 좋아요를 눌렀는지 여부
 
+  // 좋아요 버튼 클릭 시 호출되는 함수
+  void _toggleNiced () {
+    setState(() {
+      if (isNiced ) {
+        isNiced  = false;
+      } else {
+        isNiced = true;
+      }
+    });
+  }
   Widget _buildReviewsSection() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -83,16 +95,17 @@ class _RecipeReviewState extends State<RecipeReview> {
                             Row(
                               children: [
                                 GestureDetector(
-                                  onTap: () {
-                                    // 여기에 동작을 추가하세요.
-                                  },
-                                  child: Icon(Icons.thumb_up_alt_outlined,
+                                  onTap: _toggleNiced,
+                                  child: Icon(isNiced? Icons.thumb_up : Icons.thumb_up_alt_outlined,
                                       size: 12),
                                 ),
                                 SizedBox(width: 10),
                                 GestureDetector(
                                   onTap: () {
-                                    // 여기에 동작을 추가하세요.
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => ReportAnIssue(postNo: 1)));
                                   },
                                   child:
                                       Icon(Icons.feedback_outlined, size: 12),

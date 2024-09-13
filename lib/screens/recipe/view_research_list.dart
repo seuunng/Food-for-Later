@@ -3,7 +3,7 @@ import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:food_for_later/screens/recipe/view_recipe_list.dart';
 
 class ViewResearchList extends StatefulWidget {
-  final String category;
+  final List<String> category;
 
   ViewResearchList({
     required this.category,
@@ -27,12 +27,20 @@ class _ViewResearchListState extends State<ViewResearchList> {
   void initState() {
     super.initState();
     // 페이지 로드 시 카테고리 이름을 키워드에 추가
-    keywords.add(widget.category);
+    keywords.addAll(widget.category);
   }
 
   // 선택된 아이템 상태를 관리할 리스트
   List<String> getRecipes() {
-    return itemsByCategory[widget.category] ?? [];
+    List<String> allRecipes = [];
+
+    for (String category in widget.category) {
+      if (itemsByCategory.containsKey(category)) {
+        allRecipes.addAll(itemsByCategory[category]!);
+      }
+    }
+
+    return allRecipes;
   }
 
   Widget _buildKeywords() {
@@ -69,7 +77,14 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   Widget _buildCategoryGrid() {
     List<String> recipeList = getRecipes();
-
+    if (recipeList.isEmpty) {
+      return Center(
+        child: Text(
+          '검색 결과가 없습니다.',
+          style: TextStyle(fontSize: 14, ),
+        ),
+      );
+    }
     return GridView.builder(
       shrinkWrap: true,
       padding: EdgeInsets.all(8.0),
@@ -88,7 +103,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
         return GestureDetector(
           onTap: () {
             Navigator.push(
-                context, MaterialPageRoute(builder: (context) => ViewRecipeList(recipeName: recipeName)));
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        ViewRecipeList(recipeName: recipeName)));
           },
           child: Container(
             padding: EdgeInsets.all(8.0),
@@ -109,14 +127,14 @@ class _ViewResearchListState extends State<ViewResearchList> {
                   ),
                   child: hasImage
                       ? Image.asset(
-                    'assets/images/recipe_placeholder.png', // 이미지 경로
-                    fit: BoxFit.cover,
-                  )
+                          'assets/images/recipe_placeholder.png', // 이미지 경로
+                          fit: BoxFit.cover,
+                        )
                       : Icon(
-                    Icons.image, // 이미지가 없을 경우 대체할 아이콘
-                    size: 40,
-                    color: Colors.grey,
-                  ),
+                          Icons.image, // 이미지가 없을 경우 대체할 아이콘
+                          size: 40,
+                          color: Colors.grey,
+                        ),
                 ),
                 SizedBox(width: 10), // 간격 추가
                 // 요리 이름과 키워드를 포함하는 Column
@@ -161,12 +179,17 @@ class _ViewResearchListState extends State<ViewResearchList> {
     List<String> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
+
+      if (searchKeyword.isNotEmpty && !keywords.contains(searchKeyword)) {
+        keywords.add(searchKeyword);
+      }
+
+      filteredItems = [];
       itemsByCategory.forEach((category, items) {
-        tempFilteredItems.addAll(
+        filteredItems.addAll(
           items.where((item) => item.toLowerCase().contains(searchKeyword)),
         );
       });
-      filteredItems = tempFilteredItems;
     });
   }
 
@@ -182,27 +205,23 @@ class _ViewResearchListState extends State<ViewResearchList> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText: '검색어 입력',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                            vertical: 8.0, horizontal: 10.0),
-                      ),
-                      onChanged: (value) {
-                        _searchItems(value); // 검색어 입력 시 아이템 필터링
-                      },
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.search,
+                          decoration: InputDecoration(
+                            hintText: '검색어 입력',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                                vertical: 8.0, horizontal: 10.0),
+                          ),
+                          onSubmitted: (value) {
+                            _searchItems(value);
+                          }),
                     ),
-                  ),
-                  SizedBox(width: 20),
-                  ElevatedButton(onPressed: () {}, child: Text('검색')),
-                ],
-              ),
+                  ]),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),

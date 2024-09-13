@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _pages = <Widget>[
     FridgeMainPage(), // 냉장고 페이지
     ShoppingListMainPage(), // 예시로 장보기 페이지
-    RecipeMainPage(), // 예시로 레시피 페이지
+    RecipeMainPage(category: ['닭고기', '양파'],), // 예시로 레시피 페이지
     RecordsCalendarView(), // 예시로 기록 페이지
   ];
 

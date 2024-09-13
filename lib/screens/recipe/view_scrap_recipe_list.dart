@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid.dart';
-import 'package:food_for_later/screens/recipe/recipe_grid_method.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid_theme.dart';
 
 class AddRecipe extends StatefulWidget {
