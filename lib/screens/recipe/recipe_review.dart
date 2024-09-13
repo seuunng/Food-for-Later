@@ -70,21 +70,15 @@ class _RecipeReviewState extends State<RecipeReview> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
                                     Text(
                                       recipeReviews[index]['nickname']!,
                                       style: TextStyle(fontSize: 12),
                                     ),
                                     SizedBox(width: 4),
-                                    Text('|'),
-                                    SizedBox(width: 4),
                                     Text(
                                       recipeReviews[index]['date']!,
                                       style: TextStyle(fontSize: 12),
                                     ),
-                                  ],
-                                ),
                                 Text(
                                   recipeReviews[index]['ratings']!,
                                   style: TextStyle(fontSize: 12),
@@ -172,11 +166,14 @@ class _RecipeReviewState extends State<RecipeReview> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildReviewsSection(),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildReviewsSection(),
+        ],
+      ),
     );
   }
 }

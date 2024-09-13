@@ -392,7 +392,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       ),
       bottomNavigationBar: isDeleteMode
           ? Container(
-              color: Colors.white,
+              color: Colors.transparent,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
@@ -400,8 +400,16 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                   onPressed: _confirmDeleteItems,
                   child: Text('삭제 하기'),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    textStyle: TextStyle(fontSize: 20),
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                    ),
+                    elevation: 5,
+                    textStyle: TextStyle(
+                      fontSize: 18, // 글씨 크기 조정
+                      fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                      letterSpacing: 1.2, //
+                    ),
                     // primary: isDeleteMode ? Colors.red : Colors.blue,
                   ),
                 ),

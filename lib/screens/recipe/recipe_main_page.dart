@@ -3,6 +3,7 @@ import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid_theme.dart';
 import 'package:food_for_later/screens/recipe/view_research_list.dart';
+import 'package:food_for_later/screens/recipe/view_scrap_recipe_list.dart';
 
 class RecipeMainPage extends StatefulWidget {
   final List<String> category;
@@ -133,7 +134,12 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                 IconButton(
                   icon: Icon(Icons.bookmark, size: 60), // 스크랩 아이콘 크기 조정
                   onPressed: () {
-                    // 스크랩 아이콘 클릭 시 실행할 동작
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewScrapRecipeList(),
+                      ),
+                    );// 스크랩 아이콘 클릭 시 실행할 동작
                   },
                 ),
               ],
@@ -191,6 +197,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         ],
       ),
       bottomNavigationBar: Container(
+        color: Colors.transparent,
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -218,8 +225,17 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                 },
                 child: Text('냉장고 재료 레시피 추천'),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  textStyle: TextStyle(fontSize: 20),
+                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                  // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                  ),
+                  elevation: 5,
+                  textStyle: TextStyle(
+                    fontSize: 18, // 글씨 크기 조정
+                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                    letterSpacing: 1.2, //
+                  ),
                   // primary: isDeleteMode ? Colors.red : Colors.blue,
                 ),
               ),
@@ -238,6 +254,10 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                 );
               },
               child: Icon(Icons.add),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+              ),
+
             ),
           ],
         ),

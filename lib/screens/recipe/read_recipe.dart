@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
+import 'package:food_for_later/screens/recipe/add_recipe_review.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 
@@ -23,6 +24,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
   List<String> themes = ['저칼로리', '한식', '간단한 요리'];
 
   List<String> fridgeIngredients = ['닭고기'];
+  List<String> searchKeywords = ['양파', '간장'];
+  List<String> shoppingList = [];
+  List<bool> selectedIngredients = [];
 
   List<Map<String, String>> recipeSteps = [
     {'image': 'assets/step1.jpeg', 'description': '재료를 손질합니다.'},
@@ -32,6 +36,15 @@ class _ReadRecipeState extends State<ReadRecipe> {
 
   bool isLiked = false; // 이미 좋아요를 눌렀는지 여부
   bool isScraped = false; // 이미 좋아요를 눌렀는지 여부
+
+  @override
+  void initState() {
+    super.initState();
+    // 기본적으로 냉장고에 없는 재료들을 모두 선택된 상태로 설정
+    selectedIngredients = List.generate(ingredients.length, (index) {
+      return !fridgeIngredients.contains(ingredients[index]);
+    });
+  }
 
   // 좋아요 버튼 클릭 시 호출되는 함수
   void _toggleLike() {
@@ -52,6 +65,72 @@ class _ReadRecipeState extends State<ReadRecipe> {
         isScraped = true;
       }
     });
+  }
+
+  Widget _buildAddToShoppingListButton() {
+    return IconButton(
+      icon: Icon(Icons.add_shopping_cart),
+      onPressed: _addToShoppingListDialog, // 팝업 다이얼로그 호출
+    );
+  }
+
+// 장보기 목록에 재료를 추가하는 함수
+  void _addToShoppingListDialog() {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AlertDialog(
+                title: Text('장바구니에 추가할 재료 선택'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: ingredients.map((ingredient) {
+                      int index = ingredients.indexOf(ingredient);
+                      if (!fridgeIngredients.contains(ingredient)) {
+                        return CheckboxListTile(
+                          title: Text(ingredient),
+                          value: selectedIngredients[index],
+                          onChanged: (bool? value) {
+                            setState(() {
+                              selectedIngredients[index] = value ?? false;
+                            });
+                          },
+                        );
+                      }
+                      return SizedBox.shrink(); // 냉장고에 있는 재료는 표시하지 않음
+                    }).toList(),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    child: Text('취소'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  TextButton(
+                    child: Text('추가'),
+                    onPressed: () {
+                      // 선택된 재료들을 장바구니에 추가
+                      for (int i = 0; i < ingredients.length; i++) {
+                        if (selectedIngredients[i] &&
+                            !shoppingList.contains(ingredients[i])) {
+                          shoppingList.add(ingredients[i]);
+                        }
+                      }
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('선택한 재료를 장바구니에 추가했습니다.'),
+                      ));
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        });
   }
 
   Widget _buildInfoSection() {
@@ -89,8 +168,15 @@ class _ReadRecipeState extends State<ReadRecipe> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('재료',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Text('재료',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Spacer(),
+              Text("냉장고에 없는 재료 장바구니 담기"),
+              _buildAddToShoppingListButton(),
+            ],
+          ),
           SizedBox(
             height: 10,
           ),
@@ -99,10 +185,15 @@ class _ReadRecipeState extends State<ReadRecipe> {
             runSpacing: 4.0,
             children: ingredients.map((ingredient) {
               bool inFridge = fridgeIngredients.contains(ingredient);
+              bool isKeyword = searchKeywords.contains(ingredient);
               return Container(
                 padding: EdgeInsets.symmetric(vertical: 3.0, horizontal: 5.0),
                 decoration: BoxDecoration(
-                  color: inFridge ? Colors.grey : Colors.transparent,
+                  color: inFridge
+                      ? Colors.grey // 냉장고에 있으면 회색
+                      : isKeyword
+                          ? Colors.lightGreen // 검색 키워드에 있으면 녹색
+                          : Colors.transparent, // 그 외는 기본 스타일
                   border: Border.all(
                     color: Colors.grey,
                     width: 0.5,
@@ -235,6 +326,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
       ),
     );
   }
+
   void _deleteRecipe() {
     // 삭제 동작을 여기에 정의합니다. 데이터베이스나 서버에서 레시피 삭제 요청을 보내는 로직을 추가할 수 있습니다.
     // 예시로는 현재 페이지에서 pop으로 돌아가는 동작을 수행합니다.
@@ -258,7 +350,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
                 // 실제 삭제 로직을 여기에 추가합니다.
                 // 예를 들어 데이터베이스에서 레시피 삭제 로직을 추가할 수 있습니다.
                 Navigator.of(context).pop(); // 대화상자 닫기
-                Navigator.of(context).pop(); // 이전 화면으로 돌아가기
               },
             ),
           ],
@@ -266,6 +357,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -363,10 +455,13 @@ class _ReadRecipeState extends State<ReadRecipe> {
                                       'servings': selectedServings,
                                       'cookTime': cookTime,
                                       'difficulty': difficulty,
-                                      'recipeSteps': recipeSteps.map((step) => {
-                                                'description': step['description'] ?? '',
+                                      'recipeSteps': recipeSteps
+                                          .map((step) => {
+                                                'description':
+                                                    step['description'] ?? '',
                                                 'image': step['image'] ?? '',
-                                              }).toList(),
+                                              })
+                                          .toList(),
                                     })));
                       },
                       style: TextButton.styleFrom(
@@ -391,6 +486,33 @@ class _ReadRecipeState extends State<ReadRecipe> {
               ],
             ),
             RecipeReview(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed:() {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            AddRecipeReview()), // FridgeScreen은 냉장고로 이동할 화면
+                  );
+                },
+                child: Text('리뷰쓰기'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                  ),
+                  elevation: 5,
+                  textStyle: TextStyle(
+                    fontSize: 18, // 글씨 크기 조정
+                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                    letterSpacing: 1.2, //
+                  ),
+                  // primary: isDeleteMode ? Colors.red : Colors.blue,
+                ),
+              ),
+            ),
           ],
         ),
       ),

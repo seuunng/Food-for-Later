@@ -134,18 +134,15 @@ class _AddRecipeState extends State<AddRecipe> {
                   labelText: '$title 입력',
                   border: OutlineInputBorder(),
                 ),
+                onSubmitted: (value) {
+                  if (value.isNotEmpty) {
+                    setState(() {
+                      onAddItem(value);
+                      controller.clear(); // 입력 후 텍스트필드 초기화
+                    });
+                  }
+                },
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.add),
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  setState(() {
-                    onAddItem(controller.text); // 컨트롤러에서 텍스트를 가져옴
-                    controller.clear();
-                  });
-                }
-              },
             ),
           ],
         ),
@@ -285,8 +282,8 @@ class _AddRecipeState extends State<AddRecipe> {
                 Icon(Icons.people, size: 25),
                 SizedBox(width: 5), // 아이콘과 입력 필드 사이 간격
                 Expanded(
-                  flex: 2,
-                  child: _buildTextField('기준 인원', servingsController,
+                  flex: 1,
+                  child: _buildTextField('인원', servingsController,
                       isNumber: true),
                 ),
                 SizedBox(width: 5),

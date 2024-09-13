@@ -17,9 +17,12 @@ class _ViewRecipeListState extends State<ViewRecipeList> {
 // 요리명 리스트
   List<String> recipeList = ['참치김밥', '불고기', '닭갈비'];
   List<String> ingredients = ['닭고기', '소금', '후추'];
+  String ratings = '★★★★☆';
 
   // 냉장고에 있는 재료 리스트
   List<String> fridgeIngredients = ['닭고기'];
+
+  bool isScraped = false; // 이미 좋아요를 눌렀는지 여부
 
   // Widget _buildIngredients() {
   //   return Wrap(
@@ -61,7 +64,7 @@ class _ViewRecipeListState extends State<ViewRecipeList> {
         crossAxisCount: 1,
         crossAxisSpacing: 8.0,
         mainAxisSpacing: 8.0,
-        childAspectRatio: 4,
+        childAspectRatio: 3,
       ),
       itemCount: recipeList.length,
       itemBuilder: (context, index) {
@@ -123,12 +126,11 @@ class _ViewRecipeListState extends State<ViewRecipeList> {
                             ),
                           ),
                           Spacer(),
+                          Text(ratings),
                           IconButton(
-                            icon: Icon(Icons.bookmark_border,
+                            icon: Icon(isScraped ? Icons.bookmark : Icons.bookmark_border,
                                 size: 20), // 스크랩 아이콘 크기 조정
-                            onPressed: () {
-                              // 스크랩 아이콘 클릭 시 실행할 동작
-                            },
+                            onPressed: _toggleScraped,
                           ),
                         ],
                       ), // 간격 추가
@@ -170,7 +172,15 @@ class _ViewRecipeListState extends State<ViewRecipeList> {
       },
     );
   }
-
+  void _toggleScraped() {
+    setState(() {
+      if (isScraped) {
+        isScraped = false;
+      } else {
+        isScraped = true;
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

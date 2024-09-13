@@ -450,13 +450,11 @@ class _AddItemState extends State<AddItem> {
               _buildCategoryGrid(),
               if (selectedCategory != null) ...[
                 Divider(thickness: 2),
-
                 // 아이템 그리드도 스크롤되게 함
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: _buildCategoryItemsGrid(),
                 ),
-
               ],
               ],
             ],
@@ -464,7 +462,7 @@ class _AddItemState extends State<AddItem> {
         ),
         bottomNavigationBar: selectedItems.isNotEmpty
             ? Container(
-          color: Colors.white,
+          color: Colors.transparent,
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: SizedBox(
             width: double.infinity,
@@ -472,10 +470,20 @@ class _AddItemState extends State<AddItem> {
               onPressed: isDeleteMode ? _confirmDeleteItems : _addItemsToFridge,
               child: Text(isDeleteMode ? '삭제 하기' : widget.addButton),
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                textStyle: TextStyle(fontSize: 20),
-                // primary: isDeleteMode ? Colors.red : Colors.blue,
+              padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+              // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
               ),
+              elevation: 5,
+              textStyle: TextStyle(
+                fontSize: 18, // 글씨 크기 조정
+                fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                letterSpacing: 1.2, //
+              ),
+              // primary: isDeleteMode ? Colors.red : Colors.blue,
+            ),
+
             ),
           ),
         )
