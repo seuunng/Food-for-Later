@@ -202,37 +202,47 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: DropdownButton<String>(
-                value: selectedFilter,
-                isExpanded: true,
-                items: [
-                  DropdownMenuItem(
-                    value: '즐겨찾기',
-                    child: Text('즐겨찾기',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    enabled: false, // 선택 불가, 섹션 제목 역할
+              child: Row(
+                children: [
+                  Text('컬렉션',
+                    style: TextStyle(
+                      fontSize: 18, // 원하는 폰트 크기로 지정 (예: 18)
+                      fontWeight: FontWeight.bold, // 폰트 굵기 조정 (선택사항)
+                    ),
                   ),
-                  DropdownMenuItem(
-                    value: '기본함',
-                    child: Text('기본함'),
+                  Spacer(),
+                  Expanded(
+                    child: DropdownButton<String>(
+                      value: selectedFilter,
+                      isExpanded: true,
+                      items: [
+                        DropdownMenuItem(
+                          value: '기본함',
+                          child: Text('기본함'),
+                        ),
+                        // 구분선 추가
+                        DropdownMenuItem(
+                          enabled: false,
+                          child: SizedBox(
+                            height: 1, // Divider의 높이 지정
+                            child: Divider(),
+                          ),
+                        ),
+                        ...userFavorites.map((user) {
+                          return DropdownMenuItem(
+                            value: user,
+                            child: Text(user),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedFilter = value!;
+                        });
+                      },
+                    ),
                   ),
-                  // 구분선 추가
-                  DropdownMenuItem(
-                    child: Divider(),
-                    enabled: false,
-                  ),
-                  ...userFavorites.map((user) {
-                    return DropdownMenuItem(
-                      value: user,
-                      child: Text(user),
-                    );
-                  }).toList(),
                 ],
-                onChanged: (String? value) {
-                  setState(() {
-                    selectedFilter = value!;
-                  });
-                },
               ),
             ),
             Expanded(
@@ -242,7 +252,6 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
               ),
             ),
           ],
-        )
-    );
+        ));
   }
 }

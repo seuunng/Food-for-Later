@@ -32,7 +32,6 @@ dependencies:
     sdk: flutter
 
   table_calendar: ^3.0.6
-
   # Firebase 관련 패키지
   firebase_core: ^2.15.1
   cloud_firestore: ^4.8.0   # Firestore DB 사용

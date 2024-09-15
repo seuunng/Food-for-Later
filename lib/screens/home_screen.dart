@@ -5,7 +5,9 @@ import 'package:food_for_later/screens/foods/manage_categories.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/recipe/recipe_main_page.dart';
+import 'package:food_for_later/screens/recipe/recipe_search_settings.dart';
 import 'package:food_for_later/screens/records/records_calendar_view.dart';
+import 'package:food_for_later/screens/records/view_record_main.dart';
 import 'package:food_for_later/screens/settings/account_information.dart';
 import 'package:food_for_later/screens/settings/app_environment_settings.dart';
 import 'package:food_for_later/screens/settings/app_usage_settings.dart';
@@ -32,8 +34,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _pages = <Widget>[
     FridgeMainPage(), // 냉장고 페이지
     ShoppingListMainPage(), // 예시로 장보기 페이지
-    RecipeMainPage(category: ['닭고기', '양파'],), // 예시로 레시피 페이지
-    RecordsCalendarView(), // 예시로 기록 페이지
+    RecipeMainPage(
+      category: ['닭고기', '양파'],
+    ), // 예시로 레시피 페이지
+    ViewRecordMain(), // 예시로 기록 페이지
   ];
 
   void _onItemTapped(int index) {
@@ -44,108 +48,153 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  List<PopupMenuEntry<String>> _getPopupMenuItems() {
+    switch (_selectedIndex) {
+      case 0: // 냉장고 페이지
+        return [
+          PopupMenuItem<String>(
+            value: 'basic_foods_categories_setting',
+            child: Text('기본 식품 카테고리 관리'),
+          ),
+          PopupMenuItem<String>(
+            value: 'preferred_foods_categories_setting',
+            child: Text('선호 식품 카테고리 관리'),
+          )
+        ];
+      case 1: // 장보기 페이지
+        return [
+          PopupMenuItem<String>(
+            value: 'basic_foods_categories_setting',
+            child: Text('기본 식품 카테고리 관리'),
+          ),
+          PopupMenuItem<String>(
+            value: 'preferred_foods_categories_setting',
+            child: Text('선호 식품 카테고리 관리'),
+          )
+        ];
+      case 2: // 레시피 페이지
+        return [
+          PopupMenuItem<String>(
+            value: 'recipe_search_detail_setting',
+            child: Text('검색 상세 설정'),
+          ),
+        ];
+      case 3: // 기록 페이지
+        return [
+          PopupMenuItem<String>(
+            value: 'record_search_detail_setting',
+            child: Text('검색 상세 설정'),
+          ),
+        ];
+      default:
+        return [];
+    }
+  }
+
+  void _onPopupMenuSelected(String value) {
+    // 팝업 메뉴 항목 선택 시 동작 정의
+    switch (value) {
+      case 'basic_foods_categories_setting':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddItem(
+              pageTitle: '기본 식품 카테고리에 추가',
+              addButton: '카테고리에 추가',
+              fridgeFieldIndex: '기본냉장고',
+              basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
+              itemsByCategory: {
+                '육류': ['소고기', '돼지고기', '닭고기'],
+                '수산물': ['연어', '참치', '고등어'],
+                '채소': ['양파', '당근', '감자'],
+                '과일': [
+                  '사과',
+                  '바나나',
+                  '포도',
+                  '메론',
+                  '자몽',
+                  '블루베리',
+                  '라즈베리',
+                  '딸기',
+                  '체리',
+                  '오렌지',
+                  '골드키위',
+                  '참외',
+                  '수박',
+                  '감',
+                  '복숭아',
+                  '앵두',
+                  '자두',
+                  '배',
+                  '코코넛',
+                  '리치',
+                  '망고',
+                  '망고스틴',
+                  '아보카도',
+                  '복분자',
+                  '샤인머스캣',
+                  '용과',
+                  '라임',
+                  '레몬',
+                  '천도복숭아',
+                  '파인애플',
+                  '애플망고',
+                  '잭프릇',
+                  '람보탄',
+                  '아사히베리',
+                  ''
+                ],
+                '견과': ['아몬드', '호두', '캐슈넛'],
+              }, // 원하는 카테고리 리스트), // 예시로 설정 페이지로 이동
+            ),
+          ),
+        );
+        break;
+      case 'preferred_foods_categories_setting':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddItem(
+              pageTitle: '선호식품 카테고리에 추가',
+              addButton: '카테고리에 추가',
+              fridgeFieldIndex: '기본냉장고',
+              basicFoodsCategories: ['비건', '다이어트', '무오신채', '알레르기', '채식'],
+              itemsByCategory: {
+                '비건': ['육류', '어패류', '꿀'],
+                '다이어트': ['튀기기', '밀가루', '설탕'],
+                '오신채': ['부추', '마늘', '파', '달래', '양파'],
+                '알레르기': ['복숭아', '우유', '파인애플'],
+                '채식': ['육류', '어패류', '팜유'],
+              }, // 원하는 카테고리 리스트), // 의견 보내기 페이지로 이동
+            ),
+          ),
+        );
+
+        break;
+
+      case 'recipe_search_detail_setting':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => RecipeSearchSettings()));
+        break;
+
+      case 'record_search_detail_setting':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => RecipeSearchSettings()));
+        break;
+      default:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('이따뭐먹지'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert), // 3점 버튼 아이콘
-            onPressed: () {
-              showMenu(
-                context: context,
-                position: RelativeRect.fromLTRB(
-                    1000.0, 80.0, 0.0, 0.0), // 메뉴가 화면의 오른쪽에 나오도록 위치 지정
-                items: [
-                  PopupMenuItem<String>(
-                    value: 'settings',
-                    child: Text('기본 식품 카테고리 관리'),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'feedback',
-                    child: Text('선호 식품 카테고리 관리'),
-                  ),
-                ],
-                elevation: 8.0,
-              ).then((value) {
-                if (value == 'settings') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddItem(
-                        pageTitle: '기본 식품 카테고리에 추가',
-                        addButton: '카테고리에 추가',
-                        fridgeFieldIndex: '기본냉장고',
-                        basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
-                        itemsByCategory: {
-                          '육류': ['소고기', '돼지고기', '닭고기'],
-                          '수산물': ['연어', '참치', '고등어'],
-                          '채소': ['양파', '당근', '감자'],
-                          '과일': [
-                            '사과',
-                            '바나나',
-                            '포도',
-                            '메론',
-                            '자몽',
-                            '블루베리',
-                            '라즈베리',
-                            '딸기',
-                            '체리',
-                            '오렌지',
-                            '골드키위',
-                            '참외',
-                            '수박',
-                            '감',
-                            '복숭아',
-                            '앵두',
-                            '자두',
-                            '배',
-                            '코코넛',
-                            '리치',
-                            '망고',
-                            '망고스틴',
-                            '아보카도',
-                            '복분자',
-                            '샤인머스캣',
-                            '용과',
-                            '라임',
-                            '레몬',
-                            '천도복숭아',
-                            '파인애플',
-                            '애플망고',
-                            '잭프릇',
-                            '람보탄',
-                            '아사히베리',
-                            ''
-                          ],
-                          '견과': ['아몬드', '호두', '캐슈넛'],
-                        }, // 원하는 카테고리 리스트), // 예시로 설정 페이지로 이동
-                      ),
-                    ),
-                  );
-                } else if (value == 'feedback') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddItem(
-                        pageTitle: '선호식품 카테고리에 추가',
-                        addButton: '카테고리에 추가',
-                        fridgeFieldIndex: '기본냉장고',
-                        basicFoodsCategories: ['비건', '다이어트', '무오신채', '알레르기', '채식'],
-                        itemsByCategory: {
-                          '비건': ['육류', '어패류', '꿀'],
-                          '다이어트': ['튀기기', '밀가루', '설탕'],
-                          '오신채': ['부추', '마늘', '파', '달래', '양파'],
-                          '알레르기': ['복숭아', '우유', '파인애플'],
-                          '채식': ['육류', '어패류', '팜유'],
-                        }, // 원하는 카테고리 리스트), // 의견 보내기 페이지로 이동
-                      ),
-                    ),
-                  );
-                }
-              });
-            },
+          PopupMenuButton<String>(
+            onSelected: _onPopupMenuSelected,
+            itemBuilder: (BuildContext context) => _getPopupMenuItems(),
           ),
         ],
       ),
