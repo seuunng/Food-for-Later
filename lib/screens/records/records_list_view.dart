@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/records/read_record.dart';
 
 class RecordsListView extends StatefulWidget {
   @override
@@ -58,74 +59,86 @@ class _RecordsListViewState extends State<RecordsListView> {
                       return Colors.grey; // 기본 색상
                   }
                 }
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                // 컬러 바 추가
-                Container(
-                width: 4,
-                height: 50, // 컬러 바의 높이 설정
-                color: getZoneColor(recordsList[index]['zone']!),
-                ),
-                SizedBox(width: 8), // 컬러 바와 텍스트 사이 간격
-
-                Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              recordsList[index]['zone']!,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            SizedBox(width: 4),
-                            Text('|'),
-                            SizedBox(width: 4),
-                            Text(
-                              recordsList[index]['unit']!,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            SizedBox(width: 4),
-                            Text('|'),
-                            SizedBox(width: 4),
-                            Text(
-                              recordsList[index]['date']!,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          recordsList[index]['title']!,
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          recordsList[index]['contents']!,
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8.0,
-                          runSpacing: 4.0,
-                          children: recordsList[index]['images'] != null
-                              ? List.generate(
-                                  recordsList[index]['images'].length,
-                                  (imgIndex) => Image.asset(
-                                    recordsList[index]['images'][imgIndex],
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              : [Container()], // images가 null일 경우 빈 컨테이너를 표시
-                        ),
-                      ],
+                return InkWell(
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ReadRecord(
+                            )));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  
+                  child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  
+                  children: [
+                  
+                  // 컬러 바 추가
+                  Container(
+                  width: 4,
+                  height: 50, // 컬러 바의 높이 설정
+                  color: getZoneColor(recordsList[index]['zone']!),
                   ),
-                ),
-                ],
-                ),
+                  SizedBox(width: 8), // 컬러 바와 텍스트 사이 간격
+                  
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                recordsList[index]['zone']!,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              SizedBox(width: 4),
+                              Text('|'),
+                              SizedBox(width: 4),
+                              Text(
+                                recordsList[index]['unit']!,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              SizedBox(width: 4),
+                              Text('|'),
+                              SizedBox(width: 4),
+                              Text(
+                                recordsList[index]['date']!,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            recordsList[index]['title']!,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Text(
+                            recordsList[index]['contents']!,
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8.0,
+                            runSpacing: 4.0,
+                            children: recordsList[index]['images'] != null
+                                ? List.generate(
+                                    recordsList[index]['images'].length,
+                                    (imgIndex) => Image.asset(
+                                      recordsList[index]['images'][imgIndex],
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : [Container()], // images가 null일 경우 빈 컨테이너를 표시
+                          ),
+                        ],
+                    ),
+                  ),
+                  ],
+                  ),
+                  ),
                 );
               },
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:food_for_later/screens/recipe/view_recipe_list.dart';
+import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/records_album_view.dart';
 import 'package:food_for_later/screens/records/records_calendar_view.dart';
 import 'package:food_for_later/screens/records/records_list_view.dart';
@@ -122,7 +123,25 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
               ),
             ),
           ),
+
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'record_add_button',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CreateRecord(),
+              fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
+            ),
+          );
+        },
+        child: Icon(Icons.add),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+        ),
+
       ),
     );
   }

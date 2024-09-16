@@ -6,6 +6,8 @@ import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/recipe/recipe_main_page.dart';
 import 'package:food_for_later/screens/recipe/recipe_search_settings.dart';
+import 'package:food_for_later/screens/records/edit_record_categories.dart';
+import 'package:food_for_later/screens/records/record_search_settings.dart';
 import 'package:food_for_later/screens/records/records_calendar_view.dart';
 import 'package:food_for_later/screens/records/view_record_main.dart';
 import 'package:food_for_later/screens/settings/account_information.dart';
@@ -84,6 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
           PopupMenuItem<String>(
             value: 'record_search_detail_setting',
             child: Text('검색 상세 설정'),
+          ),
+          PopupMenuItem<String>(
+            value: 'record_categories_setting',
+            child: Text('기록 카테고리 관리'),
           ),
         ];
       default:
@@ -179,7 +185,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       case 'record_search_detail_setting':
         Navigator.push(context,
-            MaterialPageRoute(builder: (context) => RecipeSearchSettings()));
+            MaterialPageRoute(builder: (context) => RecordSearchSettings()));
+        break;
+      case 'record_categories_setting':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => EditRecordCategories()));
         break;
       default:
         break;

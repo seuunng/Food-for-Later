@@ -73,13 +73,13 @@ class _ViewRecipeListState extends State<ViewRecipeList> {
         // 카테고리 그리드 렌더링
         return GestureDetector(
           onTap: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => ReadRecipe(
-                          recipeName: recipeName,
-                        )));
-          },
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ReadRecipe(
+                    recipeName: recipeName,
+                  )));
+        },
           child: Container(
             padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
             decoration: BoxDecoration(
