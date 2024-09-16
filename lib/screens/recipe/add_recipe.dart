@@ -320,7 +320,7 @@ class _AddRecipeState extends State<AddRecipe> {
                   setState(() {
                     themes.add(newItem);
                   });
-                }), // 아이콘
+                }),
             SizedBox(height: 10),
             _buildStepsWithImagesSection(),
           ],
