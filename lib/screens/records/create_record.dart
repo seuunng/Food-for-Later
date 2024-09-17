@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
+// import 'dart:nativewrappers/_internal/vm/lib/typed_data_patch.dart';
 
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 class CreateRecord extends StatefulWidget {
   final Map<String, dynamic>? recordsData; // 수정 시 전달될 레시피 데이터
@@ -30,7 +33,7 @@ class _CreateRecordState extends State<CreateRecord> {
   };
 
   // 이미지 선택을 위한 ImagePicker 인스턴스
-  final ImagePicker _picker = ImagePicker();
+  List<AssetEntity> images = [];
 
   XFile? _imageFile;
 
@@ -54,12 +57,20 @@ class _CreateRecordState extends State<CreateRecord> {
   }
 
   // 이미지를 선택하는 메서드
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  Future<void> _pickImages() async {
+    var permission = await PhotoManager.requestPermissionExtend();
+    if (permission.isAuth) {
+      // 권한이 허용된 경우 이미지 로드
+      List<AssetEntity> assets = await PhotoManager.getAssetPathList(
+        onlyAll: true,
+      ).then((value) => value[0].getAssetListRange(start: 0, end: 100));
+
       setState(() {
-        _imageFile = pickedFile; // 선택한 이미지 파일을 저장
+        images = assets;
       });
+    } else {
+      // 권한 거부 시 설정으로 이동
+      PhotoManager.openSetting();
     }
   }
 
@@ -106,7 +117,31 @@ class _CreateRecordState extends State<CreateRecord> {
       ),
     );
   }
+  // 위젯에서 이미지 출력
+  Widget _buildSelectedImages() {
+    if (images.isEmpty) {
+      return Text("선택된 이미지가 없습니다");
+    }
 
+    return Wrap(
+      children: images.map((image) {
+        return FutureBuilder<Uint8List?>(
+          future: image.thumbnailDataWithSize(ThumbnailSize(100, 100)), // 썸네일 데이터 가져오기
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
+              return Image.memory(
+                snapshot.data!,
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+              );
+            }
+            return CircularProgressIndicator();
+          },
+        );
+      }).toList(),
+    );
+  }
   //조리방법과이미지 섹션
   Widget _buildRecordsWithImagesSection() {
     return Column(
@@ -167,7 +202,7 @@ class _CreateRecordState extends State<CreateRecord> {
                 '', categoryFieldMap[selectedCategory]!, selectedField,
                 (value) {
               setState(() {
-                selectedCategory = value;
+                selectedField = value;
               });
             }),
             SizedBox(width: 5.0),
@@ -198,7 +233,7 @@ class _CreateRecordState extends State<CreateRecord> {
           children: [
             IconButton(
               icon: Icon(Icons.camera_alt_outlined),
-              onPressed: _pickImage,
+              onPressed: _pickImages,
             ),
             if (_imageFile != null) ...[
               Image.file(
@@ -273,6 +308,15 @@ class _CreateRecordState extends State<CreateRecord> {
             ),
             SizedBox(height: 10),
             _buildRecordsWithImagesSection(),
+            Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.camera_alt_outlined),
+                  onPressed: _pickImages,
+                ),
+              ],
+            ),
+            _buildSelectedImages(),
           ],
         ),
       ),

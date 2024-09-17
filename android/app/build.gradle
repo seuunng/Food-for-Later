@@ -13,6 +13,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+//        allWarningsAsErrors true  // 경고를 오류로 취급
+//        options.compilerArgs += ["-Xlint:deprecation", "-Xlint:unchecked"]
     }
 
     kotlinOptions {

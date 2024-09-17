@@ -31,7 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  permission_handler: ^10.2.0
   table_calendar: ^3.0.6
+  device_info_plus: ^9.0.2
   # Firebase 관련 패키지
   firebase_core: ^2.15.1
   cloud_firestore: ^4.8.0   # Firestore DB 사용
@@ -57,7 +59,8 @@ dependencies:
   # 네비게이션 및 기타 유틸리티
   get: ^4.6.6  # 네비게이션 및 상태 관리
   url_launcher: ^6.1.10  # 외부 URL 열기
-  image_picker: ^1.0.0  # 사진 선택 (냉장고 추가 시 카메라/앨범 접근)
+  image_picker: ^1.0.0  # 사진 선택
+  photo_manager: ^3.0.0
 
   # 테스트 관련 패키지
   flutter_test:
