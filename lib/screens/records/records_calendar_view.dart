@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 
@@ -11,34 +12,56 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedDate = DateTime.now();
 
-  Map<DateTime, List<Map<String, dynamic>>> recordsData = {
-    DateTime(2024, 9, 18): [
-      {
-        'zone': '식단',
-        'title': '아침 식사',
-        'color': Colors.blueAccent.shade100,
-      },
-    ],
-    DateTime(2024, 9, 19): [
-      {
-        'zone': '운동',
-        'title': '아침 운동',
-        'color': Colors.greenAccent.shade100,
-      },
-      {
-        'zone': '식단',
-        'title': '점심 식사',
-        'color': Colors.blueAccent.shade100,
-      },
-    ],
-    DateTime(2024, 9, 20): [
-      {
-        'zone': '식단',
-        'title': '저녁 식사',
-        'color': Colors.blueAccent.shade100,
-      },
-    ],
-  };
+  List<Map<String, dynamic>> recordsList = [
+    {
+      'zone': '식단',
+      'color': Colors.blueAccent.shade100,
+      'date': '2024-09-17',
+      'records': [
+        {
+          'unit': '아침',
+          'contents': '맛있었습니다!',
+          'images': [
+            'assets/step1.jpeg',
+            'assets/step2.jpeg',
+            'assets/step3.jpeg'
+          ],
+        },
+        {
+          'unit': '점심',
+          'contents': '점심도 맛있었습니다!',
+          'images': [
+            'assets/step1.jpeg',
+            'assets/step2.jpeg',
+            'assets/step3.jpeg'
+          ],
+        }
+      ]
+    },
+    {
+      'zone': '운동',
+      'color': Colors.greenAccent.shade100,
+      'date': '2024-09-19',
+      'records': [
+        {
+          'unit': '저녁',
+          'contents': '운동을 했습니다!',
+          'images': [
+            'assets/step1.jpeg',
+            'assets/step2.jpeg',
+            'assets/step3.jpeg'
+          ],
+        }
+      ]
+    },
+  ];
+
+  List<Map<String, dynamic>>? getRecordsForDate(DateTime date) {
+    String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+    return recordsList
+        .where((record) => record['date'] == formattedDate)
+        .toList();
+  }
 
   // 일주일 범위를 계산하는 함수
   List<DateTime> _getWeekDates(DateTime date) {
@@ -81,46 +104,88 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
-                    textAlign: TextAlign.left,
-                  ),
-                  if (recordsForDate != null) // 해당 날짜에 기록이 있을 때만 렌더링
-                    Column(
-                      children: recordsForDate.map((record) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(Icons.image, size: 24), // 아이콘으로 이미지 대체
-                            SizedBox(width: 10), // 아이콘과 텍스트 사이 간격
-
-                            // 텍스트가 있는 부분을 최대한 넓게 설정
-                            Expanded(
-                              child: Text(
-                                record['title'],
-                                style: TextStyle(fontSize: 12),
-                                overflow: TextOverflow.ellipsis, // 글자가 넘치면 말줄임 표시
+              child: Padding(
+                padding: const EdgeInsets.all(3.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
+                      textAlign: TextAlign.left,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    if (recordsForDate != null) // 해당 날짜에 기록이 있을 때만 렌더링
+                      Column(
+                        children: recordsForDate.map((record) {
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => ReadRecord(
+                                            recordData: [record],
+                                          )));
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(3.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Column(
+                                    children: record['records']
+                                        .map<Widget>((recordItem) {
+                                      return Row(
+                                        children: [
+                                          // 이미지와 텍스트를 묶어서 하나의 Column에 배치하고 중앙 정렬
+                                          Center(
+                                            child: recordItem['images']
+                                                    .isNotEmpty
+                                                ? Column(
+                                                    children: [
+                                                      Image.asset(
+                                                        recordItem['images'][0],
+                                                        height: 50, // 이미지 높이
+                                                        width: 50, // 이미지 너비
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                      SizedBox(
+                                                        height: 3,
+                                                      ),
+                                                    ],
+                                                  )
+                                                : Icon(Icons.image),
+                                          ),
+                                          SizedBox(
+                                              width: 15), // 이미지와 텍스트 사이에 간격 추가
+                                          Center(
+                                            child: Text(
+                                              recordItem['contents'] ??
+                                                  '내용이 없습니다',
+                                              style: TextStyle(fontSize: 16),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                ],
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
               ),
             ),
           );
         },
       ),
     );
-  }
-
-  // 날짜의 시간 정보를 제거하고 비교하는 함수
-  List<Map<String, dynamic>>? getRecordsForDate(DateTime date) {
-    return recordsData[DateTime(date.year, date.month, date.day)];
   }
 
   @override
@@ -151,7 +216,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                     ),
                     Text(
                       DateFormat.yMMM().format(_focusedDate),
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     IconButton(
                       icon: Icon(
@@ -205,12 +271,12 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                   List<Map<String, dynamic>>? recordsForDate =
                       getRecordsForDate(date);
                   Color? backgroundColor;
-                  String? title;
+                  String? contents;
 
                   if (recordsForDate != null && recordsForDate.isNotEmpty) {
                     // 기록이 있을 경우 첫 번째 기록의 색상과 타이틀을 사용
                     backgroundColor = recordsForDate.first['color'];
-                    title = recordsForDate.first['title'];
+                    contents = recordsForDate.first['contents'] ?? '내용이 없습니다';
                   }
                   return GestureDetector(
                       onTap: () {
@@ -253,20 +319,41 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                 // 해당 날짜의 기록들이 있는지 확인하고, 각각을 렌더링
                                 if (recordsForDate != null)
                                   ...recordsForDate.map((record) {
-                                    return Container(
-                                      margin: EdgeInsets.only(top: 2), // 항목 간의 간격
-                                      padding: EdgeInsets.all(1),
-                                      width:
-                                          MediaQuery.of(context).size.width / 7,
-                                      decoration: BoxDecoration(
-                                        color: record['color'], // 각 기록의 배경색 적용
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        record['title'],
-                                        style: TextStyle(
-                                          fontSize: 8,
-                                          color: Colors.black,
+                                    return GestureDetector(
+                                      // GestureDetector로 onTap 기능 추가
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ReadRecord(
+                                              recordData: [record],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        margin:
+                                            EdgeInsets.only(top: 2), // 항목 간의 간격
+                                        padding: EdgeInsets.all(1),
+                                        width:
+                                            MediaQuery.of(context).size.width /
+                                                7,
+                                        decoration: BoxDecoration(
+                                          color:
+                                              record['color'], // 각 기록의 배경색 적용
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Column(
+                                          children: record['records']
+                                              .map<Widget>((recordItem) {
+                                            return Text(
+                                              recordItem['contents'] ??
+                                                  '내용이 없습니다', // 리스트 항목별로 contents에 접근
+                                              style: TextStyle(fontSize: 8),
+                                              overflow: TextOverflow.ellipsis,
+                                            );
+                                          }).toList(),
                                         ),
                                       ),
                                     );

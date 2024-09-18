@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/records/read_record.dart';
 
 class RecordsAlbumView extends StatefulWidget {
   @override
@@ -9,27 +10,44 @@ class _RecordsAlbumViewState extends State< RecordsAlbumView> {
   List<Map<String, dynamic>> recordsList = [
     {
       'zone': '식단',
-      'unit': '아침',
-      'title': '승희네',
-      'contents': '맛있었습니다!',
-      'date': '2024-05-17',
-      'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
-    },
-    {
-      'zone': '식단',
-      'unit': '점심',
-      'title': '지환네',
-      'contents': '맛있었습니다!',
-      'date': '2024-05-17',
-      'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
+      'color': Colors.blueAccent.shade100,
+      'date': '2024-09-17',
+      'records': [
+        {
+          'unit': '아침',
+          'contents': '맛있었습니다!',
+          'images': [
+            'assets/step1.jpeg',
+            'assets/step2.jpeg',
+            'assets/step3.jpeg'
+          ],
+        },
+        {
+          'unit': '점심',
+          'contents': '점심도 맛있었습니다!',
+          'images': [
+            'assets/step1.jpeg',
+            'assets/step2.jpeg',
+            'assets/step3.jpeg'
+          ],
+        }
+      ]
     },
     {
       'zone': '운동',
-      'unit': '저녁',
-      'title': '옥정네',
-      'contents': '맛있었습니다!',
-      'date': '2024-05-17',
-      'images': ['assets/step1.jpeg', 'assets/step2.jpeg', 'assets/step3.jpeg'],
+      'color': Colors.greenAccent.shade100,
+      'date': '2024-09-19',
+      'records': [
+        {
+          'unit': '저녁',
+          'contents': '운동을 했습니다!',
+          'images': [
+            'assets/step1.jpeg',
+            'assets/step2.jpeg',
+            'assets/step3.jpeg'
+          ],
+        }
+      ]
     },
   ];
 
@@ -39,6 +57,7 @@ class _RecordsAlbumViewState extends State< RecordsAlbumView> {
       allImages.addAll(record['images']);
     }
     return GridView.builder(
+      
       padding: const EdgeInsets.all(8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4, // 1줄에 4개씩 나열
@@ -48,10 +67,22 @@ class _RecordsAlbumViewState extends State< RecordsAlbumView> {
       ),
       itemCount: allImages.length,
       itemBuilder: (context, index) {
-        return Image.asset(
-          allImages[index],
-          fit: BoxFit.cover,
-        );
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ReadRecord(
+                  recordData: recordsList,
+                ),
+              ),
+            );
+          },
+            child: Image.asset(
+            allImages[index],
+            fit: BoxFit.cover,
+                    ),
+          );
       },
     );
   }
