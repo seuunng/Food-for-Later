@@ -18,13 +18,15 @@ class CreateRecord extends StatefulWidget {
 }
 
 class _CreateRecordState extends State<CreateRecord> {
-  late TextEditingController stepDescriptionController;
+  // late TextEditingController stepDescriptionController;
   late TextEditingController categoryController;
   late TextEditingController fieldController;
+  late TextEditingController contentsController;
   late TextEditingController dateController;
 
   late String selectedCategory = '식단';
   late String selectedField = '아침';
+  late String selectedContents = '양배추 참치덮밥';
   late List<Map<String, dynamic>> recordsWithImages = [];
   DateTime selectedDate = DateTime.now();
 
@@ -46,39 +48,53 @@ class _CreateRecordState extends State<CreateRecord> {
     categoryController = TextEditingController();
     fieldController = TextEditingController();
     dateController = TextEditingController();
-    stepDescriptionController = TextEditingController();
+    contentsController = TextEditingController();
+    // stepDescriptionController = TextEditingController();
 
     if (widget.isEditing && widget.recordsData != null) {
       final recordData = widget.recordsData!['record'];
       selectedCategory = recordData['zone'] ?? '식단';
-      print(selectedCategory);
-      selectedField =
-          (recordData['records'] != null && recordData['records'].isNotEmpty)
-              ? recordData['records'][0]['unit'] ?? '아침'
-              : '아침';
-      print(selectedField);
       selectedDate = DateTime.tryParse(recordData['date']) ?? DateTime.now();
 
-      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
       categoryController.text = selectedCategory;
       fieldController.text = selectedField;
-      recordsWithImages = List<Map<String, dynamic>>.from(
-          widget.recordsData!['record']['records'] ?? []);
+      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+      // 이미지 리스트 초기화
+      if (recordData['records'] != null && recordData['records'].isNotEmpty) {
+        recordsWithImages = List<Map<String, dynamic>>.from(
+            recordData['records'].map<Map<String, dynamic>>((record) {
+              return {
+                'field': record['unit'],
+                'contents': record['contents'],
+                'images': List<String>.from(record['images'] ?? []),
+              };
+            }).toList());
+      }
+      // 드롭다운 리스트에 값이 없으면 추가
+      if (!categoryFieldMap.containsKey(selectedCategory)) {
+        categoryFieldMap[selectedCategory] = [selectedField];
+      } else if (!categoryFieldMap[selectedCategory]!.contains(selectedField)) {
+        categoryFieldMap[selectedCategory]!.add(selectedField);
+      }
     } else {
       // 추가 모드일 경우 현재 날짜 및 기본값 초기화
-      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
       categoryController = TextEditingController(
         text: widget.recordsData?['category']?.toString() ?? '식단',
       );
       fieldController = TextEditingController(
         text: widget.recordsData?['field']?.toString() ?? '아침',
       );
+      contentsController = TextEditingController(
+        text: widget.recordsData?['contents']?.toString() ?? '',
+      );
+      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
     }
 
-    selectedCategory = widget.recordsData?['category']?.toString() ?? '식단';
-    selectedField = widget.recordsData?['field']?.toString() ?? '아침';
-    recordsWithImages =
-        List<Map<String, dynamic>>.from(widget.recordsData?['records'] ?? []);
+    // selectedCategory = widget.recordsData?['category']?.toString() ?? '식단';
+    // selectedField = widget.recordsData?['field']?.toString() ?? '아침';
+    // recordsWithImages =
+    //     List<Map<String, dynamic>>.from(widget.recordsData?['records'] ?? []);
   }
 
   // 이미지를 선택하는 메서드
@@ -88,11 +104,12 @@ class _CreateRecordState extends State<CreateRecord> {
     // 카메라 또는 갤러리에서 이미지 선택
     List<XFile>? selectedImages = await picker.pickMultiImage();
 
-    if (selectedImages != null) {
+    if (selectedImages != null && selectedImages.isNotEmpty) {
       setState(() {
         _imageFiles = selectedImages; // 선택된 이미지를 리스트에 저장
       });
     }
+    print("Selected Images: $_imageFiles");
   }
 
   // 입력필드
@@ -100,18 +117,14 @@ class _CreateRecordState extends State<CreateRecord> {
       {bool isNumber = false, VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AbsorbPointer(
-          child: TextField(
-            controller: controller,
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-            decoration: InputDecoration(
-              labelText: label,
-              border: OutlineInputBorder(),
-            ),
-          ),
+      child:  TextField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
         ),
+        onTap: onTap, // 필요 시 추가된 onTap 이벤트
       ),
     );
   }
@@ -209,8 +222,10 @@ class _CreateRecordState extends State<CreateRecord> {
                         recordsWithImages[index]['field'] ?? '',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(width: 10),
-                      Text(recordsWithImages[index]['description'] ?? ''),
+                      SizedBox(width: 4),
+                      Text(' | '),
+                      SizedBox(width: 4),
+                      Text(recordsWithImages[index]['contents'] ?? ''),
                     ],
                   ),
                   SizedBox(
@@ -222,12 +237,35 @@ class _CreateRecordState extends State<CreateRecord> {
                 spacing: 8.0,
                 runSpacing: 8.0,
                 children: imagePaths.map<Widget>((imagePath) {
-                  return Image.file(
-                    File(imagePath),
+                  return  imagePath.startsWith('assets/')
+                      ? Image.asset(
+                    imagePath,
                     width: 50,
                     height: 50,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return Text('Error loading image'); // 에러 발생 시 표시
+                      return Text('Error loading image');
+                    },
+                  )
+                      : FutureBuilder(
+                    future: File(imagePath).exists(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.done &&
+                          snapshot.hasData &&
+                          snapshot.data == true) {
+                        return Image.file(
+                          File(imagePath),
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text('Error loading image');
+                          },
+                        );
+                      } else {
+                        return Text('Image not found');
+                      }
                     },
                   );
                 }).toList(),
@@ -255,24 +293,28 @@ class _CreateRecordState extends State<CreateRecord> {
             }),
             SizedBox(width: 5.0),
             Expanded(
-              child: _buildTextField('기록 내용 입력', stepDescriptionController),
+              child: _buildTextField('기록 내용 입력', contentsController),
             ),
             IconButton(
               icon: Icon(Icons.add),
               onPressed: () {
-                if (stepDescriptionController.text.isNotEmpty &&
-                    _imageFiles != null &&
-                    _imageFiles!.isNotEmpty) {
+                if (recordsWithImages.length >= 10) {
+                  // 최대 10개의 기록만 추가 가능하도록 제한
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('기록은 최대 10개까지만 추가할 수 있습니다.'),
+                    ),
+                  );
+                  return;
+                }
+                if (contentsController.text.isNotEmpty) {
                   setState(() {
-                    print(
-                        "Selected image paths: ${_imageFiles!.map((image) => image.path).toList()}");
-
                     recordsWithImages.add({
                       'field': selectedField,
-                      'description': stepDescriptionController.text,
+                      'contents': contentsController.text,
                       'images': _imageFiles!.map((image) => image.path).toList()
                     });
-                    stepDescriptionController.clear();
+                    contentsController.clear();
                     _imageFiles = [];
                   });
                 }
@@ -285,7 +327,30 @@ class _CreateRecordState extends State<CreateRecord> {
           children: [
             IconButton(
               icon: Icon(Icons.camera_alt_outlined),
-              onPressed: _pickImages,
+              onPressed: () async {
+                if (_imageFiles != null && _imageFiles!.length >= 4) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('한 기록당 최대 4개의 사진만 추가할 수 있습니다.'),
+                    ),
+                  );
+                  return;
+                }
+
+                await _pickImages();
+
+                // 한 기록에 최대 4개의 사진만 추가할 수 있도록 제한
+                if (_imageFiles != null && _imageFiles!.length > 4) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('한 기록당 최대 4개의 사진만 추가할 수 있습니다.'),
+                    ),
+                  );
+                  setState(() {
+                    _imageFiles = _imageFiles!.sublist(0, 4); // 초과하는 사진 제거
+                  });
+                }
+              },
             ),
             if (_imageFiles != null && _imageFiles!.isNotEmpty) ...[
               Wrap(
@@ -320,7 +385,7 @@ class _CreateRecordState extends State<CreateRecord> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isEditing ? '기록수정' : '기록하기'),
+        title: Text(widget.isEditing ? '기록 수정' : '기록하기'),
         actions: [
           TextButton(
             child: Text(
@@ -370,6 +435,7 @@ class _CreateRecordState extends State<CreateRecord> {
                       selectedCategory = value;
                       // 분류 변경 시 구분을 첫 번째 값으로 초기화
                       selectedField = categoryFieldMap[selectedCategory]!.first;
+                      fieldController.text = selectedField;
                     });
                   },
                 ),

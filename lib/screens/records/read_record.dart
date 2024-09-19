@@ -30,8 +30,13 @@ class _ReadRecordState extends State<ReadRecord> {
       appBar: AppBar(
         title: Text('기록 보기'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.edit),
+          TextButton(
+            child: Text(
+              '수정',
+              style: TextStyle(
+                fontSize: 20, // 글씨 크기를 20으로 설정
+              ),
+            ),
             onPressed: () async {
               final updatedRecord = await Navigator.push(
                 context,
@@ -49,6 +54,9 @@ class _ReadRecordState extends State<ReadRecord> {
               }
             },
           ),
+          SizedBox(
+            width: 20,
+          )
         ],
       ),
       body: Column(
