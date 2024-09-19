@@ -14,6 +14,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
 
   List<Map<String, dynamic>> recordsList = [
     {
+      'no': 1,
       'zone': '식단',
       'color': Colors.blueAccent.shade100,
       'date': '2024-09-17',
@@ -39,6 +40,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
       ]
     },
     {
+      'no': 2,
       'zone': '운동',
       'color': Colors.greenAccent.shade100,
       'date': '2024-09-19',
@@ -86,103 +88,91 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
           DateTime date = weekDates[index];
           List<Map<String, dynamic>>? recordsForDate = getRecordsForDate(date);
           return Container(
-            margin: EdgeInsets.symmetric(vertical: 5.0),
-            constraints: BoxConstraints(
-              minHeight: 100, // 각 컬럼의 최소 높이 설정
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white, // 배경을 흰색으로 설정
-              borderRadius: BorderRadius.circular(10), // 둥근 모서리
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5), // 그림자 색상
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: Offset(0, 3), // 그림자의 위치
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Padding(
-                padding: const EdgeInsets.all(3.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
-                      textAlign: TextAlign.left,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    if (recordsForDate != null) // 해당 날짜에 기록이 있을 때만 렌더링
-                      Column(
-                        children: recordsForDate.map((record) {
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => ReadRecord(
-                                            recordData: [record],
-                                          )));
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(3.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Column(
-                                    children: record['records']
-                                        .map<Widget>((recordItem) {
-                                      return Row(
-                                        children: [
-                                          // 이미지와 텍스트를 묶어서 하나의 Column에 배치하고 중앙 정렬
-                                          Center(
-                                            child: recordItem['images']
-                                                    .isNotEmpty
-                                                ? Column(
-                                                    children: [
-                                                      Image.asset(
-                                                        recordItem['images'][0],
-                                                        height: 50, // 이미지 높이
-                                                        width: 50, // 이미지 너비
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                      SizedBox(
-                                                        height: 3,
-                                                      ),
-                                                    ],
-                                                  )
-                                                : Icon(Icons.image),
-                                          ),
-                                          SizedBox(
-                                              width: 15), // 이미지와 텍스트 사이에 간격 추가
-                                          Center(
-                                            child: Text(
-                                              recordItem['contents'] ??
-                                                  '내용이 없습니다',
-                                              style: TextStyle(fontSize: 16),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                  ],
-                ),
+              margin: EdgeInsets.symmetric(vertical: 5.0),
+              constraints: BoxConstraints(
+                minHeight: 100, // 각 컬럼의 최소 높이 설정
               ),
-            ),
-          );
+              decoration: BoxDecoration(
+                color: Colors.white, // 배경을 흰색으로 설정
+                borderRadius: BorderRadius.circular(10), // 둥근 모서리
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5), // 그림자 색상
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: Offset(0, 3), // 그림자의 위치
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(3.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
+                        textAlign: TextAlign.left,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      if (recordsForDate != null) // 해당 날짜에 기록이 있을 때만 렌더링
+                        Column(
+                          children: recordsForDate.map((record) {
+                            return Column(
+                              children: record['records'].map<Widget>((rec) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (recordsList.indexOf(record) >= 0 &&
+                                        recordsList.indexOf(record) <
+                                            recordsList.length) {
+                                      Map<String, dynamic> recordData = {
+                                        'record': record, // 상위 레코드
+                                        'rec': rec, // 개별 레코드
+                                      };
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ReadRecord(
+                                            recordData: recordData,
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      print(
+                                          'Invalid index: ${recordsList.indexOf(record)}');
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      rec['images'].isNotEmpty
+                                          ? Image.asset(
+                                              rec['images'][0],
+                                              height: 50,
+                                              width: 50,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Icon(Icons.image),
+                                      SizedBox(width: 15),
+                                      Text(
+                                        rec['contents'] ?? '내용이 없습니다',
+                                        style: TextStyle(fontSize: 16),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              ));
         },
       ),
     );
@@ -317,44 +307,43 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                   ),
                                 ),
                                 // 해당 날짜의 기록들이 있는지 확인하고, 각각을 렌더링
-                                if (recordsForDate != null)
+                                if (recordsForDate != null && recordsForDate.isNotEmpty)
                                   ...recordsForDate.map((record) {
-                                    return GestureDetector(
-                                      // GestureDetector로 onTap 기능 추가
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ReadRecord(
-                                              recordData: [record],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        margin:
-                                            EdgeInsets.only(top: 2), // 항목 간의 간격
-                                        padding: EdgeInsets.all(1),
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                                7,
-                                        decoration: BoxDecoration(
-                                          color:
-                                              record['color'], // 각 기록의 배경색 적용
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: Column(
-                                          children: record['records']
-                                              .map<Widget>((recordItem) {
-                                            return Text(
-                                              recordItem['contents'] ??
-                                                  '내용이 없습니다', // 리스트 항목별로 contents에 접근
+                                    return Container(
+                                      margin: EdgeInsets.only(top: 2),
+                                      decoration: BoxDecoration(
+                                        color: record['color'],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Column(
+                                        children: record['records'].map<Widget>((rec) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                              if (record['records'].indexOf(rec) >= 0 &&
+                                                  record['records'].indexOf(rec) < record['records'].length) {
+                                                Map<String, dynamic> recordData = {
+                                                  'record': record,
+                                                  'rec': rec,
+                                                };
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => ReadRecord(
+                                                      recordData: recordData,
+                                                    ),
+                                                  ),
+                                                );
+                                              } else {
+                                                print('Invalid record index');
+                                              }
+                                            },
+                                            child: Text(
+                                              rec['contents'] ?? '내용이 없습니다',
                                               style: TextStyle(fontSize: 8),
                                               overflow: TextOverflow.ellipsis,
-                                            );
-                                          }).toList(),
-                                        ),
+                                            ),
+                                          );
+                                        }).toList(),
                                       ),
                                     );
                                   }).toList(),

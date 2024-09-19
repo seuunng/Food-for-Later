@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
+import 'package:intl/intl.dart';
 
 class RecordSearchSettings extends StatefulWidget {
   @override
@@ -7,138 +8,222 @@ class RecordSearchSettings extends StatefulWidget {
 }
 
 class _RecordSearchSettingsState extends State<RecordSearchSettings> {
-  String? selectedSource;
-  String? selectedCookingMethod;
-  String? selectedCookingTool;
-  TextEditingController excludeKeywordController = TextEditingController();
+  String? selectedCategory;
+  String? selectedPeriod;
+  DateTime? startDate;
+  DateTime? endDate;
 
-  List<String> sources = ['인터넷', '책', '직접 만든 레시피', '기타'];
-  List<String> cookingMethods = ['굽기', '튀기기', '끓이기', '찜'];
-  List<String> cookingTools = ['오븐', '프라이팬', '냄비', '찜기'];
+  Map<String, bool> categoryOptions = {
+    '모두': true,
+    '식단': true,
+    '운동': true,
+    '자기개발': true,
+    '기타': true,
+  };
+
+  List<String> periods = ['1달', '3달', '1년'];
+
+  // 카테고리 모두 선택 또는 해제 함수
+  void _toggleSelectAll(bool isSelected) {
+    setState(() {
+      categoryOptions.updateAll((key, value) => isSelected);
+    });
+  }
+
+  // 체크박스 상태 변경 시 처리 함수
+  void _onCategoryChanged(String category, bool? isSelected) {
+    if (category == '모두') {
+      _toggleSelectAll(isSelected ?? false);
+    } else {
+      setState(() {
+        categoryOptions[category] = isSelected ?? false;
+
+        // '모두' 옵션을 체크하려면 모든 개별 항목이 선택된 상태여야 함
+        if (categoryOptions.values.every((selected) => selected)) {
+          categoryOptions['모두'] = true;
+        } else {
+          categoryOptions['모두'] = false;
+        }
+      });
+    }
+  }
+
+  // 날짜 선택 다이얼로그
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
+    DateTime initialDate =
+        isStart ? DateTime.now() : startDate ?? DateTime.now();
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != (isStart ? startDate : endDate)) {
+      setState(() {
+        if (isStart) {
+          startDate = picked;
+        } else {
+          endDate = picked;
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('레시피 검색 상세설정'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 레시피 출처 선택
-            Text(
-              '레시피 출처 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: selectedSource,
-              hint: Text('출처를 선택하세요'),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedSource = newValue;
-                });
-              },
-              items: sources.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
-
-            // 제외 검색어 선택
-            Text(
-              '제외 검색어 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            TextField(
-              controller: excludeKeywordController,
-              decoration: InputDecoration(
-                hintText: '제외할 검색어를 입력하세요',
+        appBar: AppBar(
+          title: Text('기록 검색 상세설정'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 레시피 출처 선택
+              Text(
+                '카테고리 선택',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            SizedBox(height: 16),
+              Column(
+                children: categoryOptions.keys.map((String category) {
+                  return CheckboxListTile(
+                    title: Text(category),
+                    value: categoryOptions[category],
+                    onChanged: (bool? isSelected) {
+                      _onCategoryChanged(category, isSelected);
+                    },
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 16),
 
-            // 조리 방법 선택
-            Text(
-              '조리 방법 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: selectedCookingMethod,
-              hint: Text('조리 방법을 선택하세요'),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCookingMethod = newValue;
-                });
-              },
-              items: cookingMethods.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
-
-            // 조리 도구 선택
-            Text(
-              '조리 도구 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: selectedCookingTool,
-              hint: Text('조리 도구를 선택하세요'),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCookingTool = newValue;
-                });
-              },
-              items: cookingTools.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
-
-            // 추가 버튼 (옵션)
-            Container(
-              color: Colors.transparent,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  child: Text('설정 저장'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                    // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+              // 제외 검색어 선택
+              Text(
+                '기간 선택',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: periods.map((String period) {
+                  return Expanded(
+                    child: RadioListTile<String>(
+                      title: Text(period),
+                      value: period,
+                      groupValue: selectedPeriod,
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedPeriod = value;
+                          // 선택된 기간에 따라 시작 날짜와 끝 날짜 설정
+                          DateTime now = DateTime.now();
+                          switch (value) {
+                            case '1달':
+                              startDate = DateTime(now.year, now.month - 1, now.day);
+                              endDate = now;
+                              break;
+                            case '3달':
+                              startDate = DateTime(now.year, now.month - 3, now.day);
+                              endDate = now;
+                              break;
+                            case '1년':
+                              startDate = DateTime(now.year - 1, now.month, now.day);
+                              endDate = now;
+                              break;
+                            default:
+                              startDate = null;
+                              endDate = null;
+                          }
+                        });
+                      },
+                      visualDensity: VisualDensity(horizontal: -3.0), // 수평 간격 줄이기
+                      contentPadding: EdgeInsets.zero, // 패딩을 제거하여 간격 최소화
                     ),
-                    elevation: 5,
-                    textStyle: TextStyle(
-                      fontSize: 18, // 글씨 크기 조정
-                      fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                      letterSpacing: 1.2, //
+                  );
+                }).toList(),
+              ),
+// 시작 날짜 선택
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '시작 날짜',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                     ),
-                    // primary: isDeleteMode ? Colors.red : Colors.blue,
+                  ),
+                  Expanded(
+                    child: Text(
+                      '끝 날짜',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      startDate != null
+                          ? DateFormat('yyyy-MM-dd').format(startDate!)
+                          : '날짜를 선택하세요',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  Expanded(
+                    child: IconButton(
+                      icon: Icon(Icons.calendar_today),
+                      onPressed: () => _selectDate(context, true),
+                    ),
+                  ),
+
+                  // 끝 날짜 선택
+                  Expanded(
+                    child: Text(
+                      endDate != null
+                          ? DateFormat('yyyy-MM-dd').format(endDate!)
+                          : '날짜를 선택하세요',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  Expanded(
+                    child: IconButton(
+                      icon: Icon(Icons.calendar_today),
+                      onPressed: () => _selectDate(context, false),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 30,),
+              // 추가 버튼 (옵션)
+              Container(
+                color: Colors.transparent,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    child: Text('설정 저장'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                          vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                      // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                      ),
+                      elevation: 5,
+                      textStyle: TextStyle(
+                        fontSize: 18, // 글씨 크기 조정
+                        fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                        letterSpacing: 1.2, //
+                      ),
+                      // primary: isDeleteMode ? Colors.red : Colors.blue,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
+            ],
+          ),
+        ));
   }
-
 }

@@ -9,16 +9,16 @@ import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class CreateRecord extends StatefulWidget {
-  final Map<String, dynamic>? recordsData; // 수정 시 전달될 레시피 데이터
+  final Map<String, dynamic>? recordsData;
+  final bool isEditing;
 
-  CreateRecord({this.recordsData});
+  CreateRecord({this.recordsData, this.isEditing = false});
   @override
   _CreateRecordState createState() => _CreateRecordState();
 }
 
 class _CreateRecordState extends State<CreateRecord> {
   late TextEditingController stepDescriptionController;
-  late TextEditingController stepImageController;
   late TextEditingController categoryController;
   late TextEditingController fieldController;
   late TextEditingController dateController;
@@ -43,17 +43,37 @@ class _CreateRecordState extends State<CreateRecord> {
   @override
   void initState() {
     super.initState();
-    categoryController = TextEditingController(
-      text: widget.recordsData?['category']?.toString() ?? '식단', // 난이도 초기화
-    );
-    fieldController = TextEditingController(
-      text: widget.recordsData?['field']?.toString() ?? '아침', // 난이도 초기화
-    );
-
+    categoryController = TextEditingController();
+    fieldController = TextEditingController();
+    dateController = TextEditingController();
     stepDescriptionController = TextEditingController();
-    stepImageController = TextEditingController();
-    dateController = TextEditingController(
-        text: DateTime.now().toLocal().toString().split(' ')[0]); // 현재 날짜로 초기화
+
+    if (widget.isEditing && widget.recordsData != null) {
+      final recordData = widget.recordsData!['record'];
+      selectedCategory = recordData['zone'] ?? '식단';
+      print(selectedCategory);
+      selectedField =
+          (recordData['records'] != null && recordData['records'].isNotEmpty)
+              ? recordData['records'][0]['unit'] ?? '아침'
+              : '아침';
+      print(selectedField);
+      selectedDate = DateTime.tryParse(recordData['date']) ?? DateTime.now();
+
+      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+      categoryController.text = selectedCategory;
+      fieldController.text = selectedField;
+      recordsWithImages = List<Map<String, dynamic>>.from(
+          widget.recordsData!['record']['records'] ?? []);
+    } else {
+      // 추가 모드일 경우 현재 날짜 및 기본값 초기화
+      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+      categoryController = TextEditingController(
+        text: widget.recordsData?['category']?.toString() ?? '식단',
+      );
+      fieldController = TextEditingController(
+        text: widget.recordsData?['field']?.toString() ?? '아침',
+      );
+    }
 
     selectedCategory = widget.recordsData?['category']?.toString() ?? '식단';
     selectedField = widget.recordsData?['field']?.toString() ?? '아침';
@@ -145,7 +165,7 @@ class _CreateRecordState extends State<CreateRecord> {
           Text(label),
           SizedBox(width: 16),
           DropdownButton<String>(
-            value: options.contains(currentValue) ? currentValue : options[0],
+            value: currentValue, // 현재 선택된 값을 드롭다운의 value로 사용
             items: options.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 value: value,
@@ -300,7 +320,7 @@ class _CreateRecordState extends State<CreateRecord> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('기록하기'),
+        title: Text(widget.isEditing ? '기록수정' : '기록하기'),
         actions: [
           TextButton(
             child: Text(
@@ -325,8 +345,19 @@ class _CreateRecordState extends State<CreateRecord> {
             Row(
               children: [
                 Expanded(
-                  child: _buildTextField('날짜', dateController, onTap: () {
-                    _selectDate(context); // 날짜 선택 메서드 호출
+                  child: _buildTextField('날짜', dateController, onTap: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2101),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        dateController.text =
+                        pickedDate.toLocal().toString().split(' ')[0];
+                      });
+                    }
                   }),
                 ),
                 SizedBox(width: 30),
@@ -334,7 +365,7 @@ class _CreateRecordState extends State<CreateRecord> {
                   '',
                   categoryFieldMap.keys.toList(), // 카테고리 목록을 드롭다운에 전달
                   selectedCategory,
-                      (value) {
+                  (value) {
                     setState(() {
                       selectedCategory = value;
                       // 분류 변경 시 구분을 첫 번째 값으로 초기화
