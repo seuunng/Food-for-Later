@@ -384,6 +384,7 @@ class _CreateRecordState extends State<CreateRecord> {
         images: List<String>.from(record['images']), // 이미지 리스트를 String 리스트로 변환
       );
     }).toList();
+
     final record = RecordModel(
       id: Uuid().v4(), // 고유 ID 생성
       date: selectedDate,
@@ -394,13 +395,13 @@ class _CreateRecordState extends State<CreateRecord> {
     try {
       // Firestore에 Record 객체를 저장
       await FirebaseFirestore.instance
-          .collection('records') // 'records' 컬렉션에 저장
+          .collection('record') // 'records' 컬렉션에 저장
           .doc(record.id) // 고유 ID를 사용하여 문서 생성
           .set(record.toMap()); // Record 객체를 Map으로 변환하여 저장
 
       // 성공 메시지 표시 및 이전 화면으로 이동
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('기록이 성공적으로 저장되었습니다.')),
+        SnackBar(content: Text('기록이 저장되었습니다.')),
       );
       Navigator.pop(context);
     } catch (e) {

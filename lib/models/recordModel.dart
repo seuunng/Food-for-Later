@@ -25,6 +25,17 @@ class RecordModel {
           .toList(),
     );
   }
+// fromJson 메서드 추가
+  factory RecordModel.fromJson(Map<String, dynamic> json, {required String id}) {
+    return RecordModel(
+      id: id,
+      date: (json['date'] as Timestamp).toDate(),
+      zone: json['zone'] ?? '',
+      records: (json['records'] as List)
+          .map((item) => RecordDetail.fromMap(item))
+          .toList(),
+    );
+  }
 
   // Record 객체를 Firestore에 저장 가능한 Map으로 변환하는 메서드
   Map<String, dynamic> toMap() {
