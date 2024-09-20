@@ -85,17 +85,34 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                 '카테고리 선택',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              Column(
-                children: categoryOptions.keys.map((String category) {
-                  return CheckboxListTile(
-                    title: Text(category),
-                    value: categoryOptions[category],
-                    onChanged: (bool? isSelected) {
-                      _onCategoryChanged(category, isSelected);
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: categoryOptions.entries.map((entry) {
+                  final category = entry.key;
+                  final isSelected = entry.value;
+                  return ChoiceChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      _onCategoryChanged(category, selected);
                     },
+                    selectedColor: Colors.deepPurple[100],
+                    backgroundColor: Colors.grey[200],
                   );
                 }).toList(),
               ),
+              // Column(
+              //   children: categoryOptions.keys.map((String category) {
+              //     return CheckboxListTile(
+              //       title: Text(category),
+              //       value: categoryOptions[category],
+              //       onChanged: (bool? isSelected) {
+              //         _onCategoryChanged(category, isSelected);
+              //       },
+              //     );
+              //   }).toList(),
+              // ),
               SizedBox(height: 16),
 
               // 제외 검색어 선택

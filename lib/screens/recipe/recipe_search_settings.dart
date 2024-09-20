@@ -7,14 +7,17 @@ class RecipeSearchSettings extends StatefulWidget {
 }
 
 class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
-  String? selectedSource;
-  String? selectedCookingMethod;
-  String? selectedCookingTool;
+  List<String> selectedSources = [];
+  List<String> selectedcookingMethods = [];
+  List<String> selectedcookingTools = [];
+
   TextEditingController excludeKeywordController = TextEditingController();
 
-  List<String> sources = ['인터넷', '책', '직접 만든 레시피', '기타'];
+  List<String> sources = ['인터넷', '책', '"이따 뭐 먹지" 레시피', '기타'];
   List<String> cookingMethods = ['굽기', '튀기기', '끓이기', '찜'];
   List<String> cookingTools = ['오븐', '프라이팬', '냄비', '찜기'];
+
+  List<String> excludeKeywords = [];
 
   @override
   Widget build(BuildContext context) {
@@ -27,24 +30,85 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 조리 도구 선택
+            Text(
+              '조리 도구 선택',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: cookingTools.map((item) {
+                final isSelected = selectedcookingTools.contains(item);
+                return ChoiceChip(
+                  label: Text(item),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        selectedcookingTools.add(item);
+                      } else {
+                        selectedcookingTools.remove(item);
+                      }
+                    });
+                  },
+                  selectedColor: Colors.deepPurple[100],
+                  backgroundColor: Colors.grey[200],
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16),
+            Text(
+              '조리 방법 선택',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: cookingMethods.map((item) {
+                final isSelected = selectedcookingMethods.contains(item);
+                return ChoiceChip(
+                  label: Text(item),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        selectedcookingMethods.add(item);
+                      } else {
+                        selectedcookingMethods.remove(item);
+                      }
+                    });
+                  },
+                  selectedColor: Colors.deepPurple[100],
+                  backgroundColor: Colors.grey[200],
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16),
             // 레시피 출처 선택
             Text(
               '레시피 출처 선택',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: selectedSource,
-              hint: Text('출처를 선택하세요'),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedSource = newValue;
-                });
-              },
-              items: sources.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: sources.map((source) {
+                final isSelected = selectedSources.contains(source);
+                return ChoiceChip(
+                  label: Text(source),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        selectedSources.add(source);
+                      } else {
+                        selectedSources.remove(source);
+                      }
+                    });
+                  },
+                  selectedColor: Colors.deepPurple[100],
+                  backgroundColor: Colors.grey[200],
                 );
               }).toList(),
             ),
@@ -59,86 +123,69 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
               controller: excludeKeywordController,
               decoration: InputDecoration(
                 hintText: '제외할 검색어를 입력하세요',
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // 조리 방법 선택
-            Text(
-              '조리 방법 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: selectedCookingMethod,
-              hint: Text('조리 방법을 선택하세요'),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCookingMethod = newValue;
-                });
-              },
-              items: cookingMethods.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
-
-            // 조리 도구 선택
-            Text(
-              '조리 도구 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: selectedCookingTool,
-              hint: Text('조리 도구를 선택하세요'),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCookingTool = newValue;
-                });
-              },
-              items: cookingTools.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
-
-            // 추가 버튼 (옵션)
-        Container(
-          color: Colors.transparent,
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-                onPressed: () {},
-                child: Text('설정 저장'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                  // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                  ),
-                  elevation: 5,
-                  textStyle: TextStyle(
-                    fontSize: 18, // 글씨 크기 조정
-                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                    letterSpacing: 1.2, //
-                  ),
-                  // primary: isDeleteMode ? Colors.red : Colors.blue,
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: () {
+                    _addExcludeKeyword();
+                  },
                 ),
               ),
+              onSubmitted: (value) {
+                _addExcludeKeyword();
+              },
             ),
-        ),
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8.0,
+              children: excludeKeywords.map((keyword) {
+                return Chip(
+                  label: Text(keyword),
+                  onDeleted: () {
+                    setState(() {
+                      excludeKeywords.remove(keyword);
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16),
           ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: double.infinity,
+          height: 50, // 버튼 높이 설정
+          child: ElevatedButton(
+            onPressed: () {
+            },
+            child: Text('설정 저장'),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 5,
+              textStyle: TextStyle(
+                fontSize: 16, // 글씨 크기 조정
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.2, //
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
-
+// 제외 검색어 추가 함수
+  void _addExcludeKeyword() {
+    final keyword = excludeKeywordController.text.trim();
+    if (keyword.isNotEmpty && !excludeKeywords.contains(keyword)) {
+      setState(() {
+        excludeKeywords.add(keyword);
+      });
+      excludeKeywordController.clear();
+    }
+  }
 }

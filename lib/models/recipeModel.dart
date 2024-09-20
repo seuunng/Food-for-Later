@@ -1,4 +1,4 @@
-class Recipe {
+class RecipeModel {
   final int recipeID;
   final int userID;
   final int foods;
@@ -8,7 +8,7 @@ class Recipe {
   final String content;
   final int views;
 
-  Recipe({
+  RecipeModel({
     required this.recipeID,
     required this.userID,
     required this.foods,
@@ -19,8 +19,8 @@ class Recipe {
     required this.views,
   });
 
-  factory Recipe.fromJson(Map<String, dynamic> json) {
-    return Recipe(
+  factory RecipeModel.fromJson(Map<String, dynamic> json) {
+    return RecipeModel(
       recipeID: json['RecipeID'],
       userID: json['UserID'],
       foods: json['Foods'],

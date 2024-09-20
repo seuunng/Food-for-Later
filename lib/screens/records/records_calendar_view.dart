@@ -245,7 +245,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                     crossAxisCount: 7, // 7열로 설정
                     mainAxisSpacing: 8.0,
                     crossAxisSpacing: 8.0,
-                    childAspectRatio: 0.8),
+                    childAspectRatio: 0.5),
                 shrinkWrap: true, // GridView를 스크롤이 아닌 적절한 크기로 축소
                 physics: NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index) {

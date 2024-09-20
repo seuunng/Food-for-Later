@@ -2,11 +2,14 @@ import 'dart:io';
 import 'dart:typed_data';
 // import 'dart:nativewrappers/_internal/vm/lib/typed_data_patch.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/recordModel.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:uuid/uuid.dart';
 
 class CreateRecord extends StatefulWidget {
   final Map<String, dynamic>? recordsData;
@@ -373,11 +376,39 @@ class _CreateRecordState extends State<CreateRecord> {
   }
 
   // 저장 버튼 누르면 레시피 추가 또는 수정 처리
-  void _saveRecord() {
-    if (widget.recordsData == null) {
-      print("기록 추가");
-    } else {
-      print("기록 수정");
+  void _saveRecord() async {
+    List<RecordDetail> recordDetails = recordsWithImages.map((record) {
+      return RecordDetail(
+        unit: record['field'], // recordsWithImages에서 'field'를 unit으로 매핑
+        contents: record['contents'], // recordsWithImages에서 'contents'를 contents로 매핑
+        images: List<String>.from(record['images']), // 이미지 리스트를 String 리스트로 변환
+      );
+    }).toList();
+    final record = RecordModel(
+      id: Uuid().v4(), // 고유 ID 생성
+      date: selectedDate,
+      zone: selectedCategory,
+      records: recordDetails,
+    );
+
+    try {
+      // Firestore에 Record 객체를 저장
+      await FirebaseFirestore.instance
+          .collection('records') // 'records' 컬렉션에 저장
+          .doc(record.id) // 고유 ID를 사용하여 문서 생성
+          .set(record.toMap()); // Record 객체를 Map으로 변환하여 저장
+
+      // 성공 메시지 표시 및 이전 화면으로 이동
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기록이 성공적으로 저장되었습니다.')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      // 에러 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기록 저장에 실패했습니다. 다시 시도해주세요.')),
+      );
+      print('Error saving record: $e');
     }
   }
 

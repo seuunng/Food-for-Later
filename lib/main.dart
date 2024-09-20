@@ -1,8 +1,17 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/firebase_options.dart';
 import 'package:food_for_later/screens/home_screen.dart';
 
 //Flutter 앱의 진입점
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  //파이어베이스 프로젝트 설정
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(MyApp());
 }
 // 앱 전체를 나타내는 루트 위젯

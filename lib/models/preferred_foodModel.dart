@@ -1,17 +1,17 @@
-class DefaultFood {
-  final int defaultFoodID;
+class PreferredFoodModel {
+  final int preferredFoodID;
   final int userID;
   final String categoryName;
 
-  DefaultFood({
-    required this.defaultFoodID,
+  PreferredFoodModel({
+    required this.preferredFoodID,
     required this.userID,
     required this.categoryName,
   });
 
-  factory DefaultFood.fromJson(Map<String, dynamic> json) {
-    return DefaultFood(
-      defaultFoodID: json['DefaultFoodID'],
+  factory PreferredFoodModel.fromJson(Map<String, dynamic> json) {
+    return PreferredFoodModel(
+      preferredFoodID: json['PreferredFoodID'],
       userID: json['UserID'],
       categoryName: json['CategoryName'],
     );
@@ -19,7 +19,7 @@ class DefaultFood {
 
   Map<String, dynamic> toJson() {
     return {
-      'DefaultFoodID': defaultFoodID,
+      'PreferredFoodID': preferredFoodID,
       'UserID': userID,
       'CategoryName': categoryName,
     };

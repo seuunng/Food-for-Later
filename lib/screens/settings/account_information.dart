@@ -40,6 +40,13 @@ class _AccountInformationState extends State<AccountInformation> {
                     _showNicknameChangeDialog();
                   },
                   child: Text('수정'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                    // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -77,32 +84,90 @@ class _AccountInformationState extends State<AccountInformation> {
                     _showPasswordSendDialog();
                   },
                   child: Text('수정'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                    // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                    ),
+                  ),
                 ),
               ],
             ),
-            Row(
-              children: [
-                Spacer(),
-                ElevatedButton(
-                  onPressed: () {
-                    _withdrawAlertDialog();
-                  },
-                  child: Text('회원탈퇴'),
+
+            // Row(
+            //   children: [
+            //     Spacer(),
+            //     ElevatedButton(
+            //       onPressed: () {
+            //         _withdrawAlertDialog();
+            //       },
+            //       child: Text('회원탈퇴'),
+            //     ),
+            //     SizedBox(width: 10),
+            //     ElevatedButton(
+            //       onPressed: () {
+            //         _logoutAlertDialog();
+            //       },
+            //       child: Text('로그아웃'),
+            //     ),
+            //     Spacer(),
+            //   ],
+            // ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly, // 버튼 사이 간격을 균등하게 설정
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  _withdrawAlertDialog();
+                },
+                child: Text('회원탈퇴'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                  ),
+                  elevation: 5,
+                  textStyle: TextStyle(
+                    fontSize: 18, // 글씨 크기 조정
+                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                    letterSpacing: 1.2, //
+                  ),
                 ),
-                SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    _logoutAlertDialog();
-                  },
-                  child: Text('로그아웃'),
+              ),
+            ),
+            SizedBox(width: 20), // 두 버튼 사이 간격
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  _logoutAlertDialog();
+                },
+                child: Text('로그아웃'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                  ),
+                  elevation: 5,
+                  textStyle: TextStyle(
+                    fontSize: 18, // 글씨 크기 조정
+                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                    letterSpacing: 1.2, //
+                  ),
                 ),
-                Spacer(),
-              ],
+              ),
             ),
           ],
         ),
       ),
-    );
+      );
   }
 
   // 비밀번호 변경 다이얼로그
