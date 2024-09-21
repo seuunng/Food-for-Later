@@ -125,11 +125,29 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: _submitFeedback,
-          child: Text('의견 보내기'),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _submitFeedback,
+            child: Text('의견 보내기'),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+              // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+              ),
+              elevation: 5,
+              textStyle: TextStyle(
+                fontSize: 18, // 글씨 크기 조정
+                fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                letterSpacing: 1.2, //
+              ),
+              // primary: isDeleteMode ? Colors.red : Colors.blue,
+            ),
+          ),
         ),
       ),
     );

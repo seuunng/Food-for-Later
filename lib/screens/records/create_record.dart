@@ -125,7 +125,11 @@ class _CreateRecordState extends State<CreateRecord> {
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(),
+          // border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+            vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+          ),
         ),
         onTap: onTap, // 필요 시 추가된 onTap 이벤트
       ),
@@ -298,31 +302,6 @@ class _CreateRecordState extends State<CreateRecord> {
             Expanded(
               child: _buildTextField('기록 내용 입력', contentsController),
             ),
-            IconButton(
-              icon: Icon(Icons.add),
-              onPressed: () {
-                if (recordsWithImages.length >= 10) {
-                  // 최대 10개의 기록만 추가 가능하도록 제한
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('기록은 최대 10개까지만 추가할 수 있습니다.'),
-                    ),
-                  );
-                  return;
-                }
-                if (contentsController.text.isNotEmpty) {
-                  setState(() {
-                    recordsWithImages.add({
-                      'field': selectedField,
-                      'contents': contentsController.text,
-                      'images': _imageFiles!.map((image) => image.path).toList()
-                    });
-                    contentsController.clear();
-                    _imageFiles = [];
-                  });
-                }
-              },
-            ),
           ],
         ),
         // 조리 단계와 이미지 추가 입력 필드
@@ -369,6 +348,32 @@ class _CreateRecordState extends State<CreateRecord> {
                 }).toList(),
               ),
             ],
+            Spacer(),
+            IconButton(
+              icon: Icon(Icons.add),
+              onPressed: () {
+                if (recordsWithImages.length >= 10) {
+                  // 최대 10개의 기록만 추가 가능하도록 제한
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('기록은 최대 10개까지만 추가할 수 있습니다.'),
+                    ),
+                  );
+                  return;
+                }
+                if (contentsController.text.isNotEmpty) {
+                  setState(() {
+                    recordsWithImages.add({
+                      'field': selectedField,
+                      'contents': contentsController.text,
+                      'images': _imageFiles!.map((image) => image.path).toList()
+                    });
+                    contentsController.clear();
+                    _imageFiles = [];
+                  });
+                }
+              },
+            ),
           ],
         ),
       ],

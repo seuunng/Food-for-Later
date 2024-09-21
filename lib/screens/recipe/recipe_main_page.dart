@@ -106,6 +106,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
+                SizedBox(width: 10),
                 Expanded(
                   child: TextField(
                     keyboardType: TextInputType.text,
@@ -254,9 +255,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                 );
               },
               child: Icon(Icons.add),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-              ),
 
             ),
           ],

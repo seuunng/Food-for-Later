@@ -83,16 +83,16 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                      TextField(
-                        controller: _recordCategoryController,
-                        decoration: InputDecoration(
-                          labelText: '기록 카테고리',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
-                            vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
-                          ),
-                        ),
+                  TextField(
+                    controller: _recordCategoryController,
+                    decoration: InputDecoration(
+                      labelText: '기록 카테고리',
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+                        vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
                       ),
+                    ),
+                  ),
                   SizedBox(height: 10),
                   Wrap(
                     spacing: 4.0,
@@ -122,7 +122,9 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                               color: color,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: _selectedColor == color ? Colors.black : Colors.transparent,
+                                color: _selectedColor == color
+                                    ? Colors.black
+                                    : Colors.transparent,
                                 width: 2,
                               ),
                             ),
@@ -157,48 +159,49 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       );
                     }).toList(),
                   ),
-                  TextField(
-                    controller: _unitController,
-                    decoration: InputDecoration(
-                      labelText: '분류 추가',
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
-                        vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+                  Container(
+                    child: TextField(
+                      controller: _unitController,
+                      decoration: InputDecoration(
+                        labelText: '분류 추가',
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+                          vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+                        ),
                       ),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.add),
-                        onPressed: () {
-                          setState(() {
-                            String newUnit = _unitController.text.trim();
-                            if (newUnit.isEmpty) {
-                              // 빈 문자열인 경우 추가하지 않음
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('빈 분류는 추가할 수 없습니다.'),
-                                ),
-                              );
-                            } else if (units.contains(newUnit)) {
-                              // 중복된 이름인 경우 추가하지 않음
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('이미 존재하는 분류입니다.'),
-                                ),
-                              );
-                            } else if (units.length >= 5) {
-                              // 분류의 개수가 5개 이상인 경우 추가하지 않음
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('최대 5개의 분류만 추가할 수 있습니다.'),
-                                ),
-                              );
-                            } else {
-                              // 새로운 분류 추가
-                              units.add(newUnit);
-                              _unitController.clear();
-                            }
-                          });
-                        },
-                      ),
+                    onSubmitted: (value) {
+                      if (value.isNotEmpty) {
+                        setState(() {
+                          String newUnit = _unitController.text.trim();
+                          if (newUnit.isEmpty) {
+                            // 빈 문자열인 경우 추가하지 않음
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('빈 분류는 추가할 수 없습니다.'),
+                              ),
+                            );
+                          } else if (units.contains(newUnit)) {
+                            // 중복된 이름인 경우 추가하지 않음
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('이미 존재하는 분류입니다.'),
+                              ),
+                            );
+                          } else if (units.length >= 5) {
+                            // 분류의 개수가 5개 이상인 경우 추가하지 않음
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('최대 5개의 분류만 추가할 수 있습니다.'),
+                              ),
+                            );
+                          } else {
+                            // 새로운 분류 추가
+                            units.add(newUnit);
+                            _unitController.clear();
+                          } // 입력 후 텍스트필드 초기화
+                        });
+                      }
+                    },
                     ),
                   ),
                   SizedBox(height: 10),
@@ -273,7 +276,9 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       color: Colors.red,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _selectedColor == Colors.red ? Colors.black : Colors.transparent,
+                        color: _selectedColor == Colors.red
+                            ? Colors.black
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -292,7 +297,9 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       color: Colors.blue,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _selectedColor == Colors.blue ? Colors.black : Colors.transparent,
+                        color: _selectedColor == Colors.blue
+                            ? Colors.black
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -316,8 +323,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
               },
             ),
           ],
-          );
-
+        );
       },
     );
   }

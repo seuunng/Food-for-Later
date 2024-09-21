@@ -3,11 +3,11 @@ import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:intl/intl.dart';
 
 class FridgeItemDetails extends StatefulWidget {
-  final String categoryName;  // 선택된 냉장고 카테고리명
-  final String categoryFoodsName;  // 선택된 냉장고 카테고리명
-  final int expirationDays;   // 유통기한
-  final int consumptionDays;  // 품질유지기한
-  final String registrationDate;  // 등록일
+  final String categoryName; // 선택된 냉장고 카테고리명
+  final String categoryFoodsName; // 선택된 냉장고 카테고리명
+  final int expirationDays; // 유통기한
+  final int consumptionDays; // 품질유지기한
+  final String registrationDate; // 등록일
 
   FridgeItemDetails({
     required this.categoryName,
@@ -94,7 +94,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
   @override
   void initState() {
     super.initState();
-    dateController.text = DateFormat('yyyy-MM-dd').format(currentDate); // 초기 등록일을 현재 날짜로 설정
+    dateController.text =
+        DateFormat('yyyy-MM-dd').format(currentDate); // 초기 등록일을 현재 날짜로 설정
     // 선택된 카테고리가 기본 카테고리 목록에 있는지 확인
     if (basicFoodsCategories.contains(widget.categoryName)) {
       selectedFoodsCategory = widget.categoryName; // 유효한 경우 카테고리 설정
@@ -102,7 +103,9 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
       selectedFoodsCategory = null;
     }
     // 선택된 값이 itemsByCategory에서 정확하게 있는지 확인 후 없으면 null 설정
-    selectedFoods = itemsByCategory[widget.categoryName]?.contains(widget.categoryFoodsName) == true
+    selectedFoods = itemsByCategory[widget.categoryName]
+                ?.contains(widget.categoryFoodsName) ==
+            true
         ? widget.categoryFoodsName
         : null;
     expirationDays = widget.expirationDays;
@@ -136,7 +139,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
       appBar: AppBar(
         title: Text('상세보기'),
       ),
-      body:SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -186,12 +189,13 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                             width: 200,
                             // 원하는 크기로 설정
                             child: TextField(
-                              controller: foodNameController..text = selectedFoods ?? '',
+                              controller: foodNameController
+                                ..text = selectedFoods ?? '',
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(),
                                 hintText: '식품명을 입력하세요',
+                              ),
                             ),
-                          ),
                           ),
                         ],
                       ),
@@ -266,7 +270,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                           });
                         },
                       ),
-                      Text('$consumptionDays 일', style: TextStyle(fontSize: 18)),
+                      Text('$consumptionDays 일',
+                          style: TextStyle(fontSize: 18)),
                       IconButton(
                         icon: Icon(Icons.add),
                         onPressed: () {
@@ -305,21 +310,31 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
         ),
       ),
       // 하단에 추가 버튼 추가
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: SizedBox(
           width: double.infinity,
-          height: 50, // 버튼 높이 설정
           child: ElevatedButton(
             onPressed: () {
-              // 버튼 눌렀을 때 실행될 함수 추가
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('추가하기 버튼 클릭됨')),
               );
             },
             child: Text(
               '저장하기',
-              style: TextStyle(fontSize: 18),
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+              ),
+              elevation: 5,
+              textStyle: TextStyle(
+                fontSize: 18, // 글씨 크기 조정
+                fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                letterSpacing: 1.2, //
+              ),
             ),
           ),
         ),

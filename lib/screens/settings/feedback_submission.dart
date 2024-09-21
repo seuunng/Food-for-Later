@@ -102,13 +102,17 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
           ],
         ),
       ),
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(16.0),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: SizedBox(
+          width: double.infinity,
           child: ElevatedButton(
             onPressed: _submitFeedback,
             child: Text('의견 보내기'),
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+              padding:
+                  EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
               ),
@@ -121,6 +125,7 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
             ),
           ),
         ),
+      ),
     );
   }
 }

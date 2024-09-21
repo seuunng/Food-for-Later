@@ -120,8 +120,12 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                       child: TextField(
                         controller: foodNameController,
                         decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          // border: OutlineInputBorder(),
                           hintText: '식품명을 입력하세요',
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+                            vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+                          ),
                         ),
                     ),
                     ),
@@ -221,7 +225,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                     textAlign: TextAlign.center,
                     decoration: InputDecoration(
                       hintText: '날짜 선택',
-                      border: OutlineInputBorder(),
+                      // border: OutlineInputBorder(),
                     ),
                     readOnly: true,
                     onTap: () => _selectDate(context), // 날짜 선택 다이얼로그 호출
@@ -234,11 +238,11 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
         ),
       ),
       // 하단에 추가 버튼 추가
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: SizedBox(
           width: double.infinity,
-          height: 50, // 버튼 높이 설정
           child: ElevatedButton(
             onPressed: () {
               // 버튼 눌렀을 때 실행될 함수 추가

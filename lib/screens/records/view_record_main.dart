@@ -105,7 +105,6 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
       ),
       body:  Column(
         children: [
-
           Expanded(
             child: Center(
               child: PageView(
@@ -138,9 +137,9 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
           );
         },
         child: Icon(Icons.add),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-        ),
+        // shape: RoundedRectangleBorder(
+        //   borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+        // ),
 
       ),
     );

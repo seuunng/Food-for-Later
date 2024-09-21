@@ -118,15 +118,33 @@ class _AdminPasswordChangeState extends State<AdminPasswordChange> {
                 },
               ),
               SizedBox(height: 15),// 버튼 위에 30픽셀 간격 추가
-              SizedBox(
-                width: double.infinity,
-                height: 50,// 버튼을 입력 필드와 동일한 너비로 설정
-                child: ElevatedButton(
-                  onPressed: _handleSubmit,
-                  child: Text('비밀번호 변경'),
-                ),
-              ),
             ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+            },
+            child: Text(
+              '비밀번호 변경',
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+              ),
+              elevation: 5,
+              textStyle: TextStyle(
+                fontSize: 18, // 글씨 크기 조정
+                fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                letterSpacing: 1.2, //
+              ),
+            ),
           ),
         ),
       ),

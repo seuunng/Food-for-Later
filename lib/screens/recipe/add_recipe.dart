@@ -70,7 +70,11 @@ class _AddRecipeState extends State<AddRecipe> {
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(),
+          // border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+            vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+          ),
         ),
       ),
     );
@@ -132,7 +136,11 @@ class _AddRecipeState extends State<AddRecipe> {
                 controller: controller,
                 decoration: InputDecoration(
                   labelText: '$title 입력',
-                  border: OutlineInputBorder(),
+                  // border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+                    vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+                  ),
                 ),
                 onSubmitted: (value) {
                   if (value.isNotEmpty) {

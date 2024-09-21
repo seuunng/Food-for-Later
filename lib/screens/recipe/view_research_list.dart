@@ -118,6 +118,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
             child: Row(
               children: [
                 // 왼쪽에 정사각형 그림
+                SizedBox(height: 65),
                 Container(
                   width: 60.0,
                   height: 60.0,
@@ -207,6 +208,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                           keyboardType: TextInputType.text,
@@ -221,6 +223,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
                             _searchItems(value);
                           }),
                     ),
+                    SizedBox(width: 10),
                   ]),
             ),
             Padding(
