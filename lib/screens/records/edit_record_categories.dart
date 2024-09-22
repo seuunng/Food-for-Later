@@ -138,13 +138,16 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                     runSpacing: 0.0,
                     children: units.map((unit) {
                       return Chip(
-                        label: Text(unit),
+                        label: Text(unit,
+                          style: TextStyle(fontSize: 12),),
+
                         labelPadding: EdgeInsets.symmetric(
                           horizontal: 4.0, // 라벨(텍스트)과 좌우 경계 사이의 여백
                           vertical: 0.0, // 라벨(텍스트)과 상하 경계 사이의 여백
                         ),
-                        padding: EdgeInsets.all(0),
-                        deleteIcon: Transform.translate(
+                        padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 5.0),
+
+                        deleteIcon: Transform.translate(n
                           offset: Offset(-4, 0), // x, y 좌표로 이동, x는 좌우, y는 상하
                           child: Icon(
                             Icons.close,

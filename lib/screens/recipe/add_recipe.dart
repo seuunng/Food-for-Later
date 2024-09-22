@@ -161,7 +161,7 @@ class _AddRecipeState extends State<AddRecipe> {
             return Chip(
               label: Text(
                 item,
-                style: TextStyle(fontSize: 14), // 텍스트 크기 줄이기
+                style: TextStyle(fontSize: 12), // 텍스트 크기 줄이기
               ),
               padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 5.0),
               // Chip 크기 줄이기
@@ -174,6 +174,7 @@ class _AddRecipeState extends State<AddRecipe> {
             );
           }).toList(),
         ),
+        Divider(),
       ],
     );
   }
