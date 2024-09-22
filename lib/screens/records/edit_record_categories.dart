@@ -147,7 +147,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 5.0),
 
-                        deleteIcon: Transform.translate(n
+                        deleteIcon: Transform.translate(
                           offset: Offset(-4, 0), // x, y 좌표로 이동, x는 좌우, y는 상하
                           child: Icon(
                             Icons.close,
