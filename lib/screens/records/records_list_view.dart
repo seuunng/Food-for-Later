@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/recordModel.dart';
@@ -10,7 +12,17 @@ class RecordsListView extends StatefulWidget {
 }
 
 class _RecordsListViewState extends State<RecordsListView> {
-
+  Color _convertColor(String colorString) {
+    try {
+      if (colorString.startsWith('#') && colorString.length == 7) {
+        return Color(int.parse(colorString.replaceFirst('#', '0xff')));
+      } else {
+        return Colors.grey; // 기본 색상
+      }
+    } catch (e) {
+      return Colors.grey; // 오류 발생 시 기본 색상
+    }
+  }
 // 레코드 수정 함수
   void _editRecord(String recordId, RecordDetail rec) async {
     try {
@@ -79,8 +91,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                           e.data() as Map<String, dynamic>,
                           id: e.id,
                         ),
-                  )
-                      .toList();
+                  ).toList();
 
                   return ListView.builder(
                     shrinkWrap: true,
@@ -88,17 +99,14 @@ class _RecordsListViewState extends State<RecordsListView> {
                     itemCount: recordsList.length,
                     itemBuilder: (context, index) {
                       final record = recordsList[index];
-                      Color getZoneColor(String zone) {
-                        switch (zone) {
-                          case '식단':
-                            return Colors.blue;
-                          case '운동':
-                            return Colors.green;
-                          default:
-                            return Colors.grey; // 기본 색상
-                        }
-                      }
+                      // 타입 출력
+                      print('Record Type: ${record.runtimeType}');
 
+                      if (record is RecordModel) {
+                        print('Record is of type RecordModel');
+                      } else {
+                        print('Record is not of type RecordModel');
+                      }
                       return Column(
                           children: List.generate(
                               record.records.length, (recIndex) {
@@ -181,16 +189,16 @@ class _RecordsListViewState extends State<RecordsListView> {
                               child: InkWell(
                                 onTap: () {
                                   // 개별 rec 데이터 전달
-                                  Map<String, dynamic> record = {
-                                    'record': recordsList[index], // 상위 레코드
-                                    'rec': rec, // 개별 레코드
-                                  };
+                                  // Map<String, dynamic> record = {
+                                  //   'record': recordsList[index], // 상위 레코드
+                                  //   'rec': rec, // 개별 레코드
+                                  // };
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           ReadRecord(
-                                            recordData: record,
+                                            recordId:  record.id ?? 'default_record_id',
                                           ),
                                     ),
                                   );
@@ -207,7 +215,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                         width: 4,
                                         height: 50, // 컬러 바의 높이 설정
                                         color:
-                                        getZoneColor(record.zone),
+                                        _convertColor(record.color),
                                       ),
                                       SizedBox(width: 8), // 컬러 바와 텍스트 사이 간격
 
@@ -266,8 +274,8 @@ class _RecordsListViewState extends State<RecordsListView> {
                                                   ? List.generate(
                                                 rec.images.length,
                                                     (imgIndex) =>
-                                                    Image.asset(
-                                                      rec.images[imgIndex],
+                                                    Image.file(
+                                                      File(rec.images[imgIndex]),
                                                       width: 50,
                                                       height: 50,
                                                       fit: BoxFit.cover,

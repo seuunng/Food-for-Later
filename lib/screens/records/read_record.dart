@@ -1,11 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
+import 'package:intl/intl.dart';
+
+import '../../models/recordModel.dart';
 
 class ReadRecord extends StatefulWidget {
-  final Map<String, dynamic> recordData;
+  final String recordId; // recordId를 전달받도록 수정
 
-  ReadRecord({required this.recordData});
+  ReadRecord({required this.recordId});
 
   @override
   _ReadRecordState createState() => _ReadRecordState();
@@ -15,17 +19,18 @@ class _ReadRecordState extends State<ReadRecord> {
   @override
   Widget build(BuildContext context) {
     // final recordTitle = widget.recordData;
-    final String category =
-        widget.recordData['record']['zone'] ?? 'Unknown Category';
-    final String date = widget.recordData['record']['date'] ?? 'Unknown Date';
-    final List<Map<String, dynamic>> records = List<Map<String, dynamic>>.from(
-        widget.recordData!['record']['records'] ?? []);
-    if (widget.recordData == null || widget.recordData['record'] == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Record Not Found')),
-        body: Center(child: Text('No record data available')),
-      );
-    }
+    // final String category =
+    //     widget.recordData['record']['zone'] ?? 'Unknown Category';
+    // final String date = widget.recordData['record']['date'] ?? 'Unknown Date';
+    // final List<Map<String, dynamic>> records = List<Map<String, dynamic>>.from(
+    //     widget.recordData!['record']['records'] ?? []);
+    // if (widget.recordData == null || widget.recordData['record'] == null) {
+    //   return Scaffold(
+    //     appBar: AppBar(title: Text('Record Not Found')),
+    //     body: Center(child: Text('No record data available')),
+    //   );
+    // }
+    print('전달된 recordId: ${widget.recordId}');
     return Scaffold(
       appBar: AppBar(
         title: Text('기록 보기'),
@@ -42,7 +47,7 @@ class _ReadRecordState extends State<ReadRecord> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => CreateRecord(
-                    recordsData: widget.recordData, // 초기 데이터 전달
+                    recordId: widget.recordId, // 초기 데이터 전달
                     isEditing: true, // 수정 모드로 설정
                   ),
                 ),
@@ -59,82 +64,117 @@ class _ReadRecordState extends State<ReadRecord> {
           )
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Text('$date',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text(
-                  ' | ',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '$category 기록',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-              child: ListView.builder(
-                  itemCount: records.length, // 데이터 세트 수만큼 렌더링
-                  itemBuilder: (context, index) {
-                    final record = records[index];
-                    final String field = record['unit'] ?? 'Unknown Field';
-                    final String description =
-                        record['contents'] ?? 'No description';
-                    final List<String> images =
-                        List<String>.from(record['images'] ?? []);
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('record')
+            .doc(widget.recordId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
+            );
+          }
+          // Firestore 데이터를 RecordModel로 변환
+          final recordData = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+          print('Firestore 데이터: $recordData'); // Firestore에서 가져온 데이터 출력
 
+          final record = RecordModel.fromJson(recordData, id: snapshot.data?.id ?? 'unknown');
+          print('RecordModel: $record'); // 기록 모델 데이터 출력
+          print('RecordModel.records: ${record.records}'); // 레코드 리스트 출력
+
+          if (record.records.isEmpty) {
+            print('레코드가 비어 있습니다.');
+          }
+
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return Center(
+              child: Text('데이터가 없습!니다.'),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Text(
+                      DateFormat('yyyy-MM-dd').format(record.date) ?? 'Unknown Date',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      ' | ',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${record.zone} 기록',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: record.records.length,
+                  itemBuilder: (context, index) {
+                    final rec = record.records[index];
+                    print('RecordDetail: $rec');
                     return Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '$field',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                                Text(
-                                  ' | ',
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  '$description',
-                                  style: TextStyle(fontSize: 16),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8.0,
-                              runSpacing: 8.0,
-                              children: images.map((imagePath) {
-                                return Image.asset(
-                                  imagePath,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Text('Error loading image');
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                            Divider(),
-                          ]),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                rec.unit ?? 'Unknown Field',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                ' | ',
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                rec.contents ?? 'No description',
+                                style: TextStyle(fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8.0,
+                            runSpacing: 8.0,
+                            children: rec.images.map((imagePath) {
+                              return Image.network(
+                                imagePath, // URL 경로를 사용하여 이미지 로드
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Text('Error loading image');
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          Divider(),
+                        ],
+                      ),
                     );
-                  }))
-        ],
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:food_for_later/components/ImagePickerComponent.dart';
 import 'package:food_for_later/models/recordModel.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,10 +14,10 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateRecord extends StatefulWidget {
-  final Map<String, dynamic>? recordsData;
+  final String? recordId; // recordId를 받을 수 있도록 수정
   final bool isEditing;
 
-  CreateRecord({this.recordsData, this.isEditing = false});
+  CreateRecord({this.recordId, this.isEditing = false});
   @override
   _CreateRecordState createState() => _CreateRecordState();
 }
@@ -29,6 +31,7 @@ class _CreateRecordState extends State<CreateRecord> {
 
   late String selectedCategory = '식단';
   late String selectedField = '아침';
+  late Color selectedColor = Colors.grey;
   late String selectedContents = '양배추 참치덮밥';
   late List<Map<String, dynamic>> recordsWithImages = [];
   DateTime selectedDate = DateTime.now();
@@ -54,51 +57,86 @@ class _CreateRecordState extends State<CreateRecord> {
     contentsController = TextEditingController();
     // stepDescriptionController = TextEditingController();
 
-    if (widget.isEditing && widget.recordsData != null) {
-      final recordData = widget.recordsData!['record'];
-      selectedCategory = recordData['zone'] ?? '식단';
-      selectedDate = DateTime.tryParse(recordData['date']) ?? DateTime.now();
-
-      categoryController.text = selectedCategory;
-      fieldController.text = selectedField;
-      dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
-
-      // 이미지 리스트 초기화
-      if (recordData['records'] != null && recordData['records'].isNotEmpty) {
-        recordsWithImages = List<Map<String, dynamic>>.from(
-            recordData['records'].map<Map<String, dynamic>>((record) {
-              return {
-                'field': record['unit'],
-                'contents': record['contents'],
-                'images': List<String>.from(record['images'] ?? []),
-              };
-            }).toList());
-      }
-      // 드롭다운 리스트에 값이 없으면 추가
-      if (!categoryFieldMap.containsKey(selectedCategory)) {
-        categoryFieldMap[selectedCategory] = [selectedField];
-      } else if (!categoryFieldMap[selectedCategory]!.contains(selectedField)) {
-        categoryFieldMap[selectedCategory]!.add(selectedField);
-      }
+    if (widget.isEditing && widget.recordId != null) {
+      // 기록 수정 모드일 때, recordId를 통해 데이터를 불러와서 초기화
+      _loadRecordData(widget.recordId!);
     } else {
       // 추가 모드일 경우 현재 날짜 및 기본값 초기화
-      categoryController = TextEditingController(
-        text: widget.recordsData?['category']?.toString() ?? '식단',
-      );
-      fieldController = TextEditingController(
-        text: widget.recordsData?['field']?.toString() ?? '아침',
-      );
-      contentsController = TextEditingController(
-        text: widget.recordsData?['contents']?.toString() ?? '',
-      );
       dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
     }
-
-    // selectedCategory = widget.recordsData?['category']?.toString() ?? '식단';
-    // selectedField = widget.recordsData?['field']?.toString() ?? '아침';
-    // recordsWithImages =
-    //     List<Map<String, dynamic>>.from(widget.recordsData?['records'] ?? []);
   }
+
+  void _loadRecordData(String recordId) async {
+    final documentSnapshot = await FirebaseFirestore.instance
+        .collection('record')
+        .doc(recordId)
+        .get();
+
+    if (documentSnapshot.exists) {
+      final data = documentSnapshot.data() as Map<String, dynamic>;
+      final record = RecordModel.fromJson(data, id: recordId);
+
+      setState(() {
+        selectedCategory = record.zone ?? '식단';
+        selectedField = record.records.first.unit ?? '아침';
+        selectedDate = record.date;
+        selectedColor = Color(int.parse(record.color.replaceFirst('#', '0xff')));
+        dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+        recordsWithImages = record.records.map((rec) {
+          return {
+            'field': rec.unit,
+            'contents': rec.contents,
+            'images': rec.images,
+          };
+        }).toList();
+      });
+    }
+  }
+  //
+  //     final recordData = widget.recordsData!['record'];
+  //     selectedCategory = recordData['zone'] ?? '식단';
+  //     selectedDate = DateTime.tryParse(recordData['date']) ?? DateTime.now();
+  //
+  //     categoryController.text = selectedCategory;
+  //     fieldController.text = selectedField;
+  //     dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+  //
+  //     // 이미지 리스트 초기화
+  //     if (recordData['records'] != null && recordData['records'].isNotEmpty) {
+  //       recordsWithImages = List<Map<String, dynamic>>.from(
+  //           recordData['records'].map<Map<String, dynamic>>((record) {
+  //             return {
+  //               'field': record['unit'],
+  //               'contents': record['contents'],
+  //               'images': List<String>.from(record['images'] ?? []),
+  //             };
+  //           }).toList());
+  //     }
+  //     // 드롭다운 리스트에 값이 없으면 추가
+  //     if (!categoryFieldMap.containsKey(selectedCategory)) {
+  //       categoryFieldMap[selectedCategory] = [selectedField];
+  //     } else if (!categoryFieldMap[selectedCategory]!.contains(selectedField)) {
+  //       categoryFieldMap[selectedCategory]!.add(selectedField);
+  //     }
+  //   } else {
+  //     // 추가 모드일 경우 현재 날짜 및 기본값 초기화
+  //     categoryController = TextEditingController(
+  //       text: widget.recordsData?['category']?.toString() ?? '식단',
+  //     );
+  //     fieldController = TextEditingController(
+  //       text: widget.recordsData?['field']?.toString() ?? '아침',
+  //     );
+  //     contentsController = TextEditingController(
+  //       text: widget.recordsData?['contents']?.toString() ?? '',
+  //     );
+  //     dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+  //   }
+  //
+  //   // selectedCategory = widget.recordsData?['category']?.toString() ?? '식단';
+  //   // selectedField = widget.recordsData?['field']?.toString() ?? '아침';
+  //   // recordsWithImages =
+  //   //     List<Map<String, dynamic>>.from(widget.recordsData?['records'] ?? []);
+  // }
 
   // 이미지를 선택하는 메서드
   Future<void> _pickImages() async {
@@ -135,6 +173,33 @@ class _CreateRecordState extends State<CreateRecord> {
       ),
     );
   }
+
+  // Future<void> _pickColor() async {
+  //   Color pickedColor = await showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text('색상 선택'),
+  //       content: SingleChildScrollView(
+  //         child: ColorPicker(
+  //           pickerColor: selectedColor, // 현재 선택된 색상
+  //           onColorChanged: (color) {
+  //             setState(() {
+  //               selectedColor = color;
+  //             });
+  //           },
+  //         ),
+  //       ),
+  //       actions: <Widget>[
+  //         TextButton(
+  //           child: Text('확인'),
+  //           onPressed: () {
+  //             Navigator.of(context).pop(selectedColor);
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // 날짜 선택 메서드
   Future<void> _selectDate(BuildContext context) async {
@@ -319,7 +384,21 @@ class _CreateRecordState extends State<CreateRecord> {
                   return;
                 }
 
-                await _pickImages();
+                // ImagePickerComponent를 열고 이미지 URL을 가져오기
+                final imageUrl = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImagePickerComponent(),
+                  ),
+                );
+
+                // 이미지 URL이 null이 아닌 경우에만 리스트에 추가
+                if (imageUrl != null) {
+                  setState(() {
+                    _imageFiles ??= []; // _imageFiles가 null인 경우 빈 리스트로 초기화
+                    _imageFiles!.add(XFile(imageUrl)); // 선택한 이미지 URL을 파일로 추가
+                  });
+                }
 
                 // 한 기록에 최대 4개의 사진만 추가할 수 있도록 제한
                 if (_imageFiles != null && _imageFiles!.length > 4) {
@@ -393,6 +472,7 @@ class _CreateRecordState extends State<CreateRecord> {
     final record = RecordModel(
       id: Uuid().v4(), // 고유 ID 생성
       date: selectedDate,
+      color: '#${selectedColor.value.toRadixString(16).padLeft(8, '0')}',
       zone: selectedCategory,
       records: recordDetails,
     );

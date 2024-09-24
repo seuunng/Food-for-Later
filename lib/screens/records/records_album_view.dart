@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
+
+import '../../models/recordModel.dart';
 
 class RecordsAlbumView extends StatefulWidget {
   @override
@@ -7,48 +12,10 @@ class RecordsAlbumView extends StatefulWidget {
 }
 
 class _RecordsAlbumViewState extends State<RecordsAlbumView> {
-  List<Map<String, dynamic>> recordsList = [
-    {
-      'no': 1,
-      'zone': '식단',
-      'color': Colors.blueAccent.shade100,
-      'date': '2024-09-17',
-      'records': [
-        {
-          'unit': '아침',
-          'contents': '맛있었습니다!',
-          'images': [
-            'assets/step1.jpeg',
-          ],
-        },
-        {
-          'unit': '점심',
-          'contents': '점심도 맛있었습니다!',
-          'images': [
-            'assets/step2.jpeg',
-          ],
-        }
-      ]
-    },
-    {
-      'no': 2,
-      'zone': '운동',
-      'color': Colors.greenAccent.shade100,
-      'date': '2024-09-19',
-      'records': [
-        {
-          'unit': '저녁',
-          'contents': '운동을 했습니다!',
-          'images': ['assets/step3.jpeg'],
-        }
-      ]
-    },
-  ];
-
-  Map<String, dynamic>? _findRecordByImage(String imagePath) {
+  Map<String, dynamic>? _findRecordByImage(List<RecordModel> recordsList, String imagePath) {
     for (var record in recordsList) {
-      for (var rec in record['records']) {
-        if (rec['images'].contains(imagePath)) {
+      for (var rec in record.records) {
+        if (rec.images.contains(imagePath)) {
           return {
             'record': record, // 상위 레코드
             'rec': rec        // 해당 이미지가 포함된 개별 레코드
@@ -59,11 +26,11 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
     return null;
   }
 
-  Widget _buildImageGrid() {
+  Widget _buildImageGrid(List<RecordModel> recordsList) {
     List<String> allImages = [];
     for (var record in recordsList) {
-      for (var rec in record['records']) {
-        allImages.addAll(List<String>.from(rec['images']));
+      for (var rec in record.records) {
+        allImages.addAll(List<String>.from(rec.images));
       }
     }
 
@@ -78,7 +45,8 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
       itemCount: allImages.length,
       itemBuilder: (context, index) {
         String imagePath = allImages[index];
-        Map<String, dynamic>? record = _findRecordByImage(imagePath);
+        Map<String, dynamic>? record = _findRecordByImage(recordsList, imagePath);
+
 
         return GestureDetector(
           onTap: () {
@@ -88,15 +56,18 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ReadRecord(
-                    recordData: record,  // 클릭한 이미지의 레코드를 넘김
+                    recordId:  record['id'] ?? 'default_record_id',
                   ),
                 ),
               );
             }
           },
-          child: Image.asset(
-            imagePath,
+          child: Image.file(
+            File(imagePath),
             fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(Icons.broken_image, size: 50);
+            },
           ),
         );
       },
@@ -106,13 +77,30 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            // Expanded는 Column 안에서만 사용
-            child: _buildImageGrid(),
-          ),
-        ],
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('record').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          final recordsList = snapshot.data!.docs.map((doc) {
+            return RecordModel.fromJson(
+              doc.data() as Map<String, dynamic>,
+              id: doc.id,
+            );
+          }).toList();
+
+          return _buildImageGrid(recordsList);
+        },
       ),
     );
   }
