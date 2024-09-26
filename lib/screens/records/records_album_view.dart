@@ -44,9 +44,11 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
       ),
       itemCount: allImages.length,
       itemBuilder: (context, index) {
-        String imagePath = allImages[index];
-        Map<String, dynamic>? record = _findRecordByImage(recordsList, imagePath);
-
+        String imageUrl = allImages[index];
+        // 수정된 부분: 리턴 타입이 Map<String, dynamic>이므로 각각에 접근
+        final recordMap = _findRecordByImage(recordsList, imageUrl);
+        final RecordModel? record = recordMap?['record'];
+        final RecordDetail? rec = recordMap?['rec'];
 
         return GestureDetector(
           onTap: () {
@@ -56,22 +58,40 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ReadRecord(
-                    recordId:  record['id'] ?? 'default_record_id',
+                    recordId:  record.id ?? 'default_record_id',
                   ),
                 ),
               );
             }
           },
-          child: Image.file(
-            File(imagePath),
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(Icons.broken_image, size: 50);
-            },
-          ),
+          child:  _buildImageWidget(imageUrl),
         );
       },
     );
+  }
+
+  Widget _buildImageWidget(String imageUrl) {
+    if (Uri
+        .parse(imageUrl)
+        .isAbsolute) {
+      // 네트워크 URL인 경우
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.broken_image, size: 50);
+        },
+      );
+    } else {
+      // 로컬 파일 경로인 경우
+      return Image.file(
+        File(imageUrl),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.broken_image, size: 50);
+        },
+      );
+    }
   }
 
   @override

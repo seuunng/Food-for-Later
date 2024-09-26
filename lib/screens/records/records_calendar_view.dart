@@ -122,14 +122,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                 },
                                 child: Row(
                                   children: [
-                                    rec.images.isNotEmpty
-                                        ? Image.file(
-                                            File(rec.images[0]),
-                                            height: 50,
-                                            width: 50,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Icon(Icons.image),
+                                    _buildImageWidget(rec.images),
                                     SizedBox(width: 15),
                                     Text(
                                       rec.contents ?? '내용이 없습니다',
@@ -149,6 +142,36 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         },
       ),
     );
+  }
+
+  Widget _buildImageWidget(List<String> images) {
+    if (images.isEmpty) {
+      return Icon(Icons.image);
+    }
+    String imageUrl = images[0];
+    if (Uri.parse(imageUrl).isAbsolute) {
+      // 네트워크 URL인 경우
+      return Image.network(
+        imageUrl,
+        height: 50,
+        width: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.broken_image, size: 55, color: Colors.grey);
+        },
+      );
+    } else {
+      // 로컬 파일인 경우
+      return Image.file(
+        File(imageUrl),
+        height: 50,
+        width: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.broken_image, size: 55, color: Colors.grey);
+        },
+      );
+    }
   }
 
   @override
@@ -274,85 +297,111 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           contents = '내용이 없습니다';
                         }
                       }
-                      if (recordsForDate != null && recordsForDate.isNotEmpty) {
-                        return Column(
-                          children: List.generate(
-                            recordsForDate!.length * 2 -
-                                1, // 전체 아이템 수는 원래 리스트의 2배 - 1
-                            (index) {
-                              if (index.isEven) {
-                                // 짝수 인덱스에는 실제 콘텐츠를 배치
-                                final recordIndex =
-                                    index ~/ 2; // 원래 리스트의 인덱스 계산
-                                if (recordsForDate[recordIndex]
-                                    .records
-                                    .isNotEmpty) {
-                                  final rec = recordsForDate[recordIndex]
-                                      .records
-                                      .first; // 첫 번째 레코드 데이터 가져오기
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ReadRecord(
-                                            recordId:
-                                                recordsForDate[recordIndex]
-                                                        .id ??
-                                                    'default_record_id',
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedDate = date;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.transparent
+                                : isToday
+                                    ? Colors.white
+                                    : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8.0),
+                            border: isSelected
+                                ? Border.all(color: Colors.black, width: 2.0)
+                                : null,
+                          ),
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.all(1.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$day',
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.black
+                                          : isToday
+                                              ? Colors.grey
+                                              : Colors.black,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  if (recordsForDate != null &&
+                                      recordsForDate.isNotEmpty)
+                                    Flexible(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: backgroundColor,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: LimitedBox(
+                                          maxHeight: 100.0, // 최대 높이 설정
+                                          child: Scrollbar(// 스크롤바 추가
+                                            child: ListView.builder(
+                                                shrinkWrap: true,
+                                                physics: ClampingScrollPhysics(),
+                                                itemCount: recordsForDate.length,
+                                                itemBuilder:
+                                                    (context, recordIndex) {
+                                                  final record =
+                                                      recordsForDate[recordIndex];
+                                                  return Column(
+                                                    children: record.records.map<Widget>((rec) {
+                                                      return GestureDetector(
+                                                        onTap: () {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder:
+                                                                  (context) =>
+                                                                      ReadRecord(
+                                                                recordId:
+                                                                    record.id!,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          padding:
+                                                              EdgeInsets.only(
+                                                                  left: 4.0),
+                                                          child: Row(
+                                                            children: [
+                                                              Text(
+                                                                rec.contents ??
+                                                                    '내용이 없습니다',
+                                                                style: TextStyle(
+                                                                    fontSize: 8),
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                                  );
+                                                }),
                                           ),
                                         ),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.all(8.0),
-                                      // 콘텐츠와의 간격을 위해 padding 사용
-                                      decoration: BoxDecoration(
-                                        color: Colors.white, // 요소 배경색 설정
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.grey.withOpacity(0.5),
-                                            spreadRadius: 2,
-                                            blurRadius: 5,
-                                            offset: Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          rec.images.isNotEmpty
-                                              ? Image.file(
-                                                  File(rec.images[0]),
-                                                  height: 50,
-                                                  width: 50,
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : Icon(Icons.image),
-                                          SizedBox(width: 15),
-                                          Text(
-                                            rec.contents ?? '내용이 없습니다',
-                                            style: TextStyle(fontSize: 16),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
                                       ),
                                     ),
-                                  );
-                                } else {
-                                  // 레코드가 비어있을 경우 빈 컨테이너 반환
-                                  return Container();
-                                }
-                              } else {
-                                // 홀수 인덱스에는 SizedBox로 간격을 추가
-                                return SizedBox(height: 10); // 원하는 높이의 간격
-                              }
-                            },
+                                ],
+                              ),
+                            ),
                           ),
-                        );
-                      }
+                        ),
+                      );
                     },
                   ),
                   _buildWeekContainer(),

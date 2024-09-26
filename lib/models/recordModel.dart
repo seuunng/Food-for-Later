@@ -31,8 +31,8 @@ class RecordModel {
   }
 // fromJson 메서드 추가
   factory RecordModel.fromJson(Map<String, dynamic> json, {required String id}) {
-    print('RecordModel.fromJson 호출됨');
-    print('json 데이터: $json');
+    // print('RecordModel.fromJson 호출됨');
+    // print('json 데이터: $json');
 
     List<RecordDetail> recordDetails = [];
 
@@ -42,7 +42,7 @@ class RecordModel {
           .toList();
     }
 
-    print('recordDetails 변환 완료: $recordDetails');
+    // print('recordDetails 변환 완료: $recordDetails');
     return RecordModel(
       id: id,
       date: (json['date'] != null && json['date'] is Timestamp)

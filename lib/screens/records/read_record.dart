@@ -30,7 +30,7 @@ class _ReadRecordState extends State<ReadRecord> {
     //     body: Center(child: Text('No record data available')),
     //   );
     // }
-    print('전달된 recordId: ${widget.recordId}');
+    // print('전달된 recordId: ${widget.recordId}');
     return Scaffold(
       appBar: AppBar(
         title: Text('기록 보기'),
@@ -77,11 +77,11 @@ class _ReadRecordState extends State<ReadRecord> {
           }
           // Firestore 데이터를 RecordModel로 변환
           final recordData = snapshot.data?.data() as Map<String, dynamic>? ?? {};
-          print('Firestore 데이터: $recordData'); // Firestore에서 가져온 데이터 출력
+          // print('Firestore 데이터: $recordData'); // Firestore에서 가져온 데이터 출력
 
           final record = RecordModel.fromJson(recordData, id: snapshot.data?.id ?? 'unknown');
-          print('RecordModel: $record'); // 기록 모델 데이터 출력
-          print('RecordModel.records: ${record.records}'); // 레코드 리스트 출력
+          // print('RecordModel: $record'); // 기록 모델 데이터 출력
+          // print('RecordModel.records: ${record.records}'); // 레코드 리스트 출력
 
           if (record.records.isEmpty) {
             print('레코드가 비어 있습니다.');
@@ -125,7 +125,7 @@ class _ReadRecordState extends State<ReadRecord> {
                   itemCount: record.records.length,
                   itemBuilder: (context, index) {
                     final rec = record.records[index];
-                    print('RecordDetail: $rec');
+                    // print('RecordDetail: $rec');
                     return Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
