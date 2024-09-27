@@ -32,21 +32,16 @@ class _CreateRecordState extends State<CreateRecord> {
   late String selectedField = '아침';
   late Color selectedColor = Colors.grey;
   late String selectedContents = '양배추 참치덮밥';
-  late List<Map<String, dynamic>> recordsWithImages = [];
+  late List<Map<String, dynamic>> recordsWithImages = <Map<String, dynamic>>[];
   DateTime selectedDate = DateTime.now();
   bool isSaving = false;
 
   // 분류와 그에 따른 구분 데이터를 정의
-  final Map<String, List<String>> categoryFieldMap = {
-    '식단': ['아침', '점심', '저녁'],
-    '운동': ['러닝', '탁구', '스트레칭'],
-    '자기개발': ['영어공부', '공부']
-  };
+  Map<String, Map<String, dynamic>> categoryFieldMap = {};
 
   // 이미지 선택을 위한 ImagePicker 인스턴스
   List<AssetEntity> images = [];
-
-  List<XFile>? _imageFiles = [];
+  List<String>? _imageFiles = [];
 
   @override
   void initState() {
@@ -64,8 +59,50 @@ class _CreateRecordState extends State<CreateRecord> {
       // 추가 모드일 경우 현재 날짜 및 기본값 초기화
       dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
     }
+    _loadCategories(); // Firestore에서 카테고리 데이터 로드
   }
 
+  // Firestore에서 카테고리 데이터를 불러오는 함수
+  void _loadCategories() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('categories').get();
+      final categories = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'category': data['zone'] ?? '기록 없음',
+          'fields': data['units'] != null ? List<String>.from(data['units']) : [],
+          'color': data['color'] != null ? Color(int.parse(data['color'].replaceFirst('#', '0xff'))) : Colors.grey,
+        };
+      }).toList();
+
+      setState(() {
+        // 카테고리와 구분 데이터를 categoryFieldMap에 저장
+        categoryFieldMap = {
+          for (var category in categories)
+            category['category']: {
+              'fields': category['fields'],
+              'color': category['color'],
+            }
+        };
+        // 기본값 설정
+        if (categoryFieldMap.isNotEmpty) {
+          selectedCategory = categoryFieldMap.keys.first;
+          selectedField = categoryFieldMap[selectedCategory]!['fields'].isNotEmpty
+              ? categoryFieldMap[selectedCategory]!['fields'].first
+              : '';
+          selectedColor = categoryFieldMap[selectedCategory]!['color'];
+        }
+      });
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  //수정모드일때 데이터를 받아옴
   void _loadRecordData(String recordId) async {
     final documentSnapshot = await FirebaseFirestore.instance
         .collection('record')
@@ -87,7 +124,7 @@ class _CreateRecordState extends State<CreateRecord> {
           return {
             'field': rec.unit ?? '',
             'contents': rec.contents ?? '',
-            'images': rec.images ?? '',
+            'images': List<String>.from(rec.images ?? <String>[]),
           };
         }).toList();
       });
@@ -107,7 +144,7 @@ class _CreateRecordState extends State<CreateRecord> {
     }
 
     // 중복된 이미지 추가 제한
-    if (_imageFiles!.any((image) => image.path == pickedFile.path)) {
+    if (_imageFiles!.any((image) => image == pickedFile.path)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('이미 추가된 이미지입니다.'),
@@ -126,7 +163,7 @@ class _CreateRecordState extends State<CreateRecord> {
     }
 
     setState(() {
-      _imageFiles!.add(pickedFile); // 로컬 경로를 XFile 객체로 변환하여 추가
+      _imageFiles!.add(pickedFile.path); // 로컬 경로를 XFile 객체로 변환하여 추가
     });
   }
 
@@ -139,8 +176,8 @@ class _CreateRecordState extends State<CreateRecord> {
       return downloadUrls; // 빈 배열 반환
     }
 
-    for (var image in _imageFiles!) {
-      File file = File(image.path);
+    for (var imagePath in _imageFiles!) {
+      File file = File(imagePath);
       try {
         final uniqueFileName =
             'record_image_${DateTime.now().millisecondsSinceEpoch}';
@@ -173,8 +210,8 @@ class _CreateRecordState extends State<CreateRecord> {
             'field': record['field'],
             'contents': record['contents'],
             'images': [
-              ...(record['images'] as List<dynamic>), // 기존 이미지 리스트
-              ...imageUrls // 새로운 이미지 URL
+              ...(record['images'] as List<dynamic>),
+              ...imageUrls,
             ],
           };
         }).toList();
@@ -186,12 +223,12 @@ class _CreateRecordState extends State<CreateRecord> {
       return RecordDetail(
         unit: record['field'],
         contents: record['contents'],
-        images: List<String>.from(record['images']),
+        images: List<String>.from(record['images'] as List<dynamic>),
       );
     }).toList();
 
     final record = RecordModel(
-      id: Uuid().v4(), // 고유 ID 생성
+      id: widget.recordId ?? Uuid().v4(), // 고유 ID 생성, 수정 모드일 때 기존 ID 사용
       date: selectedDate,
       color: '#${selectedColor.value.toRadixString(16).padLeft(8, '0')}',
       zone: selectedCategory,
@@ -218,6 +255,8 @@ class _CreateRecordState extends State<CreateRecord> {
       print('Error saving record: $e');
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -257,8 +296,8 @@ class _CreateRecordState extends State<CreateRecord> {
                     );
                     if (pickedDate != null) {
                       setState(() {
-                        dateController.text =
-                            pickedDate.toLocal().toString().split(' ')[0];
+                        selectedDate = pickedDate; // selectedDate를 업데이트
+                        dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate); // dateController 업데이트
                       });
                     }
                   }),
@@ -272,8 +311,9 @@ class _CreateRecordState extends State<CreateRecord> {
                     setState(() {
                       selectedCategory = value;
                       // 분류 변경 시 구분을 첫 번째 값으로 초기화
-                      selectedField = categoryFieldMap[selectedCategory]!.first;
-                      fieldController.text = selectedField;
+                      selectedField = categoryFieldMap[selectedCategory]!['fields'].first;
+                      selectedColor = categoryFieldMap[selectedCategory]!['color'];
+                      // fieldController.text = selectedField;
                     });
                   },
                 ),
@@ -352,7 +392,7 @@ class _CreateRecordState extends State<CreateRecord> {
           itemCount: recordsWithImages.length,
           itemBuilder: (context, index) {
             final List<String> imagePaths =
-                (recordsWithImages[index]['images'] as List<String>?) ?? [];
+            List<String>.from(recordsWithImages[index]['images'] ?? []);
 
             return ListTile(
               title: Column(
@@ -379,7 +419,7 @@ class _CreateRecordState extends State<CreateRecord> {
                 runSpacing: 8.0,
                 children: imagePaths.map<Widget>((imagePath) {
                   // URL과 로컬 파일 구분
-                  if (imagePath.startsWith('http')) {
+                  if (imagePath.startsWith('http') || imagePath.startsWith('https')) {
                     return Image.network(
                       imagePath,
                       width: 50,
@@ -389,7 +429,7 @@ class _CreateRecordState extends State<CreateRecord> {
                         return Text('Error loading image');
                       },
                     );
-                  } else {
+                  } else if (imagePath.startsWith('/')) {
                     return Image.file(
                       File(imagePath),
                       width: 50,
@@ -399,6 +439,8 @@ class _CreateRecordState extends State<CreateRecord> {
                         return Text('Error loading image');
                       },
                     );
+                  } else {
+                    return Container(); // 예상치 못한 형식의 이미지 경로인 경우 빈 컨테이너 반환
                   }
                 }).toList(),
               ),
@@ -417,7 +459,7 @@ class _CreateRecordState extends State<CreateRecord> {
         Row(
           children: [
             _buildDropdown(
-                '', categoryFieldMap[selectedCategory]!, selectedField,
+                '', categoryFieldMap[selectedCategory]!['fields'], selectedField,
                 (value) {
               setState(() {
                 selectedField = value;
@@ -438,13 +480,13 @@ class _CreateRecordState extends State<CreateRecord> {
             ),
             if (_imageFiles != null && _imageFiles!.isNotEmpty) ...[
               Wrap(
-                children: _imageFiles!.map((image) {
+                children: _imageFiles!.map((imagePath) {
                   return Stack(
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: Image.file(
-                          File(image.path), // 개별 이미지의 경로에 접근
+                          File(imagePath), // 개별 이미지의 경로에 접근
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,
@@ -456,7 +498,7 @@ class _CreateRecordState extends State<CreateRecord> {
                         child: GestureDetector(
                           onTap: () {
                             setState(() {
-                              _imageFiles!.remove(image);
+                              _imageFiles!.remove(imagePath);
                             });
                           },
                           child: Container(
@@ -489,37 +531,16 @@ class _CreateRecordState extends State<CreateRecord> {
                 }
                 if (contentsController.text.isNotEmpty) {
                   setState(() {
-                    if (widget.isEditing && widget.recordId != null) {
-                      // 수정 모드일 때: 선택된 기록을 수정
-                      int existingRecordIndex = recordsWithImages.indexWhere((record) =>
-                      record['field'] == selectedField &&
-                          record['contents'] == contentsController.text);
+                    List<String> imagePaths = _imageFiles?.map((image) => image.toString()).toList() ?? [];
+                    // 명시적으로 dynamic 타입으로 선언
+                    recordsWithImages.add({
+                      'field': selectedField,
+                      'contents': contentsController.text,
+                      'images': imagePaths, // imagePaths가 List<String>임을 보장
+                    } as Map<String, dynamic>);
 
-                      if (existingRecordIndex != -1) {
-                        // 기존 기록을 수정
-                        recordsWithImages[existingRecordIndex] = {
-                          'field': selectedField,
-                          'contents': contentsController.text,
-                          'images': _imageFiles!.map((image) => image.path).toList(),
-                        };
-                      } else {
-                        // 새 기록 추가
-                        recordsWithImages.add({
-                          'field': selectedField,
-                          'contents': contentsController.text,
-                          'images': _imageFiles!.map((image) => image.path).toList(),
-                        });
-                      }
-                    } else {
-                      // 추가 모드일 때: 새 기록 추가
-                      recordsWithImages.add({
-                        'field': selectedField,
-                        'contents': contentsController.text,
-                        'images': _imageFiles!.map((image) => image.path).toList()
-                      });
-                    }
                     contentsController.clear();
-                    // _imageFiles = [];
+                    _imageFiles = [];
                   });
                 }
               },

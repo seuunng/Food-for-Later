@@ -15,13 +15,17 @@ class RecordsListView extends StatefulWidget {
 class _RecordsListViewState extends State<RecordsListView> {
   Color _convertColor(String colorString) {
     try {
-      if (colorString.startsWith('#') && colorString.length == 7) {
+      if (colorString.startsWith('#') && colorString.length == 9) {
+        // '#AARRGGBB' 형식인 경우
+        return Color(int.parse(colorString.replaceFirst('#', '0x')));
+      } else if (colorString.startsWith('#') && colorString.length == 7) {
+        // '#RRGGBB' 형식인 경우
         return Color(int.parse(colorString.replaceFirst('#', '0xff')));
       } else {
-        return Colors.grey; // 기본 색상
+        return Colors.grey; // 잘못된 형식일 때 기본 색상 반환
       }
     } catch (e) {
-      return Colors.grey; // 오류 발생 시 기본 색상
+      return Colors.grey; // 오류 발생 시 기본 색상 반환
     }
   }
 
@@ -54,6 +58,41 @@ class _RecordsListViewState extends State<RecordsListView> {
         SnackBar(
           content: Text('레코드 삭제에 실패했습니다. 다시 시도해주세요.'),
         ),
+      );
+    }
+  }
+
+  Future<void> _deleteIndividualRecord(
+      RecordModel record, RecordDetail rec) async {
+    try {
+      if (record.records.length == 1) {
+        // 레코드에 하나의 콘텐츠만 있는 경우: 전체 레코드 삭제
+        await FirebaseFirestore.instance
+            .collection('record')
+            .doc(record.id)
+            .delete();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('전체 레코드가 삭제되었습니다.')),
+        );
+      } else {
+        // 레코드에 두 개 이상의 콘텐츠가 있는 경우: 해당 콘텐츠만 삭제
+        record.records.remove(rec);
+
+        // 업데이트된 기록을 Firestore에 저장
+        await FirebaseFirestore.instance
+            .collection('record')
+            .doc(record.id)
+            .update(record.toMap());
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('개별 기록이 삭제되었습니다.')),
+        );
+      }
+    } catch (e) {
+      print('Error deleting individual record: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기록 삭제에 실패했습니다. 다시 시도해주세요.')),
       );
     }
   }
@@ -167,11 +206,25 @@ class _RecordsListViewState extends State<RecordsListView> {
                         },
                         onDismissed: (direction) {
                           if (direction == DismissDirection.endToStart) {
-                            // 오른쪽에서 왼쪽으로 스와이프 시 삭제 기능
-                            _deleteRecord(record.id, rec);
+                            // 레코드가 2개 이상일 때, 해당 레코드만 삭제
+                            if (record.records.length > 1) {
+                              _deleteIndividualRecord(record, rec);
+                            } else {
+                              // 레코드가 1개일 때, 전체 레코드 삭제
+                              _deleteRecord(record.id, rec);
+                            }
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('레코드가 삭제되었습니다.')),
                             );
+                            setState(() {
+                              // 리스트에서 레코드를 제거
+                              record.records.removeAt(recIndex);
+
+                              // recordsList에서 항목이 비어 있는 경우 제거
+                              if (record.records.isEmpty) {
+                                recordsList.removeAt(index);
+                              }
+                            });
                           }
                         },
                         child: InkWell(
@@ -319,4 +372,5 @@ class _RecordsListViewState extends State<RecordsListView> {
       ),
     );
   }
+
 }

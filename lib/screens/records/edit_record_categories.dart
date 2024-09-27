@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
@@ -10,55 +11,90 @@ class EditRecordCategories extends StatefulWidget {
 }
 
 class _EditRecordCategoriesState extends State<EditRecordCategories> {
+  // Firestore에서 가져온 카테고리 데이터를 저장하는 리스트
+  List<Map<String, dynamic>> userData = [];
+
   // 각 열에 대한 정렬 상태를 관리하는 리스트
-  List<Map<String, dynamic>> columns = [
-    {'name': '선택', 'state': SortState.none},
-    {'name': '연번', 'state': SortState.none},
-    {'name': '기록 카테고리', 'state': SortState.none},
-    {'name': '분류', 'state': SortState.none},
-    {'name': '변동', 'state': SortState.none}
-  ];
+  // List<Map<String, dynamic>> columns = [
+  //   {'name': '선택', 'state': SortState.none},
+  //   {'name': '연번', 'state': SortState.none},
+  //   {'name': '기록 카테고리', 'state': SortState.none},
+  //   {'name': '분류', 'state': SortState.none},
+  //   {'name': '변동', 'state': SortState.none}
+  // ];
 
   // 사용자 데이터
-  List<Map<String, dynamic>> userData = [
-    {
-      '연번': 1,
-      '기록 카테고리': '식단',
-      '분류': [
-        '아침',
-        '점심',
-        '저녁',
-      ],
-      '색상': Colors.blue[100] //
-    },
-    {
-      '연번': 2,
-      '기록 카테고리': '운동',
-      '분류': [
-        '아침',
-        '점심',
-        '저녁',
-      ],
-      '색상': Colors.green[100]
-    },
-    {
-      '연번': 3,
-      '기록 카테고리': '자기개발',
-      '분류': [
-        '아침',
-        '점심',
-        '저녁',
-      ],
-      '색상': Colors.orange[100]
-    },
-  ];
+  // List<Map<String, dynamic>> userData = [
+  //   {
+  //     '연번': 1,
+  //     '기록 카테고리': '식단',
+  //     '분류': [
+  //       '아침',
+  //       '점심',
+  //       '저녁',
+  //     ],
+  //     '색상': Colors.blue[100] //
+  //   },
+  //   {
+  //     '연번': 2,
+  //     '기록 카테고리': '운동',
+  //     '분류': [
+  //       '아침',
+  //       '점심',
+  //       '저녁',
+  //     ],
+  //     '색상': Colors.green[100]
+  //   },
+  //   {
+  //     '연번': 3,
+  //     '기록 카테고리': '자기개발',
+  //     '분류': [
+  //       '아침',
+  //       '점심',
+  //       '저녁',
+  //     ],
+  //     '색상': Colors.orange[100]
+  //   },
+  // ];
 
   final TextEditingController _recordCategoryController =
       TextEditingController();
   final TextEditingController _unitController = TextEditingController();
   Color _selectedColor = Colors.grey[300]!; // 기본 색상
-
   List<String> units = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories(); // 카테고리 데이터를 로드
+  }
+
+  // Firestore에서 카테고리 데이터를 로드하는 함수
+  void _loadCategories() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('categories').get();
+      final categories = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id, // Firestore 문서 ID 저장
+          '기록 카테고리': data['zone'],
+          '분류': List<String>.from(data['units']),
+          '색상': Color(int.parse(data['color'].replaceFirst('#', '0xff'))),
+        };
+      }).toList();
+
+      setState(() {
+        userData = categories;
+      });
+    } catch (e) {
+      print('Error loading categories: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 로드하는데 실패했습니다.')),
+      );
+    }
+  }
+
   // 데이터 추가 함수
   void _addOrEditCategory({int? index}) {
     if (index != null) {
@@ -138,15 +174,16 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                     runSpacing: 0.0,
                     children: units.map((unit) {
                       return Chip(
-                        label: Text(unit,
-                          style: TextStyle(fontSize: 12),),
-
+                        label: Text(
+                          unit,
+                          style: TextStyle(fontSize: 12),
+                        ),
                         labelPadding: EdgeInsets.symmetric(
                           horizontal: 4.0, // 라벨(텍스트)과 좌우 경계 사이의 여백
                           vertical: 0.0, // 라벨(텍스트)과 상하 경계 사이의 여백
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 5.0),
-
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 1.0, vertical: 5.0),
                         deleteIcon: Transform.translate(
                           offset: Offset(-4, 0), // x, y 좌표로 이동, x는 좌우, y는 상하
                           child: Icon(
@@ -172,39 +209,39 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                           vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
                         ),
                       ),
-                    onSubmitted: (value) {
-                      if (value.isNotEmpty) {
-                        setState(() {
-                          String newUnit = _unitController.text.trim();
-                          if (newUnit.isEmpty) {
-                            // 빈 문자열인 경우 추가하지 않음
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('빈 분류는 추가할 수 없습니다.'),
-                              ),
-                            );
-                          } else if (units.contains(newUnit)) {
-                            // 중복된 이름인 경우 추가하지 않음
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('이미 존재하는 분류입니다.'),
-                              ),
-                            );
-                          } else if (units.length >= 5) {
-                            // 분류의 개수가 5개 이상인 경우 추가하지 않음
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('최대 5개의 분류만 추가할 수 있습니다.'),
-                              ),
-                            );
-                          } else {
-                            // 새로운 분류 추가
-                            units.add(newUnit);
-                            _unitController.clear();
-                          } // 입력 후 텍스트필드 초기화
-                        });
-                      }
-                    },
+                      onSubmitted: (value) {
+                        if (value.isNotEmpty) {
+                          setState(() {
+                            String newUnit = _unitController.text.trim();
+                            if (newUnit.isEmpty) {
+                              // 빈 문자열인 경우 추가하지 않음
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('빈 분류는 추가할 수 없습니다.'),
+                                ),
+                              );
+                            } else if (units.contains(newUnit)) {
+                              // 중복된 이름인 경우 추가하지 않음
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('이미 존재하는 분류입니다.'),
+                                ),
+                              );
+                            } else if (units.length >= 5) {
+                              // 분류의 개수가 5개 이상인 경우 추가하지 않음
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('최대 5개의 분류만 추가할 수 있습니다.'),
+                                ),
+                              );
+                            } else {
+                              // 새로운 분류 추가
+                              units.add(newUnit);
+                              _unitController.clear();
+                            } // 입력 후 텍스트필드 초기화
+                          });
+                        }
+                      },
                     ),
                   ),
                   SizedBox(height: 10),
@@ -212,37 +249,37 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: () => Navigator.of(context).pop(),
                   child: Text('취소'),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setState(() {
-                      if (index == null) {
-                        // 추가 모드
-                        userData.add({
-                          '연번': userData.length + 1,
-                          '기록 카테고리': _recordCategoryController.text,
-                          '분류': List.from(units),
-                          '색상': _selectedColor,
-                        });
-                      } else {
-                        // 수정 모드
-                        userData[index] = {
-                          '연번': userData[index]['연번'],
-                          '기록 카테고리': _recordCategoryController.text,
-                          '분류': List.from(units),
-                          '색상': _selectedColor,
-                        };
-                      }
-                    });
-                    _recordCategoryController.clear();
-                    _unitController.clear();
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: () => _saveCategory(index: index),
                   child: Text(index == null ? '추가' : '수정'),
+                  // onPressed: () {
+                  //   setState(() {
+                  //     if (index == null) {
+                  //       // 추가 모드
+                  //       userData.add({
+                  //         '연번': userData.length + 1,
+                  //         '기록 카테고리': _recordCategoryController.text,
+                  //         '분류': List.from(units),
+                  //         '색상': _selectedColor,
+                  //       });
+                  //     } else {
+                  //       // 수정 모드
+                  //       userData[index] = {
+                  //         '연번': userData[index]['연번'],
+                  //         '기록 카테고리': _recordCategoryController.text,
+                  //         '분류': List.from(units),
+                  //         '색상': _selectedColor,
+                  //       };
+                  //     }
+                  //   });
+                  //   _recordCategoryController.clear();
+                  //   _unitController.clear();
+                  //   Navigator.of(context).pop();
+                  // },
+                  // child: Text(index == null ? '추가' : '수정'),
                 ),
               ],
             );
@@ -331,11 +368,61 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     );
   }
 
-  // 데이터 삭제 함수
-  void _deleteCategory(int index) {
-    setState(() {
-      userData.removeAt(index);
-    });
+  // Firestore에 카테고리를 저장하거나 수정하는 함수
+  Future<void> _saveCategory({int? index}) async {
+    if (_recordCategoryController.text.isEmpty || units.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 이름과 분류를 입력해주세요.')),
+      );
+      return;
+    }
+
+    final category = {
+      'zone': _recordCategoryController.text,
+      'units': units,
+      'color': '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
+    };
+
+    try {
+      if (index == null) {
+        // 새로운 카테고리를 Firestore에 추가
+        await FirebaseFirestore.instance.collection('categories').add(category);
+      } else {
+        // 기존 카테고리를 Firestore에서 수정
+        await FirebaseFirestore.instance
+            .collection('categories')
+            .doc(userData[index]['id'])
+            .update(category);
+      }
+      _loadCategories(); // 업데이트된 카테고리 목록을 다시 로드
+      Navigator.of(context).pop(); // 다이얼로그 닫기
+    } catch (e) {
+      print('Error saving category: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 저장에 실패했습니다. 다시 시도해주세요.')),
+      );
+    }
+  }
+
+  // Firestore에서 카테고리를 삭제하는 함수
+  void _deleteCategory(int index) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('categories')
+          .doc(userData[index]['id'])
+          .delete();
+      setState(() {
+        userData.removeAt(index);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${userData[index]['기록 카테고리']} 삭제됨')),
+      );
+    } catch (e) {
+      print('Error deleting category: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 삭제에 실패했습니다. 다시 시도해주세요.')),
+      );
+    }
   }
 
   @override
@@ -349,7 +436,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
         itemBuilder: (context, index) {
           final record = userData[index];
           return Dismissible(
-              key: Key(record['연번'].toString()), // 각 항목에 고유한 키를 부여
+              key: Key(record['id']), // 각 항목에 고유한 키를 부여
               direction: DismissDirection.endToStart, // 오른쪽에서 왼쪽으로만 스와이프 가능
               onDismissed: (direction) {
                 _deleteCategory(index);
@@ -367,9 +454,6 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                 color: record['색상'] ?? Colors.grey[300],
                 margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 child: ListTile(
-                  // leading: CircleAvatar(
-                  //   child: Text(record['연번'].toString()),
-                  // ),
                   title: Text(
                     record['기록 카테고리'],
                     style: TextStyle(

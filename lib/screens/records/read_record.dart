@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
@@ -16,21 +18,25 @@ class ReadRecord extends StatefulWidget {
 }
 
 class _ReadRecordState extends State<ReadRecord> {
+
+  // Firestore에서 해당 기록을 삭제하는 함수
+  Future<void> _deleteRecord(String recordId) async {
+    try {
+      await FirebaseFirestore.instance.collection('record').doc(recordId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기록이 삭제되었습니다.')),
+      );
+      Navigator.pop(context); // 기록 삭제 후 이전 화면으로 돌아가기
+    } catch (e) {
+      print('Error deleting record: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기록 삭제에 실패했습니다. 다시 시도해주세요.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // final recordTitle = widget.recordData;
-    // final String category =
-    //     widget.recordData['record']['zone'] ?? 'Unknown Category';
-    // final String date = widget.recordData['record']['date'] ?? 'Unknown Date';
-    // final List<Map<String, dynamic>> records = List<Map<String, dynamic>>.from(
-    //     widget.recordData!['record']['records'] ?? []);
-    // if (widget.recordData == null || widget.recordData['record'] == null) {
-    //   return Scaffold(
-    //     appBar: AppBar(title: Text('Record Not Found')),
-    //     body: Center(child: Text('No record data available')),
-    //   );
-    // }
-    // print('전달된 recordId: ${widget.recordId}');
     return Scaffold(
       appBar: AppBar(
         title: Text('기록 보기'),
@@ -57,6 +63,32 @@ class _ReadRecordState extends State<ReadRecord> {
                 // 수정된 데이터가 돌아오면 처리
                 // 현재 화면을 업데이트하거나 데이터를 반영하는 작업
               }
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, ),
+            onPressed: () {
+              // 삭제 버튼을 누르면 다이얼로그 표시
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('기록 삭제'),
+                  content: Text('이 기록을 삭제하시겠습니까?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('취소'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _deleteRecord(widget.recordId); // 삭제 함수 호출
+                      },
+                      child: Text('삭제', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
           SizedBox(
@@ -154,15 +186,37 @@ class _ReadRecordState extends State<ReadRecord> {
                             spacing: 8.0,
                             runSpacing: 8.0,
                             children: rec.images.map((imagePath) {
-                              return Image.network(
-                                imagePath, // URL 경로를 사용하여 이미지 로드
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Text('Error loading image');
-                                },
-                              );
+                              if (imagePath.startsWith('http') || imagePath.startsWith('https')) {
+                                // 원격 이미지 URL일 경우
+                                return Image.network(
+                                  imagePath,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Text('Error loading image');
+                                  },
+                                );
+                              } else if (File(imagePath).existsSync()) {
+                                // 로컬 이미지 파일 경로일 경우
+                                return Image.file(
+                                  File(imagePath),
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Text('Error loading image');
+                                  },
+                                );
+                              } else {
+                                // 알 수 없는 경로의 경우, 기본 이미지나 안내 텍스트 표시
+                                return Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey,
+                                  child: Center(child: Text('Invalid Image Path')),
+                                );
+                              }
                             }).toList(),
                           ),
                           Divider(),
@@ -178,4 +232,5 @@ class _ReadRecordState extends State<ReadRecord> {
       ),
     );
   }
+
 }
