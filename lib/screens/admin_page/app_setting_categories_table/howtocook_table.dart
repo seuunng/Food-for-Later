@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/recipe_method_model.dart';
 
 enum SortState { none, ascending, descending }
 
@@ -8,6 +10,9 @@ class HowtocookTable extends StatefulWidget {
 }
 
 class _HowtocookTableState extends State<HowtocookTable> {
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
   // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '선택', 'state': SortState.none},
@@ -42,7 +47,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
   final TextEditingController _methodNameController = TextEditingController();
 
   // 사용자 데이터를 추가하는 함수
-  void _addFood() {
+  void _addMethod() {
     setState(() {
       userData.add({
         '연번': userData.length + 1,
@@ -55,8 +60,23 @@ class _HowtocookTableState extends State<HowtocookTable> {
     });
   }
 
+  void _addSampleData() async {
+    final newItem = RecipeMethodModel(
+      id: _db.collection('recipe_method_categories').doc().id, // Firestore 문서 ID 자동 생성
+      categories: '', // 대분류 카테고리 예시
+      method: ['끓이기', '데치기', '오븐'], // 소
+    );
+
+    try {
+      await _db.collection('recipe_method_categories').doc(newItem.id).set(newItem.toFirestore());
+      print('데이터 추가 성공');
+    } catch (e) {
+      print('데이터 추가 실패: $e');
+    }
+  }
+
 // 데이터 수정 버튼 클릭 시 호출할 함수
-  void _editFood(int index) {
+  void _editMethod(int index) {
     setState(() {
       // 수정할 데이터 필드로 값 가져오기
       Map<String, dynamic> selectedFood = userData[index];
@@ -223,7 +243,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: _addFood,
+                        onPressed: _addMethod,
                         child: Text('추가'),
                       ),
                     ),
@@ -277,7 +297,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: () => _editFood(row['연번'] - 1), // 수정 버튼 클릭 시
+                        onPressed: () => _editMethod(row['연번'] - 1), // 수정 버튼 클릭 시
                         child: Text('수정'),
                       ),
                     ),
@@ -290,6 +310,10 @@ class _HowtocookTableState extends State<HowtocookTable> {
           ElevatedButton(
             onPressed: selectedRows.isNotEmpty ? _deleteSelectedRows : null,
             child: Text('선택한 항목 삭제'),
+          ),
+          ElevatedButton(
+            onPressed: _addSampleData,
+            child: Text('샘플 데이터 추가'),
           ),
         ],
       ),

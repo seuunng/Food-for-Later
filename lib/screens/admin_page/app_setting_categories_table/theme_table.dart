@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/recipe_thema_model.dart';
 
 enum SortState { none, ascending, descending }
 
@@ -8,6 +10,9 @@ class ThemeTable extends StatefulWidget {
 }
 
 class _ThemeTableState extends State<ThemeTable> {
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
   // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '선택', 'state': SortState.none},
@@ -45,7 +50,7 @@ class _ThemeTableState extends State<ThemeTable> {
   final TextEditingController _themeNameController = TextEditingController();
 
   // 사용자 데이터를 추가하는 함수
-  void _addFood() {
+  void _addTheme() {
     setState(() {
       userData.add({
         '연번': userData.length + 1,
@@ -58,9 +63,21 @@ class _ThemeTableState extends State<ThemeTable> {
       _selectedCategory = null;
     });
   }
+  void _addSampleData() async {
+    final newItem = RecipeThemaModel(
+      id: _db.collection('default_foods_categories').doc().id, // Firestore 문서 ID 자동 생성
+      categories: '흑백요리사', // 대분류 카테고리 예시
+    );
 
+    try {
+      await _db.collection('recipe_thema_categories').doc(newItem.id).set(newItem.toFirestore());
+      print('데이터 추가 성공');
+    } catch (e) {
+      print('데이터 추가 실패: $e');
+    }
+  }
 // 데이터 수정 버튼 클릭 시 호출할 함수
-  void _editFood(int index) {
+  void _editTheme(int index) {
     setState(() {
       // 수정할 데이터 필드로 값 가져오기
       Map<String, dynamic> selectedFood = userData[index];
@@ -228,7 +245,7 @@ class _ThemeTableState extends State<ThemeTable> {
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: _addFood,
+                        onPressed: _addTheme,
                         child: Text('추가'),
                       ),
                     ),
@@ -282,7 +299,7 @@ class _ThemeTableState extends State<ThemeTable> {
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: () => _editFood(row['연번'] - 1), // 수정 버튼 클릭 시
+                        onPressed: () => _editTheme(row['연번'] - 1), // 수정 버튼 클릭 시
                         child: Text('수정'),
                       ),
                     ),
@@ -295,6 +312,10 @@ class _ThemeTableState extends State<ThemeTable> {
           ElevatedButton(
             onPressed: selectedRows.isNotEmpty ? _deleteSelectedRows : null,
             child: Text('선택한 항목 삭제'),
+          ),
+          ElevatedButton(
+            onPressed: _addSampleData,
+            child: Text('샘플 데이터 추가'),
           ),
         ],
       ),

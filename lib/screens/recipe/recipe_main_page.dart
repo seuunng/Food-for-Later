@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/default_foodModel.dart';
+import 'package:food_for_later/models/recipe_method_model.dart';
+import 'package:food_for_later/models/recipe_thema_model.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid_theme.dart';
@@ -19,50 +21,9 @@ class RecipeMainPage extends StatefulWidget {
 class _RecipeMainPageState extends State<RecipeMainPage>
     with SingleTickerProviderStateMixin {
   String searchKeyword = '';
-  // Map<String, List<String>> itemsByCategory = {
-  //   '육류': ['소고기', '돼지고기', '닭고기'],
-  //   '수산물': ['연어', '참치', '고등어'],
-  //   '채소': ['양파', '당근', '감자'],
-  //   '과일': [
-  //     '사과',
-  //     '바나나',
-  //     '포도',
-  //     '메론',
-  //     '자몽',
-  //     '블루베리',
-  //     '라즈베리',
-  //     '딸기',
-  //     '체리',
-  //     '오렌지',
-  //     '골드키위',
-  //     '참외',
-  //     '수박',
-  //     '감',
-  //     '복숭아',
-  //     '앵두',
-  //     '자두',
-  //     '배',
-  //     '코코넛',
-  //     '리치',
-  //     '망고',
-  //     '망고스틴',
-  //     '아보카도',
-  //     '복분자',
-  //     '샤인머스캣',
-  //     '용과',
-  //     '라임',
-  //     '레몬',
-  //     '천도복숭아',
-  //     '파인애플',
-  //     '애플망고',
-  //     '잭프릇',
-  //     '람보탄',
-  //     '아사히베리',
-  //     ''
-  //   ],
-  //   '견과': ['아몬드', '호두', '캐슈넛'],
-  // };
   Map<String, List<String>> itemsByCategory = {};
+  List<RecipeThemaModel> themaCategories = [];
+  Map<String, List<String>> methodCategories = {};
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   final List<Tab> myTabs = <Tab>[
@@ -81,6 +42,8 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     super.initState();
     _tabController = TabController(length: myTabs.length, vsync: this);
     _loadCategoriesFromFirestore(); // Firestore로부터 카테고리 데이터 로드
+    _loadThemaFromFirestore();// Firestore로부터 카테고리 데이터 로드
+    _loadMethodFromFirestore();
   }
 
   void _loadCategoriesFromFirestore() async {
@@ -95,6 +58,48 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         itemsByCategory = {
           for (var category in categories)
             category.categories: category.itemsByCategory,
+        };
+      });
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  void _loadThemaFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('recipe_thema_categories').get();
+      final themaCategories = snapshot.docs.map((doc) {
+        return RecipeThemaModel.fromFirestore(doc);
+      }).toList();
+
+      setState(() {
+        this.themaCategories = themaCategories;
+      });
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  void _loadMethodFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('recipe_method_categories').get();
+      final categories = snapshot.docs.map((doc) {
+        return RecipeMethodModel.fromFirestore(doc);
+      }).toList();
+
+      // itemsByCategory에 데이터를 추가
+      setState(() {
+        methodCategories = {
+          for (var category in categories)
+            category.categories: category.method,
         };
       });
 
@@ -185,24 +190,12 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                   itemsByCategory: itemsByCategory, // Firestore에서 불러온 데이터
                 ),
                 RecipeGridTheme(
-                    categories: [
-                      '다이어트',
-                      '편스토랑',
-                      '집밥백선생',
-                      '리틀포레스트',
-                      '손님대접'
-                    ],
+                  categories: themaCategories.map((thema) => thema.categories).toList(),
                 ),
                 RecipeGrid(
-                    categories: [
-                    ],
-                    itemsByCategory:{'': [
-                      '끓이기',
-                      '데치기',
-                      '에어프라이어',
-                      '오븐',
-                      '비조리'
-                    ]}),
+                    categories: [],
+                    itemsByCategory: methodCategories,
+                ),
               ],
             ),
           ),

@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/recipe_method_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 
 class RecipeSearchSettings extends StatefulWidget {
@@ -7,17 +9,44 @@ class RecipeSearchSettings extends StatefulWidget {
 }
 
 class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
   List<String> selectedSources = [];
-  List<String> selectedcookingMethods = [];
-  List<String> selectedcookingTools = [];
+  List<String> selectedCookingMethods = [];
 
   TextEditingController excludeKeywordController = TextEditingController();
 
   List<String> sources = ['인터넷', '책', '"이따 뭐 먹지" 레시피', '기타'];
-  List<String> cookingMethods = ['굽기', '튀기기', '끓이기', '찜'];
-  List<String> cookingTools = ['오븐', '프라이팬', '냄비', '찜기'];
+  Map<String, List<String>> cookingMethods = {};
 
   List<String> excludeKeywords = [];
+  @override
+  void initState() {
+    super.initState();_loadMethodFromFirestore();
+  }
+  void _loadMethodFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('recipe_method_categories').get();
+      final categories = snapshot.docs.map((doc) {
+        return RecipeMethodModel.fromFirestore(doc);
+      }).toList();
+
+      // itemsByCategory에 데이터를 추가
+      setState(() {
+        cookingMethods = {
+          for (var category in categories)
+            category.categories: category.method,
+        };
+      });
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,60 +59,12 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 조리 도구 선택
-            Text(
-              '조리 도구 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              children: cookingTools.map((item) {
-                final isSelected = selectedcookingTools.contains(item);
-                return ChoiceChip(
-                  label: Text(item),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        selectedcookingTools.add(item);
-                      } else {
-                        selectedcookingTools.remove(item);
-                      }
-                    });
-                  },
-                  selectedColor: Colors.deepPurple[100],
-                  backgroundColor: Colors.grey[200],
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
             Text(
               '조리 방법 선택',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              children: cookingMethods.map((item) {
-                final isSelected = selectedcookingMethods.contains(item);
-                return ChoiceChip(
-                  label: Text(item),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        selectedcookingMethods.add(item);
-                      } else {
-                        selectedcookingMethods.remove(item);
-                      }
-                    });
-                  },
-                  selectedColor: Colors.deepPurple[100],
-                  backgroundColor: Colors.grey[200],
-                );
-              }).toList(),
-            ),
+            for (var entry in cookingMethods.entries) // Map의 각 entry를 순회하며 빌드
+              _buildMethodCategory(entry.key, entry.value),
             SizedBox(height: 16),
             // 레시피 출처 선택
             Text(
@@ -122,13 +103,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             TextField(
               controller: excludeKeywordController,
               decoration: InputDecoration(
-                hintText: '제외할 검색어를 입력하세요',
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: () {
-                    _addExcludeKeyword();
-                  },
-                ),
+                hintText: '제외할 검색어를 입력하세요'
               ),
               onSubmitted: (value) {
                 _addExcludeKeyword();
@@ -139,7 +114,19 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
               spacing: 8.0,
               children: excludeKeywords.map((keyword) {
                 return Chip(
-                  label: Text(keyword),
+                  label: Text(
+                    keyword,
+                    style: TextStyle(
+                      color: Colors.red, // 텍스트 색상 빨간색으로 변경
+                      fontWeight: FontWeight.bold, // 강조를 위해 굵게 설정
+                    ),
+                  ),
+                  shape: StadiumBorder(
+                    side: BorderSide(
+                      color: Colors.red, // 테두리 색상 빨간색으로 변경
+                      width: 1.5, // 테두리 두께 조절
+                    ),
+                  ),
                   onDeleted: () {
                     setState(() {
                       excludeKeywords.remove(keyword);
@@ -187,5 +174,36 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
       });
       excludeKeywordController.clear();
     }
+  }
+  // 조리 방법 카테고리 빌드 함수
+  Widget _buildMethodCategory(String category, List<String> methods) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 4.0,
+          children: methods.map((method) {
+            final isSelected = selectedCookingMethods.contains(method);
+            return ChoiceChip(
+              label: Text(method),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    selectedCookingMethods.add(method);
+                  } else {
+                    selectedCookingMethods.remove(method);
+                  }
+                });
+              },
+              selectedColor: Colors.deepPurple[100],
+              backgroundColor: Colors.grey[200],
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 8),
+      ],
+    );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
 
@@ -11,6 +12,8 @@ class AddRecipe extends StatefulWidget {
 }
 
 class _AddRecipeState extends State<AddRecipe> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
   late TextEditingController recipeNameController;
   late TextEditingController minuteController;
   late TextEditingController stepDescriptionController;
@@ -27,6 +30,14 @@ class _AddRecipeState extends State<AddRecipe> {
   late List<String> cookingSteps;
   late List<String> themes;
   late List<Map<String, String>> stepsWithImages;
+
+  List<String> availableIngredients = []; // Firestore에서 로드한 재료 목록
+  List<String> availableMethods = []; // Firestore에서 로드한 조리 방법 목록
+  List<String> availableThemes = []; // Firestore에서 로드한 테마 목록
+
+  List<String> filteredIngredients = []; // 필터링된 재료 목록
+  List<String> filteredMethods = []; // 필터링된 조리 방법 목록
+  List<String> filteredThemes = []; // 필터링된 테마 목록
 
   @override
   void initState() {
@@ -58,8 +69,113 @@ class _AddRecipeState extends State<AddRecipe> {
     // cookingSteps = List<String>.from(widget.recipeData?['cookingSteps'] ?? []);
     stepsWithImages =
     List<Map<String, String>>.from(widget.recipeData?['recipeSteps'] ?? []);
+
+    ingredients = [];
+    cookingSteps = [];
+    themes = [];
+    stepsWithImages = [];
+
+    _loadDataFromFirestore();
   }
 
+  Future<void> _loadDataFromFirestore() async {
+    try {
+      // 재료 데이터 로드
+      final ingredientsSnapshot = await _db.collection('ingredients').get();
+      final List<String> ingredientsData = ingredientsSnapshot.docs
+          .map((doc) => doc['name'] as String)
+          .toList();
+
+      // 조리 방법 데이터 로드
+      final methodsSnapshot = await _db.collection('cooking_methods').get();
+      final List<String> methodsData = methodsSnapshot.docs
+          .map((doc) => doc['name'] as String)
+          .toList();
+
+      // 테마 데이터 로드
+      final themesSnapshot = await _db.collection('themes').get();
+      final List<String> themesData = themesSnapshot.docs
+          .map((doc) => doc['name'] as String)
+          .toList();
+
+      setState(() {
+        availableIngredients = ingredientsData;
+        availableMethods = methodsData;
+        availableThemes = themesData;
+
+        // 초기화 시 전체 데이터를 필터링된 목록으로 설정
+        filteredIngredients = availableIngredients;
+        filteredMethods = availableMethods;
+        filteredThemes = availableThemes;
+      });
+    } catch (e) {
+      print('데이터 로드 실패: $e');
+    }
+  }
+  // 검색어에 따른 필터링 기능
+  void _filterItems(String query, List<String> sourceList, List<String> targetList) {
+    setState(() {
+      if (query.isEmpty) {
+        targetList.clear();
+        targetList.addAll(sourceList);
+      } else {
+        targetList.clear();
+        targetList.addAll(sourceList.where((item) => item.contains(query)).toList());
+      }
+    });
+  }
+
+  // 선택할 수 있는 검색 입력 필드
+  Widget _buildSearchableDropdown(
+      String title,
+      TextEditingController searchController,
+      List<String> items,
+      List<String> selectedItems,
+      Function(String) onItemSelected) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Spacer(),
+            SizedBox(
+              width: 200,
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: '$title 검색',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                ),
+                onChanged: (value) {
+                  _filterItems(value, items, items);
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: items.map((item) {
+            return GestureDetector(
+              onTap: () {
+                onItemSelected(item);
+              },
+              child: Chip(
+                label: Text(item),
+                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+              ),
+            );
+          }).toList(),
+        ),
+        Divider(),
+      ],
+    );
+  }
   // 입력필드
   Widget _buildTextField(String label, TextEditingController controller,
       {bool isNumber = false}) {
@@ -310,12 +426,12 @@ class _AddRecipeState extends State<AddRecipe> {
               ],
             ),
             SizedBox(height: 20),
-            _buildKeywordInputSection('재료', ingredientsController, ingredients,
-                    (String newItem) {
+            _buildSearchableDropdown('재료', ingredientsController, filteredIngredients, ingredients,
+                    (selectedItem) {
                   setState(() {
-                    ingredients.add(newItem);
+                    ingredients.add(selectedItem);
                   });
-                }), // 아이콘
+                }),
             SizedBox(height: 10),
             _buildKeywordInputSection('조리 방법', methodsController, cookingSteps,
                     (String newItem) {
