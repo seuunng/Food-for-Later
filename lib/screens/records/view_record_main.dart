@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:food_for_later/screens/recipe/read_recipe.dart';
-import 'package:food_for_later/screens/recipe/view_recipe_list.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/records_album_view.dart';
 import 'package:food_for_later/screens/records/records_calendar_view.dart';

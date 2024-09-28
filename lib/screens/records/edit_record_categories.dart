@@ -73,7 +73,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   void _loadCategories() async {
     try {
       final snapshot =
-          await FirebaseFirestore.instance.collection('categories').get();
+          await FirebaseFirestore.instance.collection('record_categories').get();
       final categories = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
@@ -386,11 +386,11 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     try {
       if (index == null) {
         // 새로운 카테고리를 Firestore에 추가
-        await FirebaseFirestore.instance.collection('categories').add(category);
+        await FirebaseFirestore.instance.collection('record_categories').add(category);
       } else {
         // 기존 카테고리를 Firestore에서 수정
         await FirebaseFirestore.instance
-            .collection('categories')
+            .collection('record_categories')
             .doc(userData[index]['id'])
             .update(category);
       }
@@ -408,7 +408,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   void _deleteCategory(int index) async {
     try {
       await FirebaseFirestore.instance
-          .collection('categories')
+          .collection('record_categories')
           .doc(userData[index]['id'])
           .delete();
       setState(() {

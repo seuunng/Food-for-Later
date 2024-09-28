@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-// import 'dart:nativewrappers/_internal/vm/lib/typed_data_patch.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -8,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/models/recordModel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:uuid/uuid.dart';
 
@@ -22,7 +19,6 @@ class CreateRecord extends StatefulWidget {
 }
 
 class _CreateRecordState extends State<CreateRecord> {
-  // late TextEditingController stepDescriptionController;
   late TextEditingController categoryController;
   late TextEditingController fieldController;
   late TextEditingController contentsController;
@@ -43,6 +39,21 @@ class _CreateRecordState extends State<CreateRecord> {
   List<AssetEntity> images = [];
   List<String>? _imageFiles = [];
 
+  void _initializeValues() {
+    if (categoryFieldMap.isNotEmpty) {
+      selectedCategory = categoryFieldMap.keys.first;
+      selectedField = categoryFieldMap[selectedCategory]?['fields'] != null &&
+          (categoryFieldMap[selectedCategory]!['fields'] as List<String>).isNotEmpty
+          ? categoryFieldMap[selectedCategory]!['fields'].first
+          : '';
+      selectedColor = categoryFieldMap[selectedCategory]?['color'] ?? Colors.grey;
+    } else {
+      selectedCategory = '식단'; // 기본 카테고리
+      selectedField = ''; // 기본 필드
+      selectedColor = Colors.grey; // 기본 색상
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -59,13 +70,16 @@ class _CreateRecordState extends State<CreateRecord> {
       // 추가 모드일 경우 현재 날짜 및 기본값 초기화
       dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate);
     }
-    _loadCategories(); // Firestore에서 카테고리 데이터 로드
+    _initializeValues();
+    _loadCategories();
   }
 
   // Firestore에서 카테고리 데이터를 불러오는 함수
   void _loadCategories() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('categories').get();
+      final snapshot = await FirebaseFirestore.instance.collection('record_categories').get();
+
+      if (snapshot.docs.isNotEmpty) {
       final categories = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
@@ -86,14 +100,22 @@ class _CreateRecordState extends State<CreateRecord> {
             }
         };
         // 기본값 설정
+        print(categoryFieldMap);
+
         if (categoryFieldMap.isNotEmpty) {
-          selectedCategory = categoryFieldMap.keys.first;
+          selectedCategory = categoryFieldMap.keys.firstWhere(
+                (key) => key.isNotEmpty,
+            orElse: () => '식단', // 기본값 설정
+          );
           selectedField = categoryFieldMap[selectedCategory]!['fields'].isNotEmpty
               ? categoryFieldMap[selectedCategory]!['fields'].first
               : '';
           selectedColor = categoryFieldMap[selectedCategory]!['color'];
         }
       });
+      } else {
+        print('카테고리 데이터가 없습니다.');
+      }
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,37 +156,42 @@ class _CreateRecordState extends State<CreateRecord> {
   // 이미지를 선택하는 메서드
   Future<void> _pickImages() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    final List<XFile>? pickedFiles =
+        await picker.pickMultiImage();
 
-    if (pickedFile == null) {
+    if (pickedFiles == null || pickedFiles.isEmpty) {
       // 이미지 선택이 취소된 경우
       print('No image selected.');
       return;
     }
 
-    // 중복된 이미지 추가 제한
-    if (_imageFiles!.any((image) => image == pickedFile.path)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('이미 추가된 이미지입니다.'),
-        ),
-      );
-      return;
-    }
-    // 한 기록에 최대 4개의 사진만 추가할 수 있도록 제한
-    if (_imageFiles != null && _imageFiles!.length >= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('한 기록당 최대 4개의 사진만 추가할 수 있습니다.'),
-        ),
-      );
-      return; // 4개 초과 시 추가하지 않음
+    if (_imageFiles == null) {
+      _imageFiles = [];
     }
 
-    setState(() {
-      _imageFiles!.add(pickedFile.path); // 로컬 경로를 XFile 객체로 변환하여 추가
-    });
+    // 한 기록에 최대 4개의 사진만 추가할 수 있도록 제한
+    for (XFile file in pickedFiles) {
+      if (_imageFiles!.length >= 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('한 기록당 최대 4개의 사진만 추가할 수 있습니다.'),
+          ),
+        );
+        break;
+      }
+
+      if (!_imageFiles!.contains(file.path)) {
+        setState(() {
+          _imageFiles!.add(file.path); // 로컬 경로를 XFile 객체로 변환하여 추가
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('이미 추가된 이미지입니다.'),
+          ),
+        );
+      }
+    }
   }
 
 // 이미지 업로드 메서드
@@ -200,24 +227,21 @@ class _CreateRecordState extends State<CreateRecord> {
 
 // 저장 버튼 누르면 레시피 추가 또는 수정 처리
   void _saveRecord() async {
+    if (selectedField.isEmpty || selectedContents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('필수 입력 항목을 입력하세요.')),
+      );
+      return;
+    }
+
     List<String> imageUrls = await _uploadImages();
 
-    // 이미지를 업로드한 후, recordsWithImages에 있는 이미지 경로를 파이어스토리지 URL로 교체합니다.
-    if (imageUrls.isNotEmpty) {
-      setState(() {
-        recordsWithImages = recordsWithImages.map((record) {
-          return {
-            'field': record['field'],
-            'contents': record['contents'],
-            'images': [
-              ...(record['images'] as List<dynamic>),
-              ...imageUrls,
-            ],
-          };
-        }).toList();
-      });
+    if (imageUrls.isEmpty && _imageFiles!.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이미지 업로드에 실패했습니다.')),
+      );
+      return;
     }
-    ;
 
     List<RecordDetail> recordDetails = recordsWithImages.map((record) {
       return RecordDetail(
@@ -260,6 +284,15 @@ class _CreateRecordState extends State<CreateRecord> {
 
   @override
   Widget build(BuildContext context) {
+    // null 체크 추가
+    if (categoryFieldMap.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text('기록하기')),
+        body: Center(
+          child: Text('카테고리 데이터가 없습니다.'),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditing ? '기록 수정' : '기록하기'),

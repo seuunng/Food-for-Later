@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/default_foodModel.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:intl/intl.dart';
@@ -7,13 +9,13 @@ class AddItem extends StatefulWidget {
   final String pageTitle;
   final String addButton;
   final List<String> basicFoodsCategories;
-  final Map<String, List<String>> itemsByCategory;
+  // final Map<String, List<String>> itemsByCategory;
   final String fridgeFieldIndex;
 
   AddItem({
     required this.pageTitle,
     required this.basicFoodsCategories,
-    required this.itemsByCategory,
+    // required this.itemsByCategory,
     required this.addButton,
     required this.fridgeFieldIndex,
   });
@@ -21,6 +23,9 @@ class AddItem extends StatefulWidget {
   @override
   _AddItemState createState() => _AddItemState();
 }
+
+Map<String, List<String>> itemsByCategory = {};
+final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 class _AddItemState extends State<AddItem> {
   String? selectedCategory;
@@ -36,8 +41,8 @@ class _AddItemState extends State<AddItem> {
 
   // 아이템 목록에서 중복된 값이 있는지 확인 후 제거
   void removeDuplicates() {
-    widget.itemsByCategory.forEach((category, items) {
-      widget.itemsByCategory[category] = items.toSet().toList();
+    itemsByCategory.forEach((category, items) {
+      itemsByCategory[category] = items.toSet().toList();
     });
   }
 
@@ -46,6 +51,34 @@ class _AddItemState extends State<AddItem> {
   void initState() {
     super.initState();
     removeDuplicates(); // 중복 제거 함수 호출
+    _loadCategoriesFromFirestore();
+  }
+
+  void _loadCategoriesFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('default_foods_categories').get();
+      final categories = snapshot.docs.map((doc) {
+        return DefaultFoodModel.fromFirestore(doc);
+      }).toList();
+
+      // itemsByCategory에 데이터를 추가
+      setState(() {
+        itemsByCategory = {
+          for (var category in categories)
+            category.categories: category.itemsByCategory,
+        };
+      });
+
+      // 데이터 확인을 위한 출력
+      print('categories: $categories');
+      print('Items by Category: $itemsByCategory');
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
   }
 
   // 현재 날짜
@@ -105,7 +138,7 @@ class _AddItemState extends State<AddItem> {
     List<String> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
-      widget.itemsByCategory.forEach((category, items) {
+      itemsByCategory.forEach((category, items) {
         tempFilteredItems.addAll(
           items.where((item) => item.toLowerCase().contains(searchKeyword)),
         );
@@ -191,7 +224,7 @@ class _AddItemState extends State<AddItem> {
         if (selectedCategory != null) {
           deletedItems.addAll(selectedItems);
 
-          widget.itemsByCategory[selectedCategory!]!.removeWhere(
+          itemsByCategory[selectedCategory!]!.removeWhere(
                   (item) => selectedItems.contains(item));
         }
         selectedItems.clear(); // 선택된 아이템 목록 초기화
@@ -251,9 +284,9 @@ class _AddItemState extends State<AddItem> {
           mainAxisSpacing: 8.0,
           childAspectRatio: 1,
         ),
-        itemCount: widget.basicFoodsCategories.length,
+        itemCount: itemsByCategory.keys.length,
         itemBuilder: (context, index) {
-          String category = widget.basicFoodsCategories[index];
+          String category = itemsByCategory.keys.elementAt(index);
           // 카테고리 그리드 렌더링
           return GestureDetector(
             onTap: () {
@@ -290,7 +323,7 @@ class _AddItemState extends State<AddItem> {
     Widget _buildCategoryItemsGrid() {
       List<String> items = filteredItems.isNotEmpty
           ? filteredItems
-          : widget.itemsByCategory[selectedCategory!] ?? [];
+          : itemsByCategory[selectedCategory!] ?? [];
 
       return GridView.builder(
         shrinkWrap: true,

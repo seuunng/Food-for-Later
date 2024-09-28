@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/default_foodModel.dart';
 
 enum SortState { none, ascending, descending }
 
@@ -8,6 +10,9 @@ class FoodsTable extends StatefulWidget {
 }
 
 class _FoodsTableState extends State<FoodsTable> {
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
   // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '선택', 'state': SortState.none},
@@ -95,6 +100,25 @@ class _FoodsTableState extends State<FoodsTable> {
     });
   }
 
+  void _addSampleData() async {
+    final newItem = DefaultFoodModel(
+      id: _db.collection('default_foods_categories').doc().id, // Firestore 문서 ID 자동 생성
+      categories: '육류', // 대분류 카테고리 예시
+      itemsByCategory: ['소고기', '돼지고기', '닭고기'], // 소분류 예시
+      isDisabled: false,
+      isDefaultFridgeCategory: true,
+      isShoppingListCategory: true,
+      expirationDate: DateTime.now().add(Duration(days: 30)), // 현재 날짜로부터 30일 뒤로 설정
+      shelfLife: DateTime.now().add(Duration(days: 60)), // 현재 날짜로부터 60일 뒤로 설정
+    );
+
+    try {
+      await _db.collection('default_foods_categories').doc(newItem.id).set(newItem.toFirestore());
+      print('데이터 추가 성공');
+    } catch (e) {
+      print('데이터 추가 실패: $e');
+    }
+  }
 // 데이터 수정 버튼 클릭 시 호출할 함수
   void _editFood(int index) {
     setState(() {
@@ -508,8 +532,14 @@ class _FoodsTableState extends State<FoodsTable> {
             onPressed: selectedRows.isNotEmpty ? _deleteSelectedRows : null,
             child: Text('선택한 항목 삭제'),
           ),
+          ElevatedButton(
+              onPressed: _addSampleData,
+              child: Text('샘플 데이터 추가'),
+            ),
         ],
+
       ),
+
     );
   }
 }

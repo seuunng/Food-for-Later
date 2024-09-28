@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/default_foodModel.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid_theme.dart';
@@ -17,50 +19,51 @@ class RecipeMainPage extends StatefulWidget {
 class _RecipeMainPageState extends State<RecipeMainPage>
     with SingleTickerProviderStateMixin {
   String searchKeyword = '';
-  Map<String, List<String>> itemsByCategory = {
-    '육류': ['소고기', '돼지고기', '닭고기'],
-    '수산물': ['연어', '참치', '고등어'],
-    '채소': ['양파', '당근', '감자'],
-    '과일': [
-      '사과',
-      '바나나',
-      '포도',
-      '메론',
-      '자몽',
-      '블루베리',
-      '라즈베리',
-      '딸기',
-      '체리',
-      '오렌지',
-      '골드키위',
-      '참외',
-      '수박',
-      '감',
-      '복숭아',
-      '앵두',
-      '자두',
-      '배',
-      '코코넛',
-      '리치',
-      '망고',
-      '망고스틴',
-      '아보카도',
-      '복분자',
-      '샤인머스캣',
-      '용과',
-      '라임',
-      '레몬',
-      '천도복숭아',
-      '파인애플',
-      '애플망고',
-      '잭프릇',
-      '람보탄',
-      '아사히베리',
-      ''
-    ],
-    '견과': ['아몬드', '호두', '캐슈넛'],
-  };
-
+  // Map<String, List<String>> itemsByCategory = {
+  //   '육류': ['소고기', '돼지고기', '닭고기'],
+  //   '수산물': ['연어', '참치', '고등어'],
+  //   '채소': ['양파', '당근', '감자'],
+  //   '과일': [
+  //     '사과',
+  //     '바나나',
+  //     '포도',
+  //     '메론',
+  //     '자몽',
+  //     '블루베리',
+  //     '라즈베리',
+  //     '딸기',
+  //     '체리',
+  //     '오렌지',
+  //     '골드키위',
+  //     '참외',
+  //     '수박',
+  //     '감',
+  //     '복숭아',
+  //     '앵두',
+  //     '자두',
+  //     '배',
+  //     '코코넛',
+  //     '리치',
+  //     '망고',
+  //     '망고스틴',
+  //     '아보카도',
+  //     '복분자',
+  //     '샤인머스캣',
+  //     '용과',
+  //     '라임',
+  //     '레몬',
+  //     '천도복숭아',
+  //     '파인애플',
+  //     '애플망고',
+  //     '잭프릇',
+  //     '람보탄',
+  //     '아사히베리',
+  //     ''
+  //   ],
+  //   '견과': ['아몬드', '호두', '캐슈넛'],
+  // };
+  Map<String, List<String>> itemsByCategory = {};
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   final List<Tab> myTabs = <Tab>[
     Tab(text: '재료별'),
@@ -77,6 +80,30 @@ class _RecipeMainPageState extends State<RecipeMainPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: myTabs.length, vsync: this);
+    _loadCategoriesFromFirestore(); // Firestore로부터 카테고리 데이터 로드
+  }
+
+  void _loadCategoriesFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('default_foods_categories').get();
+      final categories = snapshot.docs.map((doc) {
+        return DefaultFoodModel.fromFirestore(doc);
+      }).toList();
+
+      // itemsByCategory에 데이터를 추가
+      setState(() {
+        itemsByCategory = {
+          for (var category in categories)
+            category.categories: category.itemsByCategory,
+        };
+      });
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
   }
 
   void _searchItems(String keyword) {
@@ -128,7 +155,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                             ),
                           ),
                         );
-
                     },
                   ),
                 ),
@@ -155,23 +181,8 @@ class _RecipeMainPageState extends State<RecipeMainPage>
               controller: _tabController,
               children: [
                 RecipeGrid(
-                    categories: [
-                      '육류',
-                      '수산물',
-                      '채소',
-                      '과일',
-                      '견과'
-                    ],
-                    itemsByCategory:{
-                      '육류': ['소고기', '돼지고기', '닭고기'],
-                      '수산물': ['연어', '참치', '고등어'],
-                      '채소': ['양파', '당근', '감자'],
-                      '과일': [
-                        '사과', '바나나', '포도', '메론', '자몽', '블루베리', '라즈베리', '딸기', '체리', '오렌지', '골드키위', '참외', '수박', '감',
-                        '복숭아', '앵두', '자두', '배', '코코넛', '리치', '망고', '망고스틴', '아보카도', '복분자', '샤인머스캣', '용과', '라임', '레몬', '천도복숭아', '파인애플', '애플망고', '잭프릇', '람보탄', '아사히베리', ''
-                      ],
-                      '견과': ['아몬드', '호두', '캐슈넛'],
-                    }
+                  categories: itemsByCategory.keys.toList(), // 카테고리 목록
+                  itemsByCategory: itemsByCategory, // Firestore에서 불러온 데이터
                 ),
                 RecipeGridTheme(
                     categories: [
