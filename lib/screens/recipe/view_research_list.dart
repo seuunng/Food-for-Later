@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:food_for_later/screens/recipe/view_recipe_list.dart';
 
 class ViewResearchList extends StatefulWidget {
+
   final List<String> category;
 
   ViewResearchList({
@@ -14,6 +17,7 @@ class ViewResearchList extends StatefulWidget {
 }
 
 class _ViewResearchListState extends State<ViewResearchList> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
   String? selectedCategory;
   Map<String, List<String>> itemsByCategory = {
     '집밥백선생': ['소고기', '돼지고기', '닭고기'],
@@ -21,7 +25,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
     '다이어트': ['참치오이비빔밥', '독일국수', '오트밀미역죽', '버섯리조또']
   };
 
-  List<String> keywords = ['고기', '해산물', '다이어트'];
+  List<String> keywords = [];
 
   @override
   void initState() {
@@ -33,7 +37,21 @@ class _ViewResearchListState extends State<ViewResearchList> {
   // 선택된 아이템 상태를 관리할 리스트
   List<String> getRecipes() {
     List<String> allRecipes = [];
+    Future<List<RecipeModel>> fetchRecipesByKeywords(List<String> keywords) async {
+      try {
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('recipes')
+            .where('ingredients', arrayContainsAny: keywords)
+            .get();
 
+        return querySnapshot.docs
+            .map((doc) => RecipeModel.fromFirestore(doc.data()))
+            .toList();
+      } catch (e) {
+        print('레시피 불러오기 실패: $e');
+        return [];
+      }
+    }
     for (String category in widget.category) {
       if (itemsByCategory.containsKey(category)) {
         allRecipes.addAll(itemsByCategory[category]!);
@@ -41,6 +59,24 @@ class _ViewResearchListState extends State<ViewResearchList> {
     }
 
     return allRecipes;
+  }
+
+  Future<List<RecipeModel>> fetchRecipesByKeywords(List<String> keywords) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('recipes')
+          .where('ingredients', arrayContainsAny: keywords)
+          .where('themes', arrayContainsAny: keywords)
+          .where('methods', arrayContainsAny: keywords)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => RecipeModel.fromFirestore(doc.data()))
+          .toList();
+    } catch (e) {
+      print('레시피 불러오기 실패: $e');
+      return [];
+    }
   }
 
   Widget _buildKeywords() {

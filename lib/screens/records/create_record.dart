@@ -209,7 +209,7 @@ class _CreateRecordState extends State<CreateRecord> {
         final uniqueFileName =
             'record_image_${DateTime.now().millisecondsSinceEpoch}';
         final ref =
-            FirebaseStorage.instance.ref().child('images/$uniqueFileName');
+            FirebaseStorage.instance.ref().child('images/records/$uniqueFileName');
 
         final SettableMetadata metadata = SettableMetadata(
           contentType: 'image/jpeg', // 이미지 형식에 맞게 설정

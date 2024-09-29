@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddRecipe extends StatefulWidget {
   final Map<String, dynamic>? recipeData; // 수정 시 전달될 레시피 데이터
@@ -24,7 +29,7 @@ class _AddRecipeState extends State<AddRecipe> {
   late TextEditingController servingsController;
   late TextEditingController difficultyController;
 
-  late int selectedServings;
+  late int selectedServings = 1;
   late String selectedDifficulty;
   late List<String> ingredients;
   late List<String> cookingSteps;
@@ -42,6 +47,8 @@ class _AddRecipeState extends State<AddRecipe> {
   List<String> selectedIngredients = [];
   List<String> selectedMethods = [];
   List<String> selectedThemes = []; // 선택된 재료 목록
+
+  List<String>? _imageFiles = [];
 
   @override
   void initState() {
@@ -68,7 +75,7 @@ class _AddRecipeState extends State<AddRecipe> {
     cookingSteps = List<String>.from(widget.recipeData?['cookingSteps'] ?? []);
     themes = List<String>.from(widget.recipeData?['themes'] ?? []);
     ingredients = List<String>.from(widget.recipeData?['ingredients'] ?? []);
-    // selectedServings = widget.recipeData?['servings'] ?? 0;
+    selectedServings = widget.recipeData?['servings'] ?? 0;
     selectedDifficulty = widget.recipeData?['difficulty']?.toString() ?? '중';
     // cookingSteps = List<String>.from(widget.recipeData?['cookingSteps'] ?? []);
     stepsWithImages =
@@ -108,14 +115,11 @@ class _AddRecipeState extends State<AddRecipe> {
               as String) // 각 문서의 'categories' 필드를 String으로 가져옴
           .toList();
 
-      // 데이터 로드 후 출력
-      print('로드된 재료 데이터: $ingredientsData');
-
       setState(() {
         availableIngredients = ingredientsData;
         availableMethods = methodsData;
         availableThemes = themesData;
-        filteredIngredients = ingredientsData;
+        filteredIngredients = [];
         filteredMethods = methodsData;
         filteredThemes = themesData;
       });
@@ -126,8 +130,6 @@ class _AddRecipeState extends State<AddRecipe> {
 
   // 검색어에 따른 필터링 기능
   void _filterItems(String query, List<String> sourceList, String type) {
-    print("입력된 검색어: $query"); // 검색어 출력
-    print("원본 데이터: $sourceList"); // 원본 데이터 출력
     setState(() {
       if (query.trim().isEmpty) {
         if (type == 'ingredients') {
@@ -157,15 +159,13 @@ class _AddRecipeState extends State<AddRecipe> {
         }
       }
     });
-    print(
-        "필터링된 $type: ${type == 'ingredients' ? filteredIngredients : type == 'methods' ? filteredMethods : filteredThemes}");
-  }
+   }
 
   // 선택할 수 있는 검색 입력 필드
   Widget _buildSearchableDropdown(
     String title,
     List<String> items,
-      TextEditingController searchController,
+    TextEditingController searchController,
     Function(String) onItemSelected,
     String type,
   ) {
@@ -189,30 +189,59 @@ class _AddRecipeState extends State<AddRecipe> {
                       EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                 ),
                 onChanged: (value) {
-                  _filterItems(value, items, type);
+                  // 검색어가 비어있으면 빈 리스트로 설정
+                  if (value.isEmpty) {
+                    setState(() {
+                      filteredIngredients = [];
+                    });
+                  } else {
+                    _filterItems(value, items, type);
+                  }
                 },
               ),
             ),
           ],
         ),
         SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: items.map((item) {
-            return GestureDetector(
-              onTap: () {
-                onItemSelected(item);
-                searchController.clear();
-                _filterItems('', items, type);
-              },
-              child: Chip(
-                label: Text(item),
-                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
-              ),
-            );
-          }).toList(),
-        ),
-        Divider(),
+        if (filteredIngredients.isNotEmpty)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              // spacing: 8,
+              children: filteredIngredients.map((item) {
+                final bool isSelected = selectedIngredients.contains(item);
+                return GestureDetector(
+                  onTap: () {
+                    onItemSelected(item);
+                    searchController.clear();
+                    setState(() {
+                      filteredIngredients = [];
+                    });
+                  },
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: 2.0), // 칩들 간의 간격
+                    child: Chip(
+                      label: Text(
+                        item,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.black, // 선택된 항목은 글씨 색을 흰색으로
+                        ),
+                      ),
+                      backgroundColor: isSelected
+                          ? Colors.blue
+                          : Colors.transparent, // 선택된 항목은 배경색을 파란색으로
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 4.0, vertical: 0.0), // 글자와 테두리 사이의 여백 줄이기
+                      labelPadding: EdgeInsets.symmetric(
+                          horizontal: 4.0), // 글자와 칩 사이의 여백 줄이기
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
       ],
     );
   }
@@ -224,7 +253,8 @@ class _AddRecipeState extends State<AddRecipe> {
       children: selectedItems.map((item) {
         return Chip(
           label: Text(item),
-          padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+          padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 0.0),
+          labelPadding: EdgeInsets.symmetric(horizontal: 1.0),
           deleteIcon: Icon(Icons.close),
           onDeleted: () {
             setState(() {
@@ -260,6 +290,8 @@ class _AddRecipeState extends State<AddRecipe> {
   Widget _buildHorizontalScrollSection(
     String title,
     List<String> items,
+    List<String> filteredItems, // 검색된 항목을 필터링해서 보여주기 위한 리스트
+    TextEditingController searchController,
     List<String> selectedItems,
     Function(String) onItemSelected,
     String type,
@@ -267,15 +299,36 @@ class _AddRecipeState extends State<AddRecipe> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Divider(),
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Spacer(),
+            SizedBox(
+              width: 200,
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: '$title 검색',
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                ),
+                onChanged: (value) {
+                  _filterItems(value, items, type); // 검색어 입력 시 항목 필터링
+                },
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: items.map((item) {
+            children: filteredItems.map((item) {
+              final bool isSelected = selectedItems.contains(item);
               return GestureDetector(
                 onTap: () {
                   if (!selectedItems.contains(item)) {
@@ -284,15 +337,30 @@ class _AddRecipeState extends State<AddRecipe> {
                     });
                   }
                 },
-                child: Chip(
-                  label: Text(item),
-                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 2.0), // 칩들 간의 간격
+                  child: Chip(
+                    label: Text(
+                      item,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.black, // 선택된 항목은 글씨 색을 흰색으로
+                      ),
+                    ),
+                    backgroundColor: isSelected
+                        ? Colors.blue
+                        : Colors.transparent, // 선택된 항목은 배경색을 파란색으로
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 4.0, vertical: 0.0), // 글자와 테두리 사이의 여백 줄이기
+                    labelPadding: EdgeInsets.symmetric(
+                        horizontal: 4.0), // 글자와 칩 사이의 여백 줄이기
+                  ),
                 ),
               );
             }).toList(),
           ),
         ),
-        Divider(),
       ],
     );
   }
@@ -331,72 +399,6 @@ class _AddRecipeState extends State<AddRecipe> {
     );
   }
 
-  // 키워드 입력 섹션
-  Widget _buildKeywordInputSection(
-      String title,
-      TextEditingController controller,
-      List<String> items,
-      Function(String) onAddItem) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Spacer(),
-            Container(
-              height: 50,
-              width: 200,
-              child: TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  labelText: '$title 입력',
-                  // border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
-                    vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
-                  ),
-                ),
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) {
-                    setState(() {
-                      onAddItem(value);
-                      controller.clear(); // 입력 후 텍스트필드 초기화
-                    });
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 7.0),
-        Wrap(
-          spacing: 7.0,
-          children: items.map((item) {
-            return Chip(
-              label: Text(
-                item,
-                style: TextStyle(fontSize: 12), // 텍스트 크기 줄이기
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 5.0),
-              // Chip 크기 줄이기
-              deleteIcon: Icon(Icons.close),
-              onDeleted: () {
-                setState(() {
-                  items.remove(item);
-                });
-              },
-            );
-          }).toList(),
-        ),
-        Divider(),
-      ],
-    );
-  }
-
   //조리방법과이미지 섹션
   Widget _buildStepsWithImagesSection() {
     return Column(
@@ -415,8 +417,8 @@ class _AddRecipeState extends State<AddRecipe> {
               title: Text(stepsWithImages[index]['description'] ?? ''),
               leading: stepsWithImages[index]['image'] != null &&
                       stepsWithImages[index]['image']!.isNotEmpty
-                  ? Image.asset(stepsWithImages[index]['image']!,
-                      width: 50, height: 50)
+                  ? Image.network(stepsWithImages[index]['image']!,
+                      width: 50, height: 50, fit: BoxFit.cover)
                   : Icon(Icons.image, size: 50),
               trailing: GestureDetector(
                 onTap: () {
@@ -433,27 +435,75 @@ class _AddRecipeState extends State<AddRecipe> {
         // 조리 단계와 이미지 추가 입력 필드
         Row(
           children: [
-            IconButton(
-              icon: Icon(Icons.camera_alt_outlined),
-              onPressed: () {
-                // 저장 동작 구현
-              },
-            ),
+            if (_imageFiles != null && _imageFiles!.isNotEmpty)
+              ..._imageFiles!.map((imagePath) {
+                return Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Image.file(
+                        File(imagePath), // 개별 이미지의 경로에 접근
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _imageFiles!.remove(imagePath);
+                          });
+                        },
+                        child: Container(
+                          color: Colors.black54,
+                          child: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            if (_imageFiles == null || _imageFiles!.isEmpty)
+              IconButton(
+                icon: Icon(Icons.camera_alt_outlined),
+                onPressed: _pickImages,
+              ),
             Expanded(
               child: _buildTextField('조리 과정 입력', stepDescriptionController),
             ),
             IconButton(
               icon: Icon(Icons.add),
-              onPressed: () {
-                if (stepDescriptionController.text.isNotEmpty) {
-                  setState(() {
-                    stepsWithImages.add({
-                      'description': stepDescriptionController.text,
-                      // 'image': stepImageController.text,
+              onPressed: () async {
+                if (stepDescriptionController.text.isNotEmpty &&
+                    _imageFiles != null &&
+                    _imageFiles!.isNotEmpty) {
+
+                  String imageUrl = await uploadImage(File(_imageFiles!.first));
+
+                  if (imageUrl.isNotEmpty) {
+                    setState(() {
+                      stepsWithImages.add({
+                        'description': stepDescriptionController.text,
+                        'image': imageUrl,
+                      });
+                      stepDescriptionController.clear();
+                      _imageFiles!.clear();
                     });
-                    stepDescriptionController.clear();
-                    stepImageController.clear();
-                  });
+                  } else {
+                    // 이미지 업로드 실패 메시지 출력
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('이미지 업로드 실패')));
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('조리 과정과 이미지를 입력해 주세요.')));
                 }
               },
             ),
@@ -464,13 +514,91 @@ class _AddRecipeState extends State<AddRecipe> {
   }
 
   // 저장 버튼 누르면 레시피 추가 또는 수정 처리
-  void _saveRecipe() {
+  void _saveRecipe() async {
     if (widget.recipeData == null) {
-      // 새 레시피 추가 로직
-      print("레시피 추가");
+      final newItem = RecipeModel(
+        id: _db.collection('recipe').doc().id,
+        userID: '사용자 ID',
+        difficulty: selectedDifficulty,
+        serving: selectedServings,
+        time: int.parse(minuteController.text),
+        foods: selectedIngredients,
+        themes: selectedThemes,
+        methods: selectedMethods,
+        recipeName: recipeNameController.text,
+        steps: stepsWithImages,
+      );
+
+      try {
+        await _db
+            .collection('recipe')
+            .doc(newItem.id)
+            .set(newItem.toFirestore());
+        Navigator.pop(context);
+      } catch (e) {
+        print('레시피 추가 실패: $e');
+      }
     } else {
       // 기존 레시피 수정 로직
       print("레시피 수정");
+    }
+  }
+
+  Future<String> uploadImage(File imageFile) async {
+    try {
+      final storageRef = FirebaseStorage.instance.ref();
+      final uniqueFileName =
+          'recipe_image_${DateTime.now().millisecondsSinceEpoch}';
+      final imageRef = storageRef.child('images/recipes/$uniqueFileName');
+      final metadata = SettableMetadata(
+        contentType: 'image/jpeg',  // 이미지의 MIME 타입 설정
+      );
+      final uploadTask = imageRef.putFile(imageFile, metadata);
+      final snapshot = await uploadTask.whenComplete(() {});
+      final downloadURL = await snapshot.ref.getDownloadURL();
+      return downloadURL;
+    } catch (e) {
+      print('이미지 업로드 실패: $e');
+      return '';
+    }
+  }
+
+  void addStepWithImage(String description, String imageUrl) {
+    setState(() {
+      stepsWithImages.add({
+        'description': description,
+        'image': imageUrl,
+      });
+    });
+  }
+
+  // 이미지를 선택하는 메서드
+  Future<void> _pickImages() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile>? pickedFiles = await picker.pickMultiImage();
+
+    if (pickedFiles == null || pickedFiles.isEmpty) {
+      // 이미지 선택이 취소된 경우
+      print('No image selected.');
+      return;
+    }
+
+    if (_imageFiles == null) {
+      _imageFiles = [];
+    }
+
+    for (XFile file in pickedFiles) {
+      if (!_imageFiles!.contains(file.path)) {
+        setState(() {
+          _imageFiles!.add(file.path); // 로컬 경로를 XFile 객체로 변환하여 추가
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('이미 추가된 이미지입니다.'),
+          ),
+        );
+      }
     }
   }
 
@@ -533,7 +661,7 @@ class _AddRecipeState extends State<AddRecipe> {
             SizedBox(height: 20),
             _buildSearchableDropdown(
               '재료', // title
-              filteredIngredients, // items
+              availableIngredients, // items
               ingredientsSearchController,
               (selectedItem) {
                 // onItemSelected
@@ -549,10 +677,11 @@ class _AddRecipeState extends State<AddRecipe> {
 
             _buildHorizontalScrollSection(
               '조리 방법',
+              availableMethods,
               filteredMethods,
+              methodsSearchController,
               selectedMethods,
               (selectedItem) {
-                // onItemSelected
                 setState(() {
                   selectedMethods.add(selectedItem);
                 });
@@ -565,15 +694,15 @@ class _AddRecipeState extends State<AddRecipe> {
 
             _buildHorizontalScrollSection(
                 '테마', // title
+                availableThemes,
                 filteredThemes,
+                themesSearchController,
                 selectedThemes, (selectedItem) {
               // onItemSelected
               setState(() {
                 selectedThemes.add(selectedItem);
               });
-            },
-                'themes'
-            ),
+            }, 'themes'),
             SizedBox(height: 10),
             _buildselectedItems(selectedThemes),
 

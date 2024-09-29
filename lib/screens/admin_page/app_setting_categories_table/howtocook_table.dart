@@ -64,7 +64,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
     final newItem = RecipeMethodModel(
       id: _db.collection('recipe_method_categories').doc().id, // Firestore 문서 ID 자동 생성
       categories: '', // 대분류 카테고리 예시
-      method: ['끓이기', '데치기', '오븐'], // 소
+      method: ['끓이기', '데치기', '오븐','튀기기','에어프라이어','삶기','전자렌지','볶기'], // 소
     );
 
     try {
