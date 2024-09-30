@@ -77,7 +77,7 @@ class _ViewRecipeListState extends State<ViewRecipeList> {
               context,
               MaterialPageRoute(
                   builder: (context) => ReadRecipe(
-                    recipeName: recipeName,
+                    recipeID: recipeName,searchKeywords: [],
                   )));
         },
           child: Container(

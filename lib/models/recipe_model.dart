@@ -9,6 +9,10 @@ class RecipeModel {
   final List<String> methods;
   final String recipeName;
   final List<Map<String, String>> steps;
+  final List<String> mainImages;
+  final double rating;
+  final bool isScraped;
+  final bool isLiked;
   final int views;
 
   RecipeModel({
@@ -22,22 +26,53 @@ class RecipeModel {
     required this.methods,
     required this.recipeName,
     required this.steps,
+    required this.mainImages,
+    this.rating = 0.0,
+    this.isScraped = false,
+    this.isLiked = false,
     this.views = 0,
   });
+
   factory RecipeModel.fromFirestore(Map<String, dynamic> data) {
+    List<Map<String, String>> stepsList = [];
+    if (data['steps'] != null) {
+      stepsList = List<Map<String, String>>.from(
+        (data['steps'] as List<dynamic>).map((step) {
+          return Map<String, String>.from(step as Map<String, dynamic>);
+        }),
+      );
+    }
+
     return RecipeModel(
-      id: data['id'],
-      userID: data['userID'],
-      recipeName: data['recipeName'],
-      foods: List<String>.from(data['foods']),
-      themes: List<String>.from(data['themes']),
-      methods: List<String>.from(data['methods']),
-      serving: data['serving'],
-      difficulty: data['difficulty'],
-      time: data['time'],
-      steps: List<Map<String, String>>.from(data['steps']),
+      id: data['ID'] ?? '',
+      recipeName: data['recipeName'] ?? '',
+      difficulty: data['difficulty'] ?? '',
+      serving: data['serving'] ?? 0,
+      foods: List<String>.from(data['foods'] ?? []),
+      steps: stepsList,
+      methods: List<String>.from(data['methods'] ?? []),
+      themes: List<String>.from(data['themes'] ?? []),
+      time: data['time'] ?? 0,
+      userID: data['userID'] ?? '',
+      mainImages: List<String>.from(data['mainImages'] ?? []),
+      rating: (data['rating'] ?? 0.0).toDouble(),
+      isScraped: data['isScraped'] is bool
+          ? data['isScraped']
+          : false, // 문자열을 bool로 변환
+      isLiked: data['isLiked'] is bool ? data['isLiked'] : false,
+      views: data['views'] ?? 0,
     );
   }
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is RecipeModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
   // Firestore에 저장할 때 사용할 메서드
   Map<String, dynamic> toFirestore() {
     return {
@@ -50,43 +85,17 @@ class RecipeModel {
       'themes': themes,
       'methods': methods,
       'recipeName': recipeName,
-      'steps': steps.map((step) => {
-        'description': step['description'],
-        'image': step['image'],
-      }).toList(),
+      'steps': steps
+          .map((step) => {
+                'description': step['description'],
+                'image': step['image'],
+              })
+          .toList(),
+      'mainImages': mainImages, // 메인사진 저장
+      'rating': rating, // 별점 저장
+      'isScraped': isScraped, // 스크랩 여부 저장
+      'isLiked': isLiked, // 좋아요 여부 저장
       'views': views,
     };
   }
 }
-  // factory RecipeModel.fromJson(Map<String, dynamic> json) {
-  //   return RecipeModel(
-  //     id: json['ID'],
-  //     userID: json['UserID'],
-  //     foods: json['Foods'],
-  //     difficulty: json['Difficulty'],
-  //     serving: json['Serving'],
-  //     time: json['Time'],
-  //     themes: json['Themes'],
-  //     methods: json['Methods'],
-  //     recipeName: json['RecipeName'],
-  //     content: json['Content'],
-  //     views: json['Views'],
-  //   );
-  // }
-  //
-  // Map<String, dynamic> toJson() {
-  //   return {
-  //     'ID': id,
-  //     'UserID': userID,
-  //     'Foods': foods,
-  //     'Difficulty': difficulty,
-  //     'Serving': serving,
-  //     'Time': time,
-  //     'Themes': themes,
-  //     'Methods': methods,
-  //     'RecipeName': recipeName,
-  //     'Content': content,
-  //     'Views': views,
-  //   };
-  // }
-// }

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:intl/intl.dart';
 
-import 'package:food_for_later/models/recordModel.dart';
+import 'package:food_for_later/models/record_model.dart';
 
 class RecordsCalendarView extends StatefulWidget {
   @override

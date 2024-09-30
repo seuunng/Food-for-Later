@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:food_for_later/models/recordModel.dart';
+import 'package:food_for_later/models/record_model.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:intl/intl.dart';

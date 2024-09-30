@@ -6,7 +6,7 @@ import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/recordModel.dart';
+import '../../models/record_model.dart';
 
 class ReadRecord extends StatefulWidget {
   final String recordId; // recordId를 전달받도록 수정

@@ -23,8 +23,10 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
   List<String> excludeKeywords = [];
   @override
   void initState() {
-    super.initState();_loadMethodFromFirestore();
+    super.initState();
+    _loadMethodFromFirestore();
   }
+
   void _loadMethodFromFirestore() async {
     try {
       final snapshot = await _db.collection('recipe_method_categories').get();

@@ -83,7 +83,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => ReadRecipe(
-                          recipeName: recipeName,
+                          recipeID: recipeName,
+                          searchKeywords: [],
                         )));
           },
           child: Container(

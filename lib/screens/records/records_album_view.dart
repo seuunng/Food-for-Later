@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 
-import '../../models/recordModel.dart';
+import '../../models/record_model.dart';
 
 class RecordsAlbumView extends StatefulWidget {
   @override

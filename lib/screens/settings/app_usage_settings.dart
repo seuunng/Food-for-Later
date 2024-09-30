@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/foods/manage_categories.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
-import 'package:food_for_later/screens/settings/CustomDropdown.dart';
+import 'package:food_for_later/components/custom_dropdown.dart';
 
 class AppUsageSettings extends StatefulWidget {
   @override

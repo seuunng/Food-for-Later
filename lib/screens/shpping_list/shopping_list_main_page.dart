@@ -50,103 +50,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   ];
   bool showCheckBoxes = false;
 
-  Widget _buildSections() {
-    return Column(
-      children: List.generate(storageSections.length, (index) {
-        return Column(
-          children: [
-            _buildSectionTitle(storageSections[index]), // 섹션 타이틀
-            _buildGrid(itemLists[index], index), //
-          ],
-        );
-      }),
-    );
-  }
-
-  // 각 섹션의 타이틀 빌드
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(width: 10), // 제목과 수평선 사이 간격
-          Expanded(
-            child: Divider(
-              thickness: 2, // 수평선 두께
-              color: Colors.grey, // 수평선 색상
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 물건을 추가할 수 있는 그리드
-  Widget _buildGrid(List<String> items, int sectionIndex) {
-    return GridView.builder(
-      shrinkWrap: true, // GridView의 크기를 콘텐츠에 맞게 줄임
-      physics: NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.all(8.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 1, // 한 줄에 5칸
-        crossAxisSpacing: 1.0,
-        mainAxisSpacing: 1.0,
-        childAspectRatio: 9,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              strikeThroughItems[sectionIndex][index] =
-                  !strikeThroughItems[sectionIndex][index];
-            });
-          },
-          onLongPress: () {
-            setState(() {
-              showCheckBoxes = true;
-              _selectStrikeThroughItems(); // 취소선이 있는 아이템 체크박스 true
-            });
-          },
-          child: Container(
-            padding: EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Row(
-              children: [
-                if (showCheckBoxes)
-                  Checkbox(
-                    value: checkedItems[sectionIndex][index], // 체크 상태
-                    onChanged: (bool? value) {
-                      setState(() {
-                        checkedItems[sectionIndex][index] = value!;
-                      });
-                    },
-                  ),
-                Expanded(
-                  child: Text(
-                    items[index],
-                    style: TextStyle(
-                      // 취소선 적용 여부
-                      decoration: strikeThroughItems[sectionIndex][index]
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   // 취소선이 있는 아이템들은 자동으로 체크박스가 true
   void _selectStrikeThroughItems() {
     for (int section = 0; section < strikeThroughItems.length; section++) {
@@ -285,4 +188,101 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
           : null,
     );
   }
+  Widget _buildSections() {
+    return Column(
+      children: List.generate(storageSections.length, (index) {
+        return Column(
+          children: [
+            _buildSectionTitle(storageSections[index]), // 섹션 타이틀
+            _buildGrid(itemLists[index], index), //
+          ],
+        );
+      }),
+    );
+  }
+
+  // 각 섹션의 타이틀 빌드
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(width: 10), // 제목과 수평선 사이 간격
+          Expanded(
+            child: Divider(
+              thickness: 2, // 수평선 두께
+              color: Colors.grey, // 수평선 색상
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 물건을 추가할 수 있는 그리드
+  Widget _buildGrid(List<String> items, int sectionIndex) {
+    return GridView.builder(
+      shrinkWrap: true, // GridView의 크기를 콘텐츠에 맞게 줄임
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(8.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 1, // 한 줄에 5칸
+        crossAxisSpacing: 1.0,
+        mainAxisSpacing: 1.0,
+        childAspectRatio: 9,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              strikeThroughItems[sectionIndex][index] =
+              !strikeThroughItems[sectionIndex][index];
+            });
+          },
+          onLongPress: () {
+            setState(() {
+              showCheckBoxes = true;
+              _selectStrikeThroughItems(); // 취소선이 있는 아이템 체크박스 true
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Row(
+              children: [
+                if (showCheckBoxes)
+                  Checkbox(
+                    value: checkedItems[sectionIndex][index], // 체크 상태
+                    onChanged: (bool? value) {
+                      setState(() {
+                        checkedItems[sectionIndex][index] = value!;
+                      });
+                    },
+                  ),
+                Expanded(
+                  child: Text(
+                    items[index],
+                    style: TextStyle(
+                      // 취소선 적용 여부
+                      decoration: strikeThroughItems[sectionIndex][index]
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 }
