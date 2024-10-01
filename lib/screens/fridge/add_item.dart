@@ -24,7 +24,7 @@ class AddItem extends StatefulWidget {
   _AddItemState createState() => _AddItemState();
 }
 
-Map<String, List<String>> itemsByCategory = {};
+Map<String, List<Map<String, dynamic>>> itemsByCategory = {};
 final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 class _AddItemState extends State<AddItem> {
@@ -69,10 +69,6 @@ class _AddItemState extends State<AddItem> {
         };
       });
 
-      // 데이터 확인을 위한 출력
-      print('categories: $categories');
-      print('Items by Category: $itemsByCategory');
-
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +97,7 @@ class _AddItemState extends State<AddItem> {
   List<String> selectedItems = [];
 
   // 검색된 아이템 상태를 관리할 리스트
-  List<String> filteredItems = [];
+  List<Map<String, dynamic>> filteredItems = [];
 
   // 물건 추가 다이얼로그
   Future<void> _addItemsToFridge() async {
@@ -135,12 +131,12 @@ class _AddItemState extends State<AddItem> {
 
   // 검색 로직
   void _searchItems(String keyword) {
-    List<String> tempFilteredItems = [];
+    List<Map<String, dynamic>> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
       itemsByCategory.forEach((category, items) {
         tempFilteredItems.addAll(
-          items.where((item) => item.toLowerCase().contains(searchKeyword)),
+          items.where((item) => item['itemName'].toLowerCase().contains(searchKeyword)),
         );
       });
       filteredItems = tempFilteredItems;
@@ -187,28 +183,29 @@ class _AddItemState extends State<AddItem> {
               ),
             );
           } else {
-            String currentItem = filteredItems[index];
+            Map<String, dynamic> currentItem = filteredItems[index];
+            String itemName = currentItem['itemName'];  // 여기서 itemName 추출
             //키워드 검색 결과 그리드 렌더링
             return GestureDetector(
               onTap: () {
                 // 아이템 클릭 시 처리
                 setState(() {
-                  if (!selectedItems.contains(currentItem)) {
-                    selectedItems.add(currentItem); // 아이템 선택
+                  if (!selectedItems.contains(itemName)) {
+                    selectedItems.add(itemName); // 아이템 선택
                   } else {
-                    selectedItems.remove(currentItem); // 선택 취소
+                    selectedItems.remove(itemName); // 선택 취소
                   }
                 });
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: selectedItems.contains(currentItem) ? Colors.orange : Colors.blueAccent,
+                  color: selectedItems.contains(itemName) ? Colors.orange : Colors.blueAccent,
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 height: 60,
                 child: Center(
                   child: Text(
-                    currentItem,
+                    itemName,
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
@@ -321,7 +318,7 @@ class _AddItemState extends State<AddItem> {
     }
     // 카테고리별 아이템을 출력하는 그리드
     Widget _buildCategoryItemsGrid() {
-      List<String> items = filteredItems.isNotEmpty
+      List<Map<String, dynamic>> items = filteredItems.isNotEmpty
           ? filteredItems
           : itemsByCategory[selectedCategory!] ?? [];
 
@@ -366,29 +363,31 @@ class _AddItemState extends State<AddItem> {
               ),
             );
           } else {
-            String currentItem = items[index];
-            bool isSelected = selectedItems.contains(currentItem);
-            bool isDeleted = fridgeItems.contains(currentItem);
+            Map<String, dynamic> currentItem = items[index];
+            String itemName = currentItem['itemName'];
+            bool isSelected = selectedItems.contains(itemName);
+            bool isDeleted = currentItem['isDisabled'];
             // 기존 아이템 그리드 렌더링
             return GestureDetector(
               onTap: () {
                 setState(() {
                   if (isSelected) {
-                    selectedItems.remove(currentItem);
+                    selectedItems.remove(itemName);
                   } else {
-                    selectedItems.add(currentItem);
+                    selectedItems.add(itemName);
                   }
                 });
               },
               onDoubleTap: () {
-                String currentItem = items[index];
+                Map<String, dynamic> currentItem = items[index];
+                String itemName = currentItem['itemName']; // 아이템 이름 접근
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
                         FridgeItemDetails(
                           categoryName: selectedCategory ?? '기타',
-                          categoryFoodsName: currentItem,
+                          categoryFoodsName: itemName,
                           expirationDays: 1,
                           consumptionDays: 1,
                           registrationDate: DateFormat('yyyy-MM-dd').format(
@@ -400,7 +399,7 @@ class _AddItemState extends State<AddItem> {
               onLongPress: () {
                 setState(() {
                   _toggleDeleteMode();
-                  selectedItems.add(currentItem);
+                  selectedItems.add(itemName);
 
                 });
               },
@@ -414,7 +413,7 @@ class _AddItemState extends State<AddItem> {
                 height: 60,
                 child: Center(
                   child: Text(
-                    currentItem,
+                    itemName,
                     style: TextStyle(color: Colors.white),
                   ),
                 ),

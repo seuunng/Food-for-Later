@@ -53,11 +53,21 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         return DefaultFoodModel.fromFirestore(doc);
       }).toList();
 
-      // itemsByCategory에 데이터를 추가
+      for (var category in categories) {
+        print('Category: ${category.categories}');
+        print('Items by Category: ${category.itemsByCategory}');
+      }
+
       setState(() {
         itemsByCategory = {
           for (var category in categories)
-            category.categories: category.itemsByCategory,
+            category.categories: category.itemsByCategory is List<Map<String, dynamic>>
+                ? category.itemsByCategory
+                .map((item) => item['itemName'].toString())
+                .toList() // Map에서 itemName 추출
+                : category.itemsByCategory
+                .map((item) => item.toString())
+                .toList(), // 이미 List<String>인 경우
         };
       });
 
@@ -186,8 +196,8 @@ class _RecipeMainPageState extends State<RecipeMainPage>
               controller: _tabController,
               children: [
                 RecipeGrid(
-                  categories: itemsByCategory.keys.toList(), // 카테고리 목록
-                  itemsByCategory: itemsByCategory, // Firestore에서 불러온 데이터
+                  categories: itemsByCategory.keys.toList(),
+                  itemsByCategory: itemsByCategory,
                 ),
                 RecipeGridTheme(
                   categories: themaCategories.map((thema) => thema.categories).toList(),

@@ -1,15 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/shopping_category.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/home_screen.dart';
 
 class ShoppingListMainPage extends StatefulWidget {
+
   @override
   _ShoppingListMainPageState createState() => _ShoppingListMainPageState();
 }
 
 class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
-
   int _selectedIndex = 0;
 
   // 각 페이지를 저장하는 리스트
@@ -26,28 +28,36 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     }
   }
 
+  List<ShoppingCategory> _categories = [];
+  List<List<String>> itemLists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategoriesFromFirestore();
+  }
+
+  Future<void> _loadCategoriesFromFirestore() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('shopping_categories')
+        .get();
+
+    final categories = snapshot.docs.map((doc) {
+      return ShoppingCategory.fromFirestore(doc);
+    }).toList();
+
+    setState(() {
+      _categories = categories;
+    });
+  }
+
+
   static const List<String> fridgeName = ['기본냉장고', '김치냉장고', '오빠네냉장고'];
   String? selectedFridge = '기본냉장고';
 
-  static const List<String> storageSections = ['신선', '육류/수산', '공산품'];
-  String? selectedSection;
+  List<List<bool>> checkedItems = List.generate(9, (_) => [false, false, false]);
+  List<List<bool>> strikeThroughItems = List.generate(9, (_) => [false, false, false]);
 
-  // List<List<String>> itemLists = [[], [], []];
-  List<List<String>> itemLists = [
-    ['사과', '바나나', '상추'], // 신선 섹션 아이템
-    ['소고기', '연어', '닭가슴살'], // 육류/수산 섹션 아이템
-    ['라면', '통조림', '밀가루'] // 공산품 섹션 아이템
-  ];
-  List<List<bool>> checkedItems = [
-    [false, false, false], // 신선 섹션 체크박스 상태
-    [false, false, false], // 육류/수산 섹션 체크박스 상태
-    [false, false, false], // 공산품 섹션 체크박스 상태
-  ];
-  List<List<bool>> strikeThroughItems = [
-    [false, false, false], // 신선 섹션 텍스트 취소선 상태
-    [false, false, false], // 육류/수산 섹션 텍스트 취소선 상태
-    [false, false, false], // 공산품 섹션 텍스트 취소선 상태
-  ];
   bool showCheckBoxes = false;
 
   // 취소선이 있는 아이템들은 자동으로 체크박스가 true
@@ -190,10 +200,14 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   }
   Widget _buildSections() {
     return Column(
-      children: List.generate(storageSections.length, (index) {
+      children: List.generate(_categories.length, (index) {
+        // itemLists의 길이가 충분한지 확인
+        if (index >= itemLists.length) {
+          itemLists.add([]); // 새로운 빈 리스트 추가
+        }
         return Column(
           children: [
-            _buildSectionTitle(storageSections[index]), // 섹션 타이틀
+            _buildSectionTitle(_categories[index].categoryName), // 섹션 타이틀
             _buildGrid(itemLists[index], index), //
           ],
         );
