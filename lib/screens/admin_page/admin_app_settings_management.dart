@@ -17,7 +17,7 @@ class _AdminAppSettingsManagementState
     Tab(text: '재료별 카테고리'),
     Tab(text: '테마별 카테고리'),
     Tab(text: '조리방법별 카테고리'),
-    Tab(text: '기본식품 카테고리'),
+    // Tab(text: '기본식품 카테고리'),
     Tab(text: '선호식품 카테고리'),
   ];
 
@@ -34,11 +34,11 @@ class _AdminAppSettingsManagementState
         ),
         body: TabBarView(
           children: [
-            FoodsTable(),  // 재료별 카테고리 테이블
-            ThemeTable(),  // 테마별 카테고리 테이블
-            HowtocookTable(),  // 조리방법별 카테고리 테이블
-            BasicfoodscategoryTable(),  // 기본식품 카테고리 테이블
-            PreferredfoodscategoryTable(),  // 선호식품 카테고리 테이블
+            SingleChildScrollView(child: FoodsTable()),
+            SingleChildScrollView(child: ThemeTable()),
+            SingleChildScrollView(child: HowtocookTable()),
+            // SingleChildScrollView(child: BasicfoodscategoryTable()),
+            SingleChildScrollView(child: PreferredfoodscategoryTable()),
           ],
         ),
       ),

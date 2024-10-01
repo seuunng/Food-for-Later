@@ -10,10 +10,6 @@ class ThemeTable extends StatefulWidget {
 }
 
 class _ThemeTableState extends State<ThemeTable> {
-
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '선택', 'state': SortState.none},
     {'name': '연번', 'state': SortState.none},
@@ -22,79 +18,151 @@ class _ThemeTableState extends State<ThemeTable> {
   ];
 
   // 사용자 데이터
-  List<Map<String, dynamic>> userData = [
-    {
-      '연번': 1,
-      '테마명': '다이어트',
-    },
-    {
-      '연번': 2,
-      '테마명': '자취요리',
-    },
-    {
-      '연번': 3,
-      '테마명': '리틀포레스트',
-    },
-  ];
+  List<Map<String, dynamic>> userData = [];
 
   // 선택된 행의 인덱스를 저장하는 리스트
   List<int> selectedRows = [];
 
-  // 드롭다운 선택 항목들
-  final List<String> categoryOptions = ['다이어트', '자취요리', '리틀포레스트', '편스토랑'];
+  bool isEditing = false;
+  int? selectedThemesIndex; // 수정할 아이템의 인덱스
 
-  // 선택된 값들을 저장할 변수들
-  String? _selectedCategory;
-
-// 추가할 때 사용할 입력 필드 컨트롤러들
   final TextEditingController _themeNameController = TextEditingController();
 
-  // 사용자 데이터를 추가하는 함수
-  void _addTheme() {
-    setState(() {
-      userData.add({
-        '연번': userData.length + 1,
-        '테마명':_themeNameController.text,
+  @override
+  void initState() {
+    super.initState();
+    _loadThemesData();
+    // addSampleTheme();
+  }
+
+  Future<void> _loadThemesData() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('recipe_thema_categories')
+        .get();
+
+    List<Map<String, dynamic>> themes = [];
+
+    snapshot.docs.forEach((doc) {
+      final theme = RecipeThemaModel.fromFirestore(doc);
+
+      themes.add({
+        '연번': themes.length + 1, // 연번은 자동으로 증가하도록 설정
+        '테마명': theme.categories,
+        'documentId': doc.id,
       });
-
-      // 입력 필드 초기화
-
-      _themeNameController.clear();
-      _selectedCategory = null;
     });
-  }
-  void _addSampleData() async {
-    final newItem = RecipeThemaModel(
-      id: _db.collection('default_foods_categories').doc().id, // Firestore 문서 ID 자동 생성
-      categories: '흑백요리사', // 대분류 카테고리 예시
-    );
 
-    try {
-      await _db.collection('recipe_thema_categories').doc(newItem.id).set(newItem.toFirestore());
-      print('데이터 추가 성공');
-    } catch (e) {
-      print('데이터 추가 실패: $e');
-    }
-  }
-// 데이터 수정 버튼 클릭 시 호출할 함수
-  void _editTheme(int index) {
     setState(() {
-      // 수정할 데이터 필드로 값 가져오기
-      Map<String, dynamic> selectedFood = userData[index];
-      _themeNameController.text = selectedFood['식품명'];
-      _selectedCategory = selectedFood['테마명'];
+      userData = themes;
     });
+  }
+
+  void _addThemes(String newCategoryName) async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('recipe_thema_categories');
+
+    await snapshot.add({
+      'categories': newCategoryName,
+    });
+
+    userData.add({
+      '테마명': newCategoryName, // 테마명
+    });
+    _themeNameController.clear();
+  }
+
+// 데이터 수정 버튼 클릭 시 호출할 함수
+  void _editTheme(int index) async {
+    final selectedThemes = userData[index];
+
+    setState(() {
+      _themeNameController.text = selectedThemes['테마명'] ?? '';
+    });
+    isEditing = true;
+    selectedThemesIndex = index;
+  }
+
+  void _updateThemes(int index, String updatedCategoryName) async {
+    final selectedThemes = userData[index];
+    final String? documentId = selectedThemes['documentId'];
+
+    print(updatedCategoryName);
+    print(documentId);
+
+    if (documentId != null) {
+      try {
+        final snapshot = FirebaseFirestore.instance
+            .collection('recipe_thema_categories')
+            .doc(documentId);
+
+        await snapshot.update({
+          'categories': updatedCategoryName,
+        });
+
+        setState(() {
+          userData[index]['테마명'] = updatedCategoryName;
+        });
+      } catch (e) {
+        print('Firestore에 데이터를 업데이트하는 중 오류가 발생했습니다: $e');
+      }
+    }
   }
 
   // 체크박스를 사용해 선택한 행 삭제
-  void _deleteSelectedRows() {
-    setState(() {
-      selectedRows.sort((a, b) => b.compareTo(a)); // 역순으로 정렬하여 삭제
-      for (var index in selectedRows) {
-        userData.removeAt(index);
+  void _deleteSelectedRows(int index) async {
+    final selectedThemes = userData[index];
+
+    bool shouldDelete = await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('삭제 확인'),
+            content: Text('선택한 항목을 삭제하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(false); // 취소 선택 시 false 반환
+                },
+                child: Text('취소'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true); // 확인 선택 시 true 반환
+                },
+                child: Text('확인'),
+              ),
+            ],
+          );
+        });
+    if (shouldDelete == true) {
+      try {
+        final String? documentId = selectedThemes['documentId'];
+
+        final snapshot = await FirebaseFirestore.instance
+            .collection('recipe_thema_categories')
+            .where('categories', isEqualTo: selectedThemes['테마명'])
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          final docRef = snapshot.docs.first.reference;
+
+          await docRef.delete();
+
+          setState(() {
+            userData.removeAt(index); // 로컬 상태에서도 데이터 삭제
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('선택한 항목이 삭제되었습니다.')),
+          );
+        }
+      } catch (e) {
+        print('Error deleting food from Firestore: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('삭제 중 오류가 발생했습니다.')),
+        );
       }
-      selectedRows.clear(); // 삭제 후 선택 초기화
-    });
+    }
   }
 
   void _sortBy(String columnName, SortState currentState) {
@@ -124,6 +192,15 @@ class _ThemeTableState extends State<ThemeTable> {
         });
       }
     });
+  }
+
+  void _refreshTable() async {
+    await _loadThemesData();
+    setState(() {}); // 화면을 새로고침
+  }
+
+  void _clearFields() {
+    _themeNameController.clear();
   }
 
   @override
@@ -157,27 +234,29 @@ class _ThemeTableState extends State<ThemeTable> {
                       ),
                       child: column['name'] == '선택' || column['name'] == '변동'
                           ? Center(
-                        child: Text(column['name']),
-                      )
+                              child: Text(column['name']),
+                            )
                           : GestureDetector(
-                        onTap: () => _sortBy(column['name'], column['state']),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(column['name']),
-                              Icon(
-                                column['state'] == SortState.ascending
-                                    ? Icons.arrow_upward
-                                    : column['state'] == SortState.descending
-                                    ? Icons.arrow_downward
-                                    : Icons.sort,
-                                size: 12,
+                              onTap: () =>
+                                  _sortBy(column['name'], column['state']),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(column['name']),
+                                    Icon(
+                                      column['state'] == SortState.ascending
+                                          ? Icons.arrow_upward
+                                          : column['state'] ==
+                                                  SortState.descending
+                                              ? Icons.arrow_downward
+                                              : Icons.sort,
+                                      size: 12,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            ),
                     ),
                   );
                 }).toList(),
@@ -196,7 +275,7 @@ class _ThemeTableState extends State<ThemeTable> {
               2: FixedColumnWidth(160),
               3: FixedColumnWidth(80),
             },
-            children:  [
+            children: [
               TableRow(
                 decoration: BoxDecoration(
                   border: Border(
@@ -205,9 +284,7 @@ class _ThemeTableState extends State<ThemeTable> {
                   ),
                 ),
                 children: [
-                  TableCell(
-                    child: SizedBox.shrink()
-                  ),
+                  TableCell(child: SizedBox.shrink()),
                   TableCell(
                       verticalAlignment: TableCellVerticalAlignment.middle,
                       child: Center(child: Text('no'))),
@@ -238,14 +315,30 @@ class _ThemeTableState extends State<ThemeTable> {
                       },
                     ),
                   ),
-
                   TableCell(
                     verticalAlignment: TableCellVerticalAlignment.middle,
                     child: SizedBox(
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: _addTheme,
+                        onPressed: () {
+                          // final TextEditingController themesNameController = TextEditingController();
+
+                          if (isEditing) {
+                            if (selectedThemesIndex != null) {
+                              _updateThemes(selectedThemesIndex!,
+                                  _themeNameController.text);
+                            }
+                          } else {
+                            if (_themeNameController != null)
+                              _addThemes(_themeNameController.text);
+                          }
+
+                          setState(() {
+                            _clearFields();
+                            _refreshTable();
+                          });
+                        },
                         child: Text('추가'),
                       ),
                     ),
@@ -292,14 +385,15 @@ class _ThemeTableState extends State<ThemeTable> {
                           child: Center(child: Text(row['연번'].toString())))),
                   TableCell(
                       verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['테마명']))),
+                      child: Center(child: Text(row['테마명'].toString()))),
                   TableCell(
                     verticalAlignment: TableCellVerticalAlignment.middle,
                     child: SizedBox(
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: () => _editTheme(row['연번'] - 1), // 수정 버튼 클릭 시
+                        onPressed: () =>
+                            _editTheme(row['연번'] - 1), // 수정 버튼 클릭 시
                         child: Text('수정'),
                       ),
                     ),
@@ -310,12 +404,15 @@ class _ThemeTableState extends State<ThemeTable> {
           ),
           // 선택한 행 삭제 버튼
           ElevatedButton(
-            onPressed: selectedRows.isNotEmpty ? _deleteSelectedRows : null,
+            onPressed: selectedRows.isNotEmpty
+                ? () {
+                    // 선택된 모든 행 삭제
+                    for (int index in selectedRows) {
+                      _deleteSelectedRows(index);
+                    }
+                  }
+                : null,
             child: Text('선택한 항목 삭제'),
-          ),
-          ElevatedButton(
-            onPressed: _addSampleData,
-            child: Text('샘플 데이터 추가'),
           ),
         ],
       ),

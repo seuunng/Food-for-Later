@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:food_for_later/models/default_foodModel.dart';
+import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/recipe_method_model.dart';
 import 'package:food_for_later/models/recipe_thema_model.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';

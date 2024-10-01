@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:food_for_later/models/default_foodModel.dart';
+import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:intl/intl.dart';
