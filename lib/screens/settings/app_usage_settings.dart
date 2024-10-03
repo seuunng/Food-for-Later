@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/foods/manage_categories.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/components/custom_dropdown.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppUsageSettings extends StatefulWidget {
   @override
@@ -9,20 +11,78 @@ class AppUsageSettings extends StatefulWidget {
 }
 
 class _AppUsageSettingsState extends State<AppUsageSettings> {
-  String _selectedCategory_fridge = '기본 냉장고'; // 기본 선택값
-  final List<String> _categories_fridge = ['기본 냉장고', '김치 냉장고']; // 카테고리 리스트
-  String _selectedCategory_fridgeCategory = '냉장'; // 기본 선택값
-  final List<String> _categories_fridgeCategory = [
-    '냉장',
-    '냉동',
-    '실온'
-  ]; // 카테고리 리스트
+  String _selectedCategory_fridge = '기본 냉장고' ; // 기본 선택값
+  List<String> _categories_fridge = []; // 카테고리 리스트
+  // String _selectedCategory_fridgeCategory = '냉장'; // 기본 선택값
+  // final List<String> _categories_fridgeCategory = [
+  //   '냉장',
+  //   '냉동',
+  //   '실온'
+  // ]; // 카테고리 리스트
   String _selectedCategory_foods = '입고일 기준'; // 기본 선택값
   final List<String> _categories_foods = ['소비기한 기준', '입고일 기준']; // 카테고리 리스트
   String _selectedCategory_records = '앨범형'; // 기본 선택값
   final List<String> _categories_records = ['앨범형', '달력형', '목록형']; // 카테고리 리스트
 
   String _newCategory = '';
+  @override
+  void initState() {
+    super.initState();
+    _loadFridgeCategoriesFromFirestore(); // 초기화 시 Firestore에서 데이터를 불러옴
+  }
+
+  // Firestore에서 냉장고 목록 불러오기
+  void _loadFridgeCategoriesFromFirestore() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('fridges').get();
+      List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
+
+      if (fridgeList.isEmpty) {
+        await _createDefaultFridge(); // 기본 냉장고 추가
+      }
+
+      setState(() {
+        _categories_fridge = fridgeList; // 불러온 냉장고 목록을 상태에 저장
+        // _selectedCategory_fridge = _categories_fridge.isNotEmpty ? _categories_fridge.first : '기본 냉장고';
+      });
+    } catch (e) {
+      print('Error loading fridge categories: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('냉장고 목록을 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  Future<void> _createDefaultFridge() async {
+    try {
+      // Firestore에 기본 냉장고 추가
+      await FirebaseFirestore.instance.collection('fridges').add({
+        'FridgeName': '기본 냉장고',
+      });
+      // UI 업데이트
+      setState(() {
+        _categories_fridge.add('기본 냉장고');
+        _selectedCategory_fridge = '기본 냉장고';
+      });
+    } catch (e) {
+      print('Error creating default fridge: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기본 냉장고를 생성하는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  Future<void> _addNewFridgeToFirestore(String newFridgeName, String userId) async {
+    final fridgeRef = FirebaseFirestore.instance.collection('fridges');
+    try {
+      await fridgeRef.add({
+        'FridgeName': newFridgeName,
+        'UserID': userId,
+      });
+    } catch (e) {
+      print('냉장고 추가 중 오류가 발생했습니다: $e');
+    }
+  }
 
   // 새로운 카테고리 추가 함수
   void _addNewCategory(List<String> categories, String categoryType) {
@@ -56,15 +116,14 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
             ),
             TextButton(
               child: Text('추가'),
-              onPressed: () {
+              onPressed: () async {
                 if (newCategory.isNotEmpty) {
+                  await _addNewFridgeToFirestore(newCategory, '현재 유저 아이디');
                   setState(() {
                     categories.add(newCategory);
                     // 추가 후 선택된 카테고리 업데이트
                     if (categoryType == '냉장고') {
                       _selectedCategory_fridge = newCategory;
-                    } else if (categoryType == '냉장고 카테고리') {
-                      _selectedCategory_fridgeCategory = newCategory;
                     }
                   });
                 }
@@ -80,6 +139,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
   // 선택된 냉장고 삭제 함수
   void _deleteCategory(
       String category, List<String> categories, String categoryType) {
+    final fridgeRef = FirebaseFirestore.instance.collection('fridges');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -95,20 +155,37 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
             ),
             TextButton(
               child: Text('삭제'),
-              onPressed: () {
-                setState(() {
-                  _categories_fridge.remove(category);
-                  // 냉장고 또는 냉장고 카테고리 삭제 후 기본 선택값으로 변경
-                  if (categoryType == '냉장고') {
-                    _selectedCategory_fridge =
-                        categories.isNotEmpty ? categories.first : '';
-                  } else if (categoryType == '냉장고 카테고리') {
-                    _selectedCategory_fridgeCategory =
-                        categories.isNotEmpty ? categories.first : '';
+              onPressed: () async {
+                try {
+                  // 해당 냉장고 이름과 일치하는 문서를 찾음
+                  final snapshot = await fridgeRef
+                      .where('FridgeName', isEqualTo: category)
+                      .get();
+
+                  for (var doc in snapshot.docs) {
+                    // Firestore에서 문서 삭제
+                    await fridgeRef.doc(doc.id).delete();
                   }
-                });
-                Navigator.pop(context);
-              },
+
+                  // UI 업데이트
+                  setState(() {
+                    _categories_fridge.remove(category);
+                    if (_categories_fridge.isNotEmpty) {
+                      _selectedCategory_fridge = _categories_fridge.first;
+                    } else {
+                      _createDefaultFridge(); // 모든 냉장고가 삭제되면 기본 냉장고 생성
+                    }
+                  });
+
+                  Navigator.pop(context);
+                } catch (e) {
+                  print('Error deleting fridge: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('냉장고를 삭제하는 중 오류가 발생했습니다.')),
+                  );
+                  Navigator.pop(context);
+                };
+              }
             ),
           ],
         );
@@ -116,7 +193,10 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     );
   }
 
-  void _saveSettings() {
+  void _saveSettings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedFridge', _selectedCategory_fridge);
+    print(_selectedCategory_fridge);
     Navigator.pop(context);
   }
 
@@ -135,7 +215,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               CustomDropdown(
                 title: '냉장고 선택',
                 items: _categories_fridge,
-                selectedItem: _selectedCategory_fridge,
+                selectedItem: _categories_fridge.contains(_selectedCategory_fridge)
+                    ? _selectedCategory_fridge!
+                    : (_categories_fridge.isNotEmpty ? _categories_fridge.first : '기본 냉장고'),
                 onItemChanged: (value) {
                   setState(() {
                     _selectedCategory_fridge = value;
@@ -150,89 +232,89 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               ),
               Text('가장 자주 보는 냉장고를 기본냉장고로 설정하세요'),
               SizedBox(height: 20),
-              CustomDropdown(
-                title: '냉장고 카테고리 선택',
-                items: _categories_fridgeCategory,
-                selectedItem: _selectedCategory_fridgeCategory,
-                onItemChanged: (value) {
-                  setState(() {
-                    _selectedCategory_fridgeCategory = value;
-                  });
-                },
-                onItemDeleted: (item) {
-                  _deleteCategory(item, _categories_fridgeCategory, '냉장고 카테고리');
-                },
-                onAddNewItem: () {
-                  _addNewCategory(_categories_fridgeCategory, '냉장고 카테고리');
-                },
-              ),
-              // Row(
-              //   children: [
-              //     Text(
-              //       '냉장고 카테고리 선택',
-              //       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              //     ),
-              //     Spacer(),
-              //     PopupMenuButton<String>(
-              //       onSelected: (String value) {
-              //         if (value == '추가') {
-              //           _addNewCategory(_categories_fridgeCategory, '냉장고 카테고리');
-              //         } else {
-              //           setState(() {
-              //             _selectedCategory_fridgeCategory = value;
-              //           });
-              //         }
-              //       },
-              //       itemBuilder: (BuildContext context) {
-              //         return _categories_fridgeCategory.map((String category) {
-              //           return PopupMenuItem<String>(
-              //             value: category,
-              //             child: Row(
-              //               children: [
-              //                 Expanded(
-              //                   child: Text(category),
-              //
-              //                 ),
-              //                 IconButton(
-              //                   icon: Icon(Icons.close,
-              //                       color: Colors.black, size: 16),
-              //                   onPressed: () {
-              //                     _deleteCategory(category,
-              //                         _categories_fridgeCategory, '냉장고 카테고리');
-              //                   },
-              //                 ),
-              //               ],
-              //             ),
-              //           );
-              //         }).toList()
-              //           ..add(
-              //             PopupMenuItem<String>(
-              //               value: '추가',
-              //               child: Row(
-              //                 children: [
-              //                   Icon(Icons.add, color: Colors.blue),
-              //                   SizedBox(width: 8),
-              //                   Text('새 카테고리 추가'),
-              //                 ],
-              //               ),
-              //             ),
-              //           );
-              //       },
-              //       child: Row(
-              //         children: [
-              //           Text(
-              //             _selectedCategory_fridgeCategory.isNotEmpty
-              //                 ? _selectedCategory_fridgeCategory
-              //                 : '카테고리 선택',
-              //           ),
-              //           Icon(Icons.arrow_drop_down),
-              //         ],
-              //       ),
-              //     ),
-              //   ],
+              // CustomDropdown(
+              //   title: '냉장고 카테고리 선택',
+              //   items: _categories_fridgeCategory,
+              //   selectedItem: _selectedCategory_fridgeCategory,
+              //   onItemChanged: (value) {
+              //     setState(() {
+              //       _selectedCategory_fridgeCategory = value;
+              //     });
+              //   },
+              //   onItemDeleted: (item) {
+              //     _deleteCategory(item, _categories_fridgeCategory, '냉장고 카테고리');
+              //   },
+              //   onAddNewItem: () {
+              //     _addNewCategory(_categories_fridgeCategory, '냉장고 카테고리');
+              //   },
               // ),
-              Text('냉장고 속 분류 기준을 설정하세요'),
-              SizedBox(height: 20),
+              // // Row(
+              // //   children: [
+              // //     Text(
+              // //       '냉장고 카테고리 선택',
+              // //       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // //     ),
+              // //     Spacer(),
+              // //     PopupMenuButton<String>(
+              // //       onSelected: (String value) {
+              // //         if (value == '추가') {
+              // //           _addNewCategory(_categories_fridgeCategory, '냉장고 카테고리');
+              // //         } else {
+              // //           setState(() {
+              // //             _selectedCategory_fridgeCategory = value;
+              // //           });
+              // //         }
+              // //       },
+              // //       itemBuilder: (BuildContext context) {
+              // //         return _categories_fridgeCategory.map((String category) {
+              // //           return PopupMenuItem<String>(
+              // //             value: category,
+              // //             child: Row(
+              // //               children: [
+              // //                 Expanded(
+              // //                   child: Text(category),
+              // //
+              // //                 ),
+              // //                 IconButton(
+              // //                   icon: Icon(Icons.close,
+              // //                       color: Colors.black, size: 16),
+              // //                   onPressed: () {
+              // //                     _deleteCategory(category,
+              // //                         _categories_fridgeCategory, '냉장고 카테고리');
+              // //                   },
+              // //                 ),
+              // //               ],
+              // //             ),
+              // //           );
+              // //         }).toList()
+              // //           ..add(
+              // //             PopupMenuItem<String>(
+              // //               value: '추가',
+              // //               child: Row(
+              // //                 children: [
+              // //                   Icon(Icons.add, color: Colors.blue),
+              // //                   SizedBox(width: 8),
+              // //                   Text('새 카테고리 추가'),
+              // //                 ],
+              // //               ),
+              // //             ),
+              // //           );
+              // //       },
+              // //       child: Row(
+              // //         children: [
+              // //           Text(
+              // //             _selectedCategory_fridgeCategory.isNotEmpty
+              // //                 ? _selectedCategory_fridgeCategory
+              // //                 : '카테고리 선택',
+              // //           ),
+              // //           Icon(Icons.arrow_drop_down),
+              // //         ],
+              // //       ),
+              // //     ),
+              // //   ],
+              // // ),
+              // Text('냉장고 속 분류 기준을 설정하세요'),
+              // SizedBox(height: 20),
               Row(
                 children: [
                   Text(
@@ -283,7 +365,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                               '무오신채',
                               '알레르기',
                               '채식'
-                            ], // 원하는 카테고리 리스트), // 의견 보내기 페이지로 이동
+                            ], // 원하는 카테고리 리스트)
                           ),
                         ),
                       );

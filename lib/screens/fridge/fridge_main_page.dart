@@ -1,18 +1,23 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FridgeMainPage extends StatefulWidget {
+
   @override
   _FridgeMainPageState createState() => _FridgeMainPageState();
 }
 
 class _FridgeMainPageState extends State<FridgeMainPage> {
-  static const List<String> fridgeName = ['기본냉장고', '김치냉장고', '오빠네냉장고'];
-  String? selectedFridge = '기본냉장고';
+  DateTime currentDate = DateTime.now();
+
+  List<String> fridgeName = [];
+  String? selectedFridge = '';
 
   static const List<String> storageSections = ['냉장', '냉동', '상온'];
   String? selectedSection;
@@ -38,6 +43,42 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
 
   List<String> selectedItems = [];
   bool isDeleteMode = false;
+  @override
+  void initState() {
+    super.initState();
+    _loadFridgeCategoriesFromFirestore('현재 유저아이디');
+    _loadSelectedFridge(); // 초기화 시 Firestore에서 데이터를 불러옴
+  }
+
+  void _loadFridgeCategoriesFromFirestore(String userId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('fridges')
+          .get();
+
+      print(snapshot.docs); // 쿼리 결과 출력
+
+      List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
+
+      print(fridgeList); // 가져온 냉장고 이름 리스트 출력
+
+      setState(() {
+        fridgeName = fridgeList; // 불러온 냉장고 목록을 상태에 저장
+        // _selectedCategory_fridge = _categories_fridge.isNotEmpty ? _categories_fridge.first : '기본 냉장고';
+      });
+    } catch (e) {
+      print('Error loading fridge categories: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('냉장고 목록을 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+  void _loadSelectedFridge() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고'; // 기본 값 설정
+    });
+    print("불러온 냉장고: $selectedFridge");
+  }
 
   // 유통기한에 따른 색상 결정 함수
   Color _getBackgroundColor(int expirationDays) {
@@ -61,8 +102,6 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     return [];
   }
 
-  // 현재 날짜
-  DateTime currentDate = DateTime.now();
 
   // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
   void _deleteSelectedItems() {
@@ -120,6 +159,86 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text('냉장고 관리'),
+            SizedBox(width: 20),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: fridgeName.contains(selectedFridge) ? selectedFridge : null,
+                items: fridgeName.map((section) {
+                  return DropdownMenuItem(
+                    value: section,
+                    child: Text(section),
+                  );
+                }).toList(), // 반복문을 통해 DropdownMenuItem 생성
+                onChanged: (value) {
+                  setState(() {
+                    selectedFridge = value!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: '냉장고 선택',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: _buildSections(), // 섹션 동적으로 생성
+      ),
+
+      // 물건 추가 버튼
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fridge_add_button',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddItem(
+                pageTitle: '냉장고에 추가',
+                addButton: '냉장고에 추가',
+                fridgeFieldIndex: '기본냉장고',
+                basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
+              ),
+            ),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
+      bottomNavigationBar: isDeleteMode
+          ? Container(
+              color: Colors.transparent,
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _confirmDeleteItems,
+                  child: Text('삭제 하기'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                    ),
+                    elevation: 5,
+                    textStyle: TextStyle(
+                      fontSize: 18, // 글씨 크기 조정
+                      fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                      letterSpacing: 1.2, //
+                    ),
+                    // primary: isDeleteMode ? Colors.red : Colors.blue,
+                  ),
+                ),
+              ),
+            )
+          : null,
+    );
+  }
   Widget _buildSections() {
     return Column(
       children: List.generate(storageSections.length, (index) {
@@ -279,100 +398,6 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           },
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Text('냉장고 관리'),
-            SizedBox(width: 20),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: selectedFridge,
-                items: fridgeName.map((section) {
-                  return DropdownMenuItem(
-                    value: section,
-                    child: Text(section),
-                  );
-                }).toList(), // 반복문을 통해 DropdownMenuItem 생성
-                onChanged: (value) {
-                  setState(() {
-                    selectedFridge = value!;
-                  });
-                },
-                decoration: InputDecoration(
-                  labelText: '냉장고 선택',
-                ),
-              ),
-            ),
-          ],
-        ),
-        // actions: isDeleteMode
-        //     ? [
-        //         IconButton(
-        //           icon: Icon(Icons.cancel_outlined),
-        //           onPressed: () {
-        //             setState(() {
-        //               isDeleteMode = false; // 삭제 모드를 해제
-        //               selectedItems.clear(); // 선택된 아이템 목록 초기화
-        //             });
-        //           },
-        //         ),
-        //       ]
-        //     : [],
-      ),
-      body: SingleChildScrollView(
-        child: _buildSections(), // 섹션 동적으로 생성
-      ),
-
-      // 물건 추가 버튼
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fridge_add_button',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddItem(
-                pageTitle: '냉장고에 추가',
-                addButton: '냉장고에 추가',
-                fridgeFieldIndex: '기본냉장고',
-                basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
-              ),
-            ),
-          );
-        },
-        child: Icon(Icons.add),
-      ),
-      bottomNavigationBar: isDeleteMode
-          ? Container(
-              color: Colors.transparent,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _confirmDeleteItems,
-                  child: Text('삭제 하기'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                    ),
-                    elevation: 5,
-                    textStyle: TextStyle(
-                      fontSize: 18, // 글씨 크기 조정
-                      fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                      letterSpacing: 1.2, //
-                    ),
-                    // primary: isDeleteMode ? Colors.red : Colors.blue,
-                  ),
-                ),
-              ),
-            )
-          : null,
     );
   }
 }

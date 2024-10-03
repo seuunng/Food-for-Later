@@ -46,11 +46,15 @@ class _CustomDropdownState extends State<CustomDropdown> {
                   child: StatefulBuilder(
                     builder: (context, setState) {
                       return Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(item),
                           if (_isDropdownOpen) ...[
                             // 드롭다운이 열렸을 때만 표시
-                            Spacer(),
+                            Flexible( // Expanded 대신 Flexible을 사용합니다.
+                              fit: FlexFit.loose, // 자식이 가용한 공간을 최대한 덜 차지하도록 설정
+                              child: Container(), // 여기에 원하는 위젯을 넣을 수 있습니다.
+                            ),
                             IconButton(
                               icon: Icon(
                                 Icons.close,

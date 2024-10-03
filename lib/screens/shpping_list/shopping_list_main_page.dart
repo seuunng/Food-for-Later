@@ -4,6 +4,7 @@ import 'package:food_for_later/models/shopping_category_model.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ShoppingListMainPage extends StatefulWidget {
 
@@ -20,6 +21,9 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     ShoppingListMainPage(), // 예시로 장보기 페이지
   ];
 
+  List<String> fridgeName = [];
+  String? selectedFridge = '';
+
   void _onItemTapped(int index) {
     if (index < _pages.length) {
       setState(() {
@@ -31,10 +35,17 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   List<ShoppingCategory> _categories = [];
   List<List<String>> itemLists = [];
 
+  List<List<bool>> checkedItems = List.generate(9, (_) => [false, false, false]);
+  List<List<bool>> strikeThroughItems = List.generate(9, (_) => [false, false, false]);
+
+  bool showCheckBoxes = false;
+
   @override
   void initState() {
     super.initState();
     _loadCategoriesFromFirestore();
+    _loadFridgeCategoriesFromFirestore('현재 유저아이디');
+    _loadSelectedFridge();
   }
 
   Future<void> _loadCategoriesFromFirestore() async {
@@ -51,14 +62,31 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     });
   }
 
+  void _loadFridgeCategoriesFromFirestore(String userId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('fridges').get();
+      List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
 
-  static const List<String> fridgeName = ['기본냉장고', '김치냉장고', '오빠네냉장고'];
-  String? selectedFridge = '기본냉장고';
 
-  List<List<bool>> checkedItems = List.generate(9, (_) => [false, false, false]);
-  List<List<bool>> strikeThroughItems = List.generate(9, (_) => [false, false, false]);
+      setState(() {
+        fridgeName = fridgeList; // 불러온 냉장고 목록을 상태에 저장
+        // _selectedCategory_fridge = _categories_fridge.isNotEmpty ? _categories_fridge.first : '기본 냉장고';
+      });
+    } catch (e) {
+      print('Error loading fridge categories: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('냉장고 목록을 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+  void _loadSelectedFridge() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고'; // 기본 값 설정
+    });
+    print("불러온 냉장고: $selectedFridge");
+  }
 
-  bool showCheckBoxes = false;
 
   // 취소선이 있는 아이템들은 자동으로 체크박스가 true
   void _selectStrikeThroughItems() {
@@ -89,7 +117,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             SizedBox(width: 20),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: selectedFridge,
+                value: fridgeName.contains(selectedFridge) ? selectedFridge : null,
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,
