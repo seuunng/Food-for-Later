@@ -5,14 +5,12 @@ class ItemsInFridge {
   final String fridgeId; // 연결된 Fridge ID
   final String fridgeCategoryId; // 연결된 Fridge ID
   final List<Map<String, String>> items; // 냉장고:카테고리:아이템
-  final String userId; // 사용자의 ID
 
   ItemsInFridge({
     required this.id,
     required this.fridgeId,
     required this.fridgeCategoryId,
     required this.items,
-    required this.userId,
   });
 
   // Firestore 데이터를 가져올 때 사용하는 팩토리 메서드
@@ -22,12 +20,7 @@ class ItemsInFridge {
       id: doc.id,
       fridgeId: data['FridgeId'], // Firestore 필드명
       fridgeCategoryId: data['FridgeCategoryId'],
-      items: List<Map<String, String>>.from(
-        (data['Items'] as List).map(
-              (item) => Map<String, String>.from(item as Map), //
-        ),
-      ),
-      userId: data['UserId'],
+      items: data['Items'],
     );
   }
 
@@ -37,7 +30,6 @@ class ItemsInFridge {
       'FridgeId': fridgeId, // Firestore에 저장할 필드
       'fridgeCategoryId': fridgeCategoryId,
       'Items': items,
-      'UserId': userId,
     };
   }
 }

@@ -2,13 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ItemsInShoppingList {
   final String id;
-  final List<Map<String, String>> items; //카테고리:아이템
-  final String userId; // 사용자의 ID
+  final String items;
+  final String userId;
+  final bool isChecked;
+
 
   ItemsInShoppingList({
     required this.id,
     required this.items,
     required this.userId,
+    required this.isChecked,
   });
 
   // Firestore 데이터를 가져올 때 사용하는 팩토리 메서드
@@ -16,12 +19,9 @@ class ItemsInShoppingList {
     final data = doc.data()!;
     return ItemsInShoppingList(
       id: doc.id,
-      items: List<Map<String, String>>.from(
-        (data['Items'] as List).map(
-              (item) => Map<String, String>.from(item as Map),
-        ),
-      ),
-      userId: data['UserID'], // Firestore 필드명
+      items: data['Items'] ?? '',
+      userId: data['UserID'] ?? 'Unknown User', // Firestore 필드명
+      isChecked: data['IsChecked'] ?? false,
     );
   }
 
@@ -29,7 +29,8 @@ class ItemsInShoppingList {
   Map<String, dynamic> toFirestore() {
     return {
       'Items': items,
-      'UserID': userId, // Firestore에 저장할 필드
+      'UserID': userId,
+      'IsChecked': isChecked, // Firestore에 저장할 필드
     };
   }
 }

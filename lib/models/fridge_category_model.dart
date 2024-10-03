@@ -1,31 +1,56 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FridgeCategory {
-  final String id; // Firestore 문서 ID
-  final List<Map<String, String>> categoryName; //냉장고:카테고리
-  final String fridgeId; // 연결된 Fridge ID
+  final String id;
+  final String categoryName;
 
   FridgeCategory({
     required this.id,
     required this.categoryName,
-    required this.fridgeId,
   });
 
   // Firestore 데이터를 가져올 때 사용하는 팩토리 메서드
   factory FridgeCategory.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return FridgeCategory(
-      id: doc.id, // Firestore 문서의 ID
-      fridgeId: data['FridgeID'], // Firestore 필드명
-      categoryName: List<Map<String, String>>.from(data['CategoryName'].map((item) => Map<String, String>.from(item))),
+      id: doc.id,
+      categoryName: data['CategoryName'],
     );
   }
 
   // Firestore에 데이터를 저장할 때 사용하는 메서드
   Map<String, dynamic> toFirestore() {
     return {
-      'FridgeID': fridgeId, // Firestore에 저장할 필드
-      'CategoryName': categoryName.map((item) => Map<String, String>.from(item)).toList(), // Firestore에 저장할 필드
+      'CategoryName': categoryName, // Firestore에 저장할 필드
     };
+  }
+}
+
+List<FridgeCategory> generateDefaultCategories() {
+  // 기본 카테고리 목록
+  List<String> defaultCategories = [
+    '냉장',
+    '냉동',
+    '상온',
+  ];
+
+  // 고유 ID를 생성하기 위해 Firestore의 doc ID 사용
+  return defaultCategories.map((categoryName) {
+    String categoryId = FirebaseFirestore.instance.collection('fridge_categories').doc().id;
+    return FridgeCategory(
+      id: categoryId,
+      categoryName: categoryName,
+    );
+  }).toList();
+}
+
+Future<void> saveDefaultCategoriesToFirestore() async {
+  List<FridgeCategory> defaultCategories = generateDefaultCategories();
+
+  for (var category in defaultCategories) {
+    await FirebaseFirestore.instance
+        .collection('fridge_categories')
+        .doc(category.id)
+        .set(category.toFirestore());
   }
 }

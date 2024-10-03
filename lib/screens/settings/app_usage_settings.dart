@@ -366,6 +366,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                               '알레르기',
                               '채식'
                             ], // 원하는 카테고리 리스트)
+                            sourcePage: 'update_foods_category',
                           ),
                         ),
                       );

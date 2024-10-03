@@ -10,15 +10,15 @@ class AddItem extends StatefulWidget {
   final String pageTitle;
   final String addButton;
   final List<String> basicFoodsCategories;
-  // final Map<String, List<String>> itemsByCategory;
   final String fridgeFieldIndex;
+  final String sourcePage;
 
   AddItem({
     required this.pageTitle,
     required this.basicFoodsCategories,
-    // required this.itemsByCategory,
     required this.addButton,
     required this.fridgeFieldIndex,
+    required this.sourcePage,
   });
 
   @override
@@ -26,9 +26,17 @@ class AddItem extends StatefulWidget {
 }
 
 Map<String, List<Map<String, dynamic>>> itemsByCategory = {};
-final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 class _AddItemState extends State<AddItem> {
+  DateTime currentDate = DateTime.now();
+
+  static const List<String> storageSections = [];
+
+  List<List<Map<String, int>>> itemLists = [[], [], []];
+  List<String> fridgeItems = [];
+  List<String> selectedItems = [];
+  List<FoodsModel> filteredItems = [];
+
   String? selectedCategory;
   String? selectedSection;
   String searchKeyword = '';
@@ -59,14 +67,17 @@ class _AddItemState extends State<AddItem> {
         return FoodsModel.fromFirestore(doc);
       }).toList();
 
-      // itemsByCategory에 데이터를 추가
       setState(() {
-        itemsByCategory = {
-          for (var category in categories)
-            category.defaultCategory: [
-              category  // FoodsModel 객체를 사용하여 추가
-            ]
-        };
+        itemsByCategory = {};
+
+        for (var category in categories) {
+          // 기존 카테고리 리스트가 있으면 추가, 없으면 새 리스트 생성
+          if (itemsByCategory.containsKey(category.defaultCategory)) {
+            itemsByCategory[category.defaultCategory]!.add(category); // 이미 있는 리스트에 추가
+          } else {
+            itemsByCategory[category.defaultCategory] = [category]; // 새로운 리스트 생성
+          }
+        }
       });
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
@@ -76,46 +87,83 @@ class _AddItemState extends State<AddItem> {
     }
   }
 
-  // 현재 날짜
-  DateTime currentDate = DateTime.now();
-
-  // 냉장고 섹션 이름들
-  static const List<String> storageSections = ['냉장', '냉동', '상온'];
-
-  // 각 섹션별로 물건을 저장할 리스트
-  List<List<Map<String, int>>> itemLists = [[], [], []];
-
-  // 냉장고에 추가된 아이템 리스트
-  List<String> fridgeItems = [];
-
-  // 선택된 아이템 상태를 관리할 리스트
-  List<String> selectedItems = [];
-
-  // 검색된 아이템 상태를 관리할 리스트
-  List<FoodsModel> filteredItems = [];
-
   // 물건 추가 다이얼로그
   Future<void> _addItemsToFridge() async {
-    print('추가 함수 실행');
-    setState(() {
-      int fridgeFieldIndex = 0;
-      // int sectionIndex = storageSections.indexOf(selectedSection!);
-      int sectionIndex = selectedSection != null
-          ? storageSections.indexOf(selectedSection!)
-          : 0;
-      itemLists[sectionIndex]
-          .addAll(selectedItems.map((item) => {item: 7}) // 예시로 유통기한 7일 설정
-              );
-      fridgeItems
-          .addAll(selectedItems.where((item) => !fridgeItems.contains(item)));
-      selectedItems.clear();
-      // Navigator.pop(context, {
-      //   'category': selectedCategory,
-      //   'item': selectedItem,
-      //   'expirationDays': expirationDays,
-      //   'sectionIndex': sectionIndex
-      // });
+    final fridgeId = '1번 냉장고'; // 여기에 실제 유저 ID를 추가하세요
+
+    try {
+      for (String itemName in selectedItems) {
+        // FoodsModel에서 해당 itemName에 맞는 데이터를 찾기
+        final matchingFood = itemsByCategory.values.expand((x) => x).firstWhere(
+              (food) => food.foodsName == itemName, // itemName과 일치하는지 확인
+          orElse: () =>
+              FoodsModel(
+                id: 'unknown',
+                foodsName: itemName,
+                defaultCategory: '기타',
+                defaultFridgeCategory: '기타',
+                // 기본 카테고리
+                shoppingListCategory: '기타',
+                expirationDate: 0,
+                shelfLife: 0,
+              ),
+        );
+
+        // fridgeCategoryId로 matchingFood의 defaultFridgeCategory 사용
+        final fridgeCategoryId = matchingFood.defaultFridgeCategory;
+
+        await FirebaseFirestore.instance.collection('fridge_items').add({
+          'items': itemName,
+          'FridgeId': fridgeId, // Firestore에 저장할 필드
+          'fridgeCategoryId': fridgeCategoryId,
+        });
+      }
+
+      // 아이템 추가 후 상태 초기화
+      setState(() {
+        selectedItems.clear();
+      });
+
+    } catch (e) {
+      print('아이템 추가 중 오류 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('아이템 추가 중 오류가 발생했습니다.')),
+      );
+    }
+
+    // 화면 닫기 (AddItem 끄기)
+    Future.delayed(Duration(seconds: 1), () {
+      if (mounted) {
+        // mounted 상태를 확인하여 위젯이 아직 활성화된 상태일 때만 pop을 호출
+        Navigator.pop(context); // AddItem 화면을 종료
+      }
     });
+  }
+
+    Future<void> _addItemsToShoppingList() async {
+      final userId = '현재 유저아이디'; // 여기에 실제 유저 ID를 추가하세요
+
+      try {
+        for (String itemName in selectedItems) {
+          await FirebaseFirestore.instance.collection('shopping_items').add({
+            'items': itemName,
+            'userId': userId,
+            'isChecked': false, // 장바구니에 추가된 아이템은 기본적으로 체크되지 않음
+          });
+        }
+
+        // 아이템 추가 후 상태 초기화
+        setState(() {
+          selectedItems.clear();
+        });
+
+      } catch (e) {
+        print('아이템 추가 중 오류 발생: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('아이템 추가 중 오류가 발생했습니다.')),
+        );
+      }
+
     // 화면 닫기 (AddItem 끄기)
     Future.delayed(Duration(seconds: 1), () {
       if (mounted) {
@@ -138,84 +186,6 @@ class _AddItemState extends State<AddItem> {
       });
       filteredItems = tempFilteredItems;
     });
-  }
-
-  Widget _buildFilteredItemsGrid() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.all(8.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        crossAxisSpacing: 8.0,
-        mainAxisSpacing: 8.0,
-        childAspectRatio: 1,
-      ),
-      itemCount: filteredItems.length +
-          (filteredItems.contains(searchKeyword) ? 0 : 1),
-      itemBuilder: (context, index) {
-        if (index == filteredItems.length) {
-          // 마지막 그리드 항목에 "검색어로 새 항목 추가" 항목 표시
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                if (!selectedItems.contains(searchKeyword)) {
-                  selectedItems.add(searchKeyword); // 검색어로 새로운 항목 추가
-                } else {
-                  selectedItems.remove(searchKeyword); // 선택 취소
-                }
-              });
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: selectedItems.contains(searchKeyword)
-                    ? Colors.orange
-                    : Colors.cyan,
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              height: 60,
-              child: Center(
-                child: Text(
-                  '$searchKeyword',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          );
-        } else {
-          FoodsModel currentItem = filteredItems[index];
-          String itemName = currentItem.foodsName; // 여기서 itemName 추출
-          //키워드 검색 결과 그리드 렌더링
-          return GestureDetector(
-            onTap: () {
-              // 아이템 클릭 시 처리
-              setState(() {
-                if (!selectedItems.contains(itemName)) {
-                  selectedItems.add(itemName); // 아이템 선택
-                } else {
-                  selectedItems.remove(itemName); // 선택 취소
-                }
-              });
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: selectedItems.contains(itemName)
-                    ? Colors.orange
-                    : Colors.blueAccent,
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              height: 60,
-              child: Center(
-                child: Text(
-                  itemName,
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          );
-        }
-      },
-    );
   }
 
   // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
@@ -327,7 +297,6 @@ class _AddItemState extends State<AddItem> {
                 ),
               ),
             ],
-            // 카테고리 그리드
             if (filteredItems.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -337,7 +306,6 @@ class _AddItemState extends State<AddItem> {
               _buildCategoryGrid(),
               if (selectedCategory != null) ...[
                 Divider(thickness: 2),
-                // 아이템 그리드도 스크롤되게 함
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: _buildCategoryItemsGrid(),
@@ -347,15 +315,26 @@ class _AddItemState extends State<AddItem> {
           ],
         ),
       ),
-      bottomNavigationBar: selectedItems.isNotEmpty
+
+      bottomNavigationBar: selectedItems.isNotEmpty && widget.sourcePage != 'update_foods_category'
           ? Container(
               color: Colors.transparent,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed:
-                      isDeleteMode ? _confirmDeleteItems : _addItemsToFridge,
+                  onPressed:() {
+                    if (isDeleteMode) {
+                      _confirmDeleteItems(); // 삭제 모드일 때
+                    } else {
+                      // sourcePage에 따라 다른 함수 실행
+                      if (widget.sourcePage == 'shoppingList') {
+                        _addItemsToShoppingList(); // 장바구니에 아이템 추가
+                      } else if (widget.sourcePage == 'fridge') {
+                        _addItemsToFridge(); // 냉장고에 아이템 추가
+                      }
+                    }
+                  },
                   child: Text(isDeleteMode ? '삭제 하기' : widget.addButton),
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(
@@ -376,6 +355,84 @@ class _AddItemState extends State<AddItem> {
               ),
             )
           : null,
+    );
+  }
+
+  Widget _buildFilteredItemsGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(8.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5,
+        crossAxisSpacing: 8.0,
+        mainAxisSpacing: 8.0,
+        childAspectRatio: 1,
+      ),
+      itemCount: filteredItems.length +
+          (filteredItems.contains(searchKeyword) ? 0 : 1),
+      itemBuilder: (context, index) {
+        if (index == filteredItems.length) {
+          // 마지막 그리드 항목에 "검색어로 새 항목 추가" 항목 표시
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (!selectedItems.contains(searchKeyword)) {
+                  selectedItems.add(searchKeyword); // 검색어로 새로운 항목 추가
+                } else {
+                  selectedItems.remove(searchKeyword); // 선택 취소
+                }
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: selectedItems.contains(searchKeyword)
+                    ? Colors.orange
+                    : Colors.cyan,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              height: 60,
+              child: Center(
+                child: Text(
+                  '$searchKeyword',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          );
+        } else {
+          FoodsModel currentItem = filteredItems[index];
+          String itemName = currentItem.foodsName; // 여기서 itemName 추출
+          //키워드 검색 결과 그리드 렌더링
+          return GestureDetector(
+            onTap: () {
+
+              setState(() {
+                if (!selectedItems.contains(itemName)) {
+                  selectedItems.add(itemName); // 아이템 선택
+                } else {
+                  selectedItems.remove(itemName); // 선택 취소
+                }
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: selectedItems.contains(itemName)
+                    ? Colors.orange
+                    : Colors.blueAccent,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              height: 60,
+              child: Center(
+                child: Text(
+                  itemName,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 
