@@ -1,13 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/preferred_food_model.dart';
 
 enum SortState { none, ascending, descending }
 
 class PreferredfoodscategoryTable extends StatefulWidget {
   @override
-  _PreferredfoodscategoryTableState createState() => _PreferredfoodscategoryTableState();
+  _PreferredfoodscategoryTableState createState() =>
+      _PreferredfoodscategoryTableState();
 }
 
-class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTable> {
+class _PreferredfoodscategoryTableState
+    extends State<PreferredfoodscategoryTable> {
   // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '선택', 'state': SortState.none},
@@ -17,51 +21,108 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
     {'name': '변동', 'state': SortState.none}
   ];
 
-  // 사용자 데이터
-  List<Map<String, dynamic>> userData = [
-    {
-      '연번': 1,
-      '선호식품 카테고리': '유제품',
-      '식품명': '요거트',
-    },
-    {
-      '연번': 2,
-      '선호식품 카테고리': '무오신채',
-      '식품명': '마늘',
-    },
-    {
-      '연번': 3,
-      '선호식품 카테고리': '비건',
-      '식품명': '새우젓',
-    },
-  ];
-
-  // 선택된 행의 인덱스를 저장하는 리스트
+  bool isEditing = false;
+  int? selectedFoodIndex; // 수정할 아이템의 인덱스
+  List<Map<String, dynamic>> userData = [];
   List<int> selectedRows = [];
+  final List<String> categoryOptions = [];
+  final Map<String, List<String>> itemsByCategory = {};
 
-  // 드롭다운 선택 항목들
-  final List<String> categoryOptions = ['유제품', '무오신채', '비건'];
-
-  // 선택된 값들을 저장할 변수들
   String? _selectedCategory;
 
 // 추가할 때 사용할 입력 필드 컨트롤러들
   final TextEditingController _foodNameController = TextEditingController();
 
-  // 사용자 데이터를 추가하는 함수
-  void _addFood() {
-    setState(() {
-      userData.add({
-        '연번': userData.length + 1,
-        '선호식품 카테고리': _selectedCategory,
-        '식품명': _foodNameController.text,
+  @override
+  void initState() {
+    super.initState();
+    _loadFoodsData();
+    // addSampleDataToFirestore();
+  }
+
+  Future<void> _loadFoodsData() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print('Firestore 데이터가 없습니다.');
+        return; // 데이터가 없으면 메서드를 종료
+      }
+
+      Map<String, List<String>> tempItemsByCategory = {};
+      List<String> tempCategories = [];
+
+      // 문서 하나씩 처리
+      snapshot.docs.forEach((doc) {
+        final data = PreferredFoodModel.fromFirestore(doc);
+
+        // 카테고리 내 모든 itemsByCategory의 아이템을 순회하면서 각 아이템을 추가
+        data.category.forEach((category, foodList) {
+          tempCategories.add(category); // 카테고리 추가
+          tempItemsByCategory[category] = foodList;
+
+          for (var food in foodList) {
+            userData.add({
+              '연번': userData.length + 1, // 연번은 자동으로 증가하도록 설정
+              '선호식품 카테고리': category, // Firestore의 카테고리를 사용
+              '식품명': food,
+            });
+          }
+        });
       });
 
-      // 입력 필드 초기화
+      // 상태 업데이트
+      setState(() {
+        categoryOptions.addAll(tempCategories.toSet().toList()); // 카테고리 목록 설정
+        itemsByCategory.addAll(tempItemsByCategory); // 카테고리별 식품 목록 설정
+      });
+    } catch (e) {
+      print('Firestore 데이터를 불러오는 중 오류 발생: $e');
+    }
+  }
 
-      _foodNameController.clear();
-      _selectedCategory = null;
-    });
+  // 사용자 데이터를 추가하는 함수
+  Future<void> _addFood(String foodName) async {
+    try {
+      // Firestore에서 카테고리가 포함된 문서 참조
+      final docRef = FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .doc('9y0Rg5AnHEQHcCa3VO6J'); // 이 ID를 실제로 사용 중인 문서 ID로 변경
+
+      final docSnapshot = await docRef.get();
+
+      if (docSnapshot.exists) {
+        // 문서가 존재하면 기존 카테고리 배열에 항목 추가
+        Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+        List<String> existingFoods =
+        List<String>.from(data['category'][_selectedCategory] ?? []);
+
+        // 새로운 항목 추가
+        existingFoods.add(foodName);
+
+        // Firestore에 업데이트된 배열을 저장
+        await docRef.update({
+          'category.${_selectedCategory}': existingFoods, // 선택된 카테고리 배열 업데이트
+        });
+      } else {
+        // 문서가 존재하지 않을 경우 새로 생성
+        await docRef.set({
+          'category': {
+            _selectedCategory: [foodName], // 새로운 카테고리 생성 후 배열 추가
+          },
+        });
+      }
+
+      // 입력 필드 초기화
+      setState(() {
+        _foodNameController.clear();
+        _selectedCategory = null;
+      });
+    } catch (e) {
+      print('Firestore에 저장하는 중 오류가 발생했습니다: $e');
+    }
   }
 
 // 데이터 수정 버튼 클릭 시 호출할 함수
@@ -71,18 +132,108 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
       Map<String, dynamic> selectedFood = userData[index];
       _foodNameController.text = selectedFood['식품명'];
       _selectedCategory = selectedFood['선호식품 카테고리'];
+
+      isEditing = true;
+      selectedFoodIndex = index;
     });
   }
 
-  // 체크박스를 사용해 선택한 행 삭제
-  void _deleteSelectedRows() {
-    setState(() {
-      selectedRows.sort((a, b) => b.compareTo(a)); // 역순으로 정렬하여 삭제
-      for (var index in selectedRows) {
-        userData.removeAt(index);
+  Future<void> _updateFoodInCategory(String category, String oldFoodName, String updatedFoodName) async {
+
+    try {
+      // Firestore에서 선택된 카테고리 문서를 불러옵니다.
+      final docRef = FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .doc('9y0Rg5AnHEQHcCa3VO6J'); // 실제 문서 ID로 변경
+
+      final docSnapshot = await docRef.get();
+
+      if (docSnapshot.exists) {
+        // 문서가 존재하면, 해당 카테고리 배열을 불러옵니다.
+        Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+        List<String> existingFoods =
+        List<String>.from(data['category'][category] ?? []);
+
+        // 카테고리 내에서 기존 식품명을 찾아 수정
+        int foodIndex = existingFoods.indexOf(oldFoodName);
+        if (foodIndex != -1) {
+          // 기존 식품명을 수정된 이름으로 업데이트
+          existingFoods[foodIndex] = updatedFoodName;
+
+          // Firestore에 업데이트된 배열을 저장
+          await docRef.update({
+            'category.$category': existingFoods, // 선택된 카테고리 배열 업데이트
+          });
+
+          print('Firestore에서 항목이 성공적으로 업데이트되었습니다.');
+        } else {
+          print('해당 카테고리에서 식품명을 찾을 수 없습니다.');
+        }
+      } else {
+        print('Firestore 문서를 찾을 수 없습니다.');
       }
-      selectedRows.clear(); // 삭제 후 선택 초기화
-    });
+    } catch (e) {
+      print('Firestore에 데이터를 업데이트하는 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  // 체크박스를 사용해 선택한 행 삭제
+  Future<void> _deleteFoodFromCategory(String category, String foodName) async {
+    print('_deleteFoodFromCategory 실행');
+    bool shouldDelete = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('삭제 확인'),
+          content: Text('선택한 항목을 삭제하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // 취소 선택 시 false 반환
+              },
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // 확인 선택 시 true 반환
+              },
+              child: Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+    if (shouldDelete == true) {
+      try {
+        // Firestore에서 선택된 카테고리 문서를 불러옵니다.
+        final docRef = FirebaseFirestore.instance
+            .collection('preferred_foods_categories')
+            .doc('9y0Rg5AnHEQHcCa3VO6J'); // 실제 문서 ID로 변경
+
+        final docSnapshot = await docRef.get();
+
+        if (docSnapshot.exists) {
+          // 문서가 존재하면, 해당 카테고리 배열을 불러옵니다.
+          Map<String, dynamic> data = docSnapshot.data() as Map<String,
+              dynamic>;
+          List<String> existingFoods =
+          List<String>.from(data['category'][category] ?? []);
+
+          // 선택한 식품명을 배열에서 제거
+          existingFoods.remove(foodName);
+
+          // Firestore에 업데이트된 배열을 저장
+          await docRef.update({
+            'category.$category': existingFoods, // 선택된 카테고리 배열 업데이트
+          });
+
+        } else {
+          print('Firestore 문서를 찾을 수 없습니다.');
+        }
+      } catch (e) {
+        print('Firestore에서 항목을 삭제하는 중 오류가 발생했습니다: $e');
+      }
+    }
   }
 
   void _sortBy(String columnName, SortState currentState) {
@@ -146,27 +297,29 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
                       ),
                       child: column['name'] == '선택' || column['name'] == '변동'
                           ? Center(
-                        child: Text(column['name']),
-                      )
+                              child: Text(column['name']),
+                            )
                           : GestureDetector(
-                        onTap: () => _sortBy(column['name'], column['state']),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(column['name']),
-                              Icon(
-                                column['state'] == SortState.ascending
-                                    ? Icons.arrow_upward
-                                    : column['state'] == SortState.descending
-                                    ? Icons.arrow_downward
-                                    : Icons.sort,
-                                size: 12,
+                              onTap: () =>
+                                  _sortBy(column['name'], column['state']),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(column['name']),
+                                    Icon(
+                                      column['state'] == SortState.ascending
+                                          ? Icons.arrow_upward
+                                          : column['state'] ==
+                                                  SortState.descending
+                                              ? Icons.arrow_downward
+                                              : Icons.sort,
+                                      size: 12,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            ),
                     ),
                   );
                 }).toList(),
@@ -186,7 +339,7 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
               3: FixedColumnWidth(90),
               4: FixedColumnWidth(80),
             },
-            children:  [
+            children: [
               TableRow(
                 decoration: BoxDecoration(
                   border: Border(
@@ -195,9 +348,7 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
                   ),
                 ),
                 children: [
-                  TableCell(
-                    child: SizedBox.shrink()
-                  ),
+                  TableCell(child: SizedBox.shrink()),
                   TableCell(
                       verticalAlignment: TableCellVerticalAlignment.middle,
                       child: Center(child: Text('no'))),
@@ -263,7 +414,26 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
                       width: 60, // 버튼의 너비를 설정
                       height: 30, // 버튼의 높이를 설정
                       child: ElevatedButton(
-                        onPressed: _addFood,
+                        onPressed: () {
+                          if (isEditing && selectedFoodIndex != null) {
+                            Map<String, dynamic> selectedFood = userData[selectedFoodIndex!];
+                            String oldFoodName = selectedFood['식품명'];
+                            String updatedFoodName = _foodNameController.text;
+
+                            _updateFoodInCategory(_selectedCategory!, oldFoodName, updatedFoodName);
+                          } else {
+                            // 추가 모드일 때, 새 데이터를 추가
+                            _addFood(_foodNameController.text);
+                          }
+
+                          // 필드 초기화 및 수정 모드 해제
+                          setState(() {
+                            _foodNameController.clear();
+                            _selectedCategory = null;
+                            isEditing = false;
+                            selectedFoodIndex = null;
+                          });
+                        },
                         child: Text('추가'),
                       ),
                     ),
@@ -297,8 +467,10 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
                         setState(() {
                           if (value == true) {
                             selectedRows.add(index);
+                            selectedFoodIndex = index;
                           } else {
                             selectedRows.remove(index);
+                            selectedFoodIndex = null;
                           }
                         });
                       },
@@ -332,7 +504,23 @@ class _PreferredfoodscategoryTableState extends State<PreferredfoodscategoryTabl
           ),
           // 선택한 행 삭제 버튼
           ElevatedButton(
-            onPressed: selectedRows.isNotEmpty ? _deleteSelectedRows : null,
+            onPressed: () {
+              if (selectedFoodIndex != null) {
+                // 선택한 데이터를 가져옵니다.
+                Map<String, dynamic> selectedFood = userData[selectedFoodIndex!];
+                String category = selectedFood['선호식품 카테고리'];
+                String foodName = selectedFood['식품명'];
+
+                // 선택한 카테고리와 식품명을 기반으로 삭제 수행
+                _deleteFoodFromCategory(category, foodName);
+                // UI 업데이트
+                setState(() {
+                  userData.removeAt(selectedFoodIndex!);
+                  selectedRows.remove(selectedFoodIndex); // 선택한 행 삭제
+                  selectedFoodIndex = null; // 선택한 인덱스 초기화
+                });
+              }
+            },
             child: Text('선택한 항목 삭제'),
           ),
         ],

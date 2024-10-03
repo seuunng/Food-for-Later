@@ -98,12 +98,10 @@ class _AddRecipeState extends State<AddRecipe> {
   Future<void> _loadDataFromFirestore() async {
     try {
       final ingredientsSnapshot =
-          await _db.collection('default_foods_categories').get();
+          await _db.collection('foods').get();
       final List<String> ingredientsData = ingredientsSnapshot.docs
-          .expand(
-              (doc) => (doc['itemsByCategory'] as List<dynamic>).cast<String>())
+          .map((doc) => (doc['foodsName'] as String))
           .toList();
-
       final methodsSnapshot =
           await _db.collection('recipe_method_categories').get();
       final List<String> methodsData = methodsSnapshot.docs

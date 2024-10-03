@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/default_food_model.dart';
+import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/recipe_method_model.dart';
 import 'package:food_for_later/models/recipe_thema_model.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
@@ -23,6 +24,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
   String searchKeyword = '';
   Map<String, List<String>> itemsByCategory = {};
   List<RecipeThemaModel> themaCategories = [];
+  List<String> categories = []; // 카테고리를 저장할 필드 추가
   Map<String, List<String>> methodCategories = {};
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -42,33 +44,37 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     super.initState();
     _tabController = TabController(length: myTabs.length, vsync: this);
     _loadCategoriesFromFirestore(); // Firestore로부터 카테고리 데이터 로드
-    _loadThemaFromFirestore();// Firestore로부터 카테고리 데이터 로드
+    _loadThemaFromFirestore();  // Firestore로부터 카테고리 데이터 로드
     _loadMethodFromFirestore();
   }
 
   void _loadCategoriesFromFirestore() async {
     try {
-      final snapshot = await _db.collection('default_foods_categories').get();
-      final categories = snapshot.docs.map((doc) {
-        return DefaultFoodModel.fromFirestore(doc);
-      }).toList();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('foods')
+          .get();
 
-      for (var category in categories) {
-        print('Category: ${category.categories}');
-        print('Items by Category: ${category.itemsByCategory}');
+      final Map<String, List<String>> categoryMap = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final String? category = data['defaultCategory'] as String?;
+        final String? foodName = data['foodsName'] as String?;
+
+        if (category != null && foodName != null && category.isNotEmpty && foodName.isNotEmpty) {
+          if (categoryMap.containsKey(category)) {
+            categoryMap[category]!.add(foodName);
+          } else {
+            categoryMap[category] = [foodName];
+          }
+        }
       }
 
+      final categories = categoryMap.keys.toList();
+
       setState(() {
-        itemsByCategory = {
-          for (var category in categories)
-            category.categories: category.itemsByCategory is List<Map<String, dynamic>>
-                ? category.itemsByCategory
-                .map((item) => item['itemName'].toString())
-                .toList() // Map에서 itemName 추출
-                : category.itemsByCategory
-                .map((item) => item.toString())
-                .toList(), // 이미 List<String>인 경우
-        };
+        this.categories = categories;
+        this.itemsByCategory = categoryMap; // 카테고리별 식품명 리스트
       });
 
     } catch (e) {
@@ -89,7 +95,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
       setState(() {
         this.themaCategories = themaCategories;
       });
-
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(

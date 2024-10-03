@@ -14,10 +14,19 @@ class RecipeMethodModel {
   // Firestore에서 데이터를 가져올 때 사용하는 팩토리 메서드
   factory RecipeMethodModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+    String categories = (data['categories'] != null)
+        ? data['categories'] as String
+        : '';
+
+    List<String> methodList = (data['method'] != null)
+        ? List<String>.from(data['method'])
+        : [];
+
     return RecipeMethodModel(
       id: doc.id,
-      categories: data['categories'] as String,
-      method: List<String>.from(data['method'] as List<dynamic>),
+      categories: categories,
+      method: methodList,
     );
   }
 

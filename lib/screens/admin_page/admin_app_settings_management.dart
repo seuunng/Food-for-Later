@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/app_setting_categories_table/foods_table.dart';
 import 'package:food_for_later/screens/admin_page/app_setting_categories_table/theme_table.dart';
 import 'package:food_for_later/screens/admin_page/app_setting_categories_table/howtocook_table.dart';
-import 'package:food_for_later/screens/admin_page/app_setting_categories_table/basicfoodscategory_table.dart';
 import 'package:food_for_later/screens/admin_page/app_setting_categories_table/preferredfoodscategory_table.dart';
 
 class AdminAppSettingsManagement extends StatefulWidget {
@@ -17,7 +16,6 @@ class _AdminAppSettingsManagementState
     Tab(text: '재료별 카테고리'),
     Tab(text: '테마별 카테고리'),
     Tab(text: '조리방법별 카테고리'),
-    // Tab(text: '기본식품 카테고리'),
     Tab(text: '선호식품 카테고리'),
   ];
 
@@ -37,7 +35,6 @@ class _AdminAppSettingsManagementState
             SingleChildScrollView(child: FoodsTable()),
             SingleChildScrollView(child: ThemeTable()),
             SingleChildScrollView(child: HowtocookTable()),
-            // SingleChildScrollView(child: BasicfoodscategoryTable()),
             SingleChildScrollView(child: PreferredfoodscategoryTable()),
           ],
         ),

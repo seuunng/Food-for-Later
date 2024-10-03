@@ -32,7 +32,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
   void initState() {
     super.initState();
     _loadMethodsData();
-    // addSampleTheme();
+    // _addSampleData();
   }
 
   Future<void> _loadMethodsData() async {
@@ -44,11 +44,13 @@ class _HowtocookTableState extends State<HowtocookTable> {
 
     snapshot.docs.forEach((doc) {
       final method = RecipeMethodModel.fromFirestore(doc);
-print(method.method);
-      methods.add({
-        '연번': methods.length + 1, // 연번은 자동으로 증가하도록 설정
-        '조리방법명': method.method,
-        'documentId': doc.id,
+
+      method.method.forEach((singleMethod) {
+        methods.add({
+          '연번': methods.length + 1,
+          '조리방법명': singleMethod,
+          'documentId': doc.id,
+        });
       });
     });
 
@@ -59,38 +61,58 @@ print(method.method);
 
   // 사용자 데이터를 추가하는 함수
   void _addMethod(String newMethod) async {
-    final snapshot =
-        await FirebaseFirestore.instance.collection('recipe_method_categories')
-    .doc('documentId');
+    try {
+      final documentId = '0scwOYhAXemUyvkwqpQ1';
+      final snapshot = await FirebaseFirestore.instance
+          .collection('recipe_method_categories')
+          .doc(documentId);
 
-    await snapshot.update({
-      'method': FieldValue.arrayUnion([newMethod]), // 배열에 새로운 항목 추가
-    });
+      final docSnapshot = await snapshot.get();
+      if (docSnapshot.exists) {
+        await snapshot.update({
+          'method': FieldValue.arrayUnion([newMethod]), // 배열에 새로운 항목 추가
+        });
+      } else {
+        // 문서가 없으면 새로 생성
+        await snapshot.set({
+          'method': [newMethod], // 새로 문서를 만들고 첫 번째 항목으로 추가
+        });
+      }
 
-    userData.add({
-      '조리방법명': newMethod,
-    });
+      setState(() {
+        userData.add({
+          '조리방법명': newMethod,
+        });
+      });
 
-    _methodNameController.clear();
+      _methodNameController.clear();
+    } catch (e) {
+      print('Error: $e');
+    }
   }
 
-  // void _addSampleData() async {
-  //   final newItem = RecipeMethodModel(
-  //     id: _db.collection('recipe_method_categories').doc().id, // Firestore 문서 ID 자동 생성
-  //     categories: '', // 대분류 카테고리 예시
-  //     method: ['끓이기', '데치기', '오븐','튀기기','에어프라이어','삶기','전자렌지','볶기'], // 소
-  //   );
-  //
-  //   try {
-  //     await _db.collection('recipe_method_categories').doc(newItem.id).set(newItem.toFirestore());
-  //     print('데이터 추가 성공');
-  //   } catch (e) {
-  //     print('데이터 추가 실패: $e');
-  //   }
-  // }
+  void _addSampleData() async {
+    final newItem = RecipeMethodModel(
+      id: FirebaseFirestore.instance
+          .collection('recipe_method_categories')
+          .doc()
+          .id, // Firestore 문서 ID 자동 생성
+      categories: '', // 대분류 카테고리 예시
+      method: ['끓이기', '데치기', '오븐', '튀기기', '에어프라이어', '삶기', '전자렌지', '볶기'], // 소
+    );
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('recipe_method_categories')
+          .doc(newItem.id)
+          .set(newItem.toFirestore());
+      print('데이터 추가 성공');
+    } catch (e) {
+      print('데이터 추가 실패: $e');
+    }
+  }
 
 // 데이터 수정 버튼 클릭 시 호출할 함수
-
   void _editMethod(int index) {
     final selectedMethod = userData[index];
 
@@ -111,40 +133,40 @@ print(method.method);
             .collection('recipe_method_categories')
             .doc(documentId)
             .get();
-    if (snapshot.exists) {
-      // 기존의 method 배열 가져오기
-      List<dynamic> methodList = snapshot.data()?['method'] ?? [];
+        if (snapshot.exists) {
+          // 기존의 method 배열 가져오기
+          List<dynamic> methodList = snapshot.data()?['method'] ?? [];
 
-      // 배열 안에서 수정할 항목의 인덱스를 찾기
-      int methodIndex = methodList.indexWhere(
-              (method) => method == selectedMethod['조리방법명']);
+          // 배열 안에서 수정할 항목의 인덱스를 찾기
+          int methodIndex = methodList
+              .indexWhere((method) => method == selectedMethod['조리방법명']);
 
-      if (methodIndex != -1) {
-        // 배열의 해당 항목을 수정
-        methodList[methodIndex] = updatedMethod.isNotEmpty
-            ? updatedMethod
-            : selectedMethod['조리방법명'];
+          if (methodIndex != -1) {
+            // 배열의 해당 항목을 수정
+            methodList[methodIndex] = updatedMethod.isNotEmpty
+                ? updatedMethod
+                : selectedMethod['조리방법명'];
 
-        // Firestore에 업데이트
-        await FirebaseFirestore.instance
-            .collection('recipe_method_categories')
-            .doc(documentId)
-            .update({
-          'method': methodList, // 수정된 배열로 업데이트
-        });
+            // Firestore에 업데이트
+            await FirebaseFirestore.instance
+                .collection('recipe_method_categories')
+                .doc(documentId)
+                .update({
+              'method': methodList, // 수정된 배열로 업데이트
+            });
 
-        setState(() {
-          // 로컬 데이터도 업데이트
-          userData[index]['조리방법명'] = updatedMethod.isNotEmpty
-              ? updatedMethod
-              : selectedMethod['조리방법명'];
-        });
+            setState(() {
+              // 로컬 데이터도 업데이트
+              userData[index]['조리방법명'] = updatedMethod.isNotEmpty
+                  ? updatedMethod
+                  : selectedMethod['조리방법명'];
+            });
 
-        print('조리 방법이 성공적으로 업데이트되었습니다.');
-      } else {
-        print('해당 조리 방법을 찾을 수 없습니다.');
-      }
-    }
+            print('조리 방법이 성공적으로 업데이트되었습니다.');
+          } else {
+            print('해당 조리 방법을 찾을 수 없습니다.');
+          }
+        }
       } catch (e) {
         print('Firestore에 데이터를 업데이트하는 중 오류가 발생했습니다: $e');
       }
@@ -152,9 +174,7 @@ print(method.method);
   }
 
   // 체크박스를 사용해 선택한 행 삭제
-  void _deleteSelectedRows(int index) async {
-    final selectedMethod = userData[index];
-
+  void _deleteSelectedRows(String methodToDelete, String documentId) async {
     bool shouldDelete = await showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -179,27 +199,24 @@ print(method.method);
         });
     if (shouldDelete == true) {
       try {
-        final String? documentId = selectedMethod['documentId'];
-        if (documentId != null) {
-        final snapshot = await FirebaseFirestore.instance
+        // Firestore의 해당 문서 참조
+        final docRef = FirebaseFirestore.instance
             .collection('recipe_method_categories')
             .doc(documentId);
 
-          await snapshot.delete();
+        // Firestore에서 배열의 특정 항목 삭제
+        await docRef.update({
+          'method': FieldValue.arrayRemove([methodToDelete]) // 배열에서 특정 항목 삭제
+        });
 
-          setState(() {
-            userData.removeAt(index); // 로컬 상태에서도 데이터 삭제
-          });
+        print('$methodToDelete 항목이 삭제되었습니다.');
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('선택한 항목이 삭제되었습니다.')),
-          );
-        }
+        // 로컬 데이터에서도 삭제할 수 있도록 필요 시 여기에 추가로 처리
+        setState(() {
+          userData.removeWhere((item) => item['조리방법명'] == methodToDelete);
+        });
       } catch (e) {
-        print('Error deleting food from Firestore: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 중 오류가 발생했습니다.')),
-        );
+        print('Error: $e');
       }
     }
   }
@@ -221,7 +238,6 @@ print(method.method);
 
       // 정렬 수행
       if (currentState == SortState.none) {
-        // 정렬 없으면 원래 데이터 순서 유지
         userData.sort((a, b) => a['연번'].compareTo(b['연번']));
       } else {
         userData.sort((a, b) {
@@ -446,11 +462,15 @@ print(method.method);
           ElevatedButton(
             onPressed: selectedRows.isNotEmpty
                 ? () {
-              // 선택된 모든 행 삭제
-              for (int index in selectedRows) {
-                _deleteSelectedRows(index);
-              }
-            }
+                    for (int index in selectedRows) {
+                      // 삭제할 조리방법명과 documentId를 가져옵니다.
+                      final methodToDelete = userData[index]['조리방법명'];
+                      final documentId = userData[index]['documentId'];
+
+                      // 각 행의 method와 documentId를 사용해 삭제
+                      _deleteSelectedRows(methodToDelete, documentId);
+                    }
+                  }
                 : null,
             child: Text('선택한 항목 삭제'),
           ),

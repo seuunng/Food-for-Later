@@ -1,27 +1,41 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PreferredFoodModel {
-  final int preferredFoodID;
-  final int userID;
-  final String categoryName;
+  final int id;
+  final Map<String, List<String>> category;
 
   PreferredFoodModel({
-    required this.preferredFoodID,
-    required this.userID,
-    required this.categoryName,
+    required this.id,
+    required this.category,
   });
 
-  factory PreferredFoodModel.fromJson(Map<String, dynamic> json) {
+  factory PreferredFoodModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    Map<String, List<String>> categoryMap = {};
+
+    if (data['category'] != null && data['category'] is Map<String, dynamic>) {
+      (data['category'] as Map<String, dynamic>).forEach((key, value) {
+        if (value is List) {
+          categoryMap[key] = List<String>.from(value); // List<String>으로 변환
+        }
+      });
+    }
+
     return PreferredFoodModel(
-      preferredFoodID: json['PreferredFoodID'],
-      userID: json['UserID'],
-      categoryName: json['CategoryName'],
+      id: data['id'],
+      category: categoryMap,
+    );
+    return PreferredFoodModel(
+      id: data['id'],
+      category: data['category'],
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // Firestore에 데이터를 저장할 때 사용하는 메서드
+  Map<String, dynamic> toFirestore() {
     return {
-      'PreferredFoodID': preferredFoodID,
-      'UserID': userID,
-      'CategoryName': categoryName,
+      'id': id,
+      'category': category,
     };
   }
 }
