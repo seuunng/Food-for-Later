@@ -7,7 +7,6 @@ import 'package:food_for_later/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ShoppingListMainPage extends StatefulWidget {
-
   @override
   _ShoppingListMainPageState createState() => _ShoppingListMainPageState();
 }
@@ -35,8 +34,10 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   List<ShoppingCategory> _categories = [];
   List<List<String>> itemLists = [];
 
-  List<List<bool>> checkedItems = List.generate(9, (_) => [false, false, false]);
-  List<List<bool>> strikeThroughItems = List.generate(9, (_) => [false, false, false]);
+  List<List<bool>> checkedItems =
+      List.generate(9, (_) => [false, false, false]);
+  List<List<bool>> strikeThroughItems =
+      List.generate(9, (_) => [false, false, false]);
 
   bool showCheckBoxes = false;
 
@@ -64,9 +65,10 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
 
   void _loadFridgeCategoriesFromFirestore(String userId) async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('fridges').get();
-      List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
-
+      final snapshot =
+          await FirebaseFirestore.instance.collection('fridges').get();
+      List<String> fridgeList =
+          snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
 
       setState(() {
         fridgeName = fridgeList; // 불러온 냉장고 목록을 상태에 저장
@@ -79,6 +81,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       );
     }
   }
+
   void _loadSelectedFridge() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -86,7 +89,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     });
     print("불러온 냉장고: $selectedFridge");
   }
-
 
   // 취소선이 있는 아이템들은 자동으로 체크박스가 true
   void _selectStrikeThroughItems() {
@@ -117,7 +119,8 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             SizedBox(width: 20),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: fridgeName.contains(selectedFridge) ? selectedFridge : null,
+                value:
+                    fridgeName.contains(selectedFridge) ? selectedFridge : null,
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,
@@ -152,13 +155,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                 pageTitle: '장보기목록에 추가',
                 addButton: '장보기목록에 추가',
                 fridgeFieldIndex: '기본냉장고',
-                basicFoodsCategories: [
-                  '육류',
-                  '수산물',
-                  '채소',
-                  '과일',
-                  '견과'
-                ],
+                basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
               ),
               fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
             ),
@@ -168,7 +165,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       ),
       bottomNavigationBar: showCheckBoxes && shouldShowMoveToFridgeButton()
           ? Container(
-        color: Colors.transparent,
+              color: Colors.transparent,
               padding: EdgeInsets.all(16),
               child: Row(
                 children: [
@@ -184,28 +181,30 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                         );
                       },
                       child: Text('냉장고로 이동'),
-        style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-          // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-          ),
-          elevation: 5,
-          textStyle: TextStyle(
-            fontSize: 18, // 글씨 크기 조정
-            fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-            letterSpacing: 1.2, //
-          ),
-        ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                            vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                        // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                        ),
+                        elevation: 5,
+                        textStyle: TextStyle(
+                          fontSize: 18, // 글씨 크기 조정
+                          fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                          letterSpacing: 1.2, //
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {
-                    },
+                    onPressed: () {},
                     child: Text('삭제'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+                      padding: EdgeInsets.symmetric(
+                          vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
                       // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
@@ -218,7 +217,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                       ),
                       // primary: isDeleteMode ? Colors.red : Colors.blue,
                     ),
-
                   ),
                 ],
               ),
@@ -226,6 +224,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
           : null,
     );
   }
+
   Widget _buildSections() {
     return Column(
       children: List.generate(_categories.length, (index) {
@@ -283,7 +282,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
           onTap: () {
             setState(() {
               strikeThroughItems[sectionIndex][index] =
-              !strikeThroughItems[sectionIndex][index];
+                  !strikeThroughItems[sectionIndex][index];
             });
           },
           onLongPress: () {
@@ -326,5 +325,4 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       },
     );
   }
-
 }

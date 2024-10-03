@@ -55,11 +55,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       final snapshot = await FirebaseFirestore.instance.collection('fridges')
           .get();
 
-      print(snapshot.docs); // 쿼리 결과 출력
-
       List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
-
-      print(fridgeList); // 가져온 냉장고 이름 리스트 출력
 
       setState(() {
         fridgeName = fridgeList; // 불러온 냉장고 목록을 상태에 저장
@@ -72,6 +68,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       );
     }
   }
+
   void _loadSelectedFridge() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
