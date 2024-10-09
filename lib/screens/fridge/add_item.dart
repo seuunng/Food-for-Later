@@ -102,7 +102,6 @@ class _AddItemState extends State<AddItem> {
                 foodsName: itemName,
                 defaultCategory: '기타',
                 defaultFridgeCategory: '기타',
-                // 기본 카테고리
                 shoppingListCategory: '기타',
                 expirationDate: 0,
                 shelfLife: 0,

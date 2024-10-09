@@ -10,7 +10,6 @@ import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FridgeMainPage extends StatefulWidget {
-
   @override
   _FridgeMainPageState createState() => _FridgeMainPageState();
 }
@@ -25,46 +24,47 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   FridgeCategory? selectedSection;
 
   // List<List<String>> itemLists = [[], [], []];
-  List<List<Map<String, int>>> itemLists = [
-    [], [], []
-  ];
+  List<List<Map<String, int>>> itemLists = [[], [], []];
 
   List<String> selectedItems = [];
   bool isDeleteMode = false;
+
   @override
   void initState() {
     super.initState();
+    _loadSelectedFridge();
     _loadFridgeCategoriesFromFirestore('현재 유저아이디');
-    _loadSelectedFridge(); // 초기화 시 Firestore에서 데이터를 불러옴
     _loadCategoriesFromFirestore();
+    _loadFridgeNameFromFirestore();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
   }
 
   void _loadFridgeCategoriesFromFirestore(String fridgeId) async {
-    final fridgeId = '1번 냉장고';
+    final fridgeId = selectedFridge;
     try {
-      // fridges 컬렉션에서 데이터를 불러옴
       final snapshot = await FirebaseFirestore.instance
           .collection('fridge_items')
           .where('FridgeId', isEqualTo: fridgeId)
           .get(); // 해당 유저 ID에 맞는 냉장고 데이터
 
-      List<Map<String, dynamic>> items = snapshot.docs.map((doc) => doc.data()).toList();
+      List<Map<String, dynamic>> items =
+          snapshot.docs.map((doc) => doc.data()).toList();
 
-      print("Items loaded from Firestore: $items");
-      setState(() {
-        if (storageSections.isEmpty) {
-          print("storageSections is empty. Make sure it's loaded.");
-          return;
-        }
+      if (storageSections.isEmpty) {
+        print("storageSections is empty. Make sure it's loaded.");
+        return;
+      }
+      itemLists = List.generate(storageSections.length, (_) => [], growable: true);
 
-        // 아이템을 불러오고 fridgeCategoryId에 따라 storageSections에 아이템을 추가
-        items.forEach((itemData) async {
-          String fridgeCategoryId = itemData['fridgeCategoryId'] ?? '기타';
-          String itemName = itemData['items'] ?? 'Unknown Item';
-
-          print("Processing item: $itemName, Category: $fridgeCategoryId");
-
-          // foods 컬렉션에서 해당 아이템 검색
+      for (var itemData in items) {
+        String fridgeCategoryId = itemData['fridgeCategoryId'] ?? '기타';
+        String itemName = itemData['items'] ?? 'Unknown Item';
+        try {
           final foodsSnapshot = await FirebaseFirestore.instance
               .collection('foods')
               .where('foodsName', isEqualTo: itemName)
@@ -75,16 +75,15 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
             int expirationDate = foodsData['expirationDate'] ?? 0;
             int shelfLife = foodsData['shelfLife'] ?? 0;
 
-            print("Fetched from foods: expirationDate = $expirationDate, shelfLife = $shelfLife");
-
             // fridgeCategoryId가 storageSections의 categoryName과 일치하는지 확인
-            int index = storageSections.indexWhere((section) => section.categoryName == fridgeCategoryId);
+            int index = storageSections.indexWhere(
+                (section) => section.categoryName == fridgeCategoryId);
 
             if (index >= 0) {
-              print("Adding item: $itemName to section: ${storageSections[index].categoryName}");
-              // 해당 카테고리에 아이템 추가
-              itemLists[index].add({
-                itemName: expirationDate,  // expirationDate를 추가
+              setState(() {
+                itemLists[index].add({
+                  itemName: expirationDate,
+                });
               });
             } else {
               print("Category not found: $fridgeCategoryId");
@@ -92,10 +91,10 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           } else {
             print("Item not found in foods collection: $itemName");
           }
-        });
-
-        print("Updated itemLists: $itemLists");
-      });
+        } catch (e) {
+          print('Error fetching or processing food data for $itemName: $e');
+        }
+      }
     } catch (e) {
       print('Error loading fridge categories: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,16 +110,30 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     });
   }
 
+  //냉장고 내부 구분
   Future<void> _loadCategoriesFromFirestore() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('fridge_categories')
-        .get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('fridge_categories').get();
 
     final categories = snapshot.docs.map((doc) {
       return FridgeCategory.fromFirestore(doc);
     }).toList();
     setState(() {
       storageSections = categories;
+    });
+  }
+
+  Future<void> _loadFridgeNameFromFirestore() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('fridges').get();
+
+    List<String> fridgeList = snapshot.docs.map((doc) {
+      return (doc['FridgeName'] ?? 'Unknown Fridge')
+          as String; // 명시적으로 String 타입으로 변환
+    }).toList();
+
+    setState(() {
+      fridgeName = fridgeList; // fridgeName 리스트에 저장
     });
   }
 
@@ -138,14 +151,14 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
 // 선택된 섹션에 해당하는 아이템을 가져오는 함수
   List<String> _getItemsForSelectedSection() {
     if (selectedSection != null) {
-      int index = storageSections.indexWhere((section) => section.id == selectedSection!.id);
+      int index = storageSections
+          .indexWhere((section) => section.id == selectedSection!.id);
       if (index >= 0 && index < itemLists.length) {
         return itemLists[index].map((item) => item.keys.first).toList();
       }
     }
     return [];
   }
-
 
   // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
   void _deleteSelectedItems() {
@@ -213,7 +226,8 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
             SizedBox(width: 20),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: fridgeName.contains(selectedFridge) ? selectedFridge : null,
+                value:
+                    fridgeName.contains(selectedFridge) ? selectedFridge : null,
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,
@@ -223,6 +237,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                 onChanged: (value) {
                   setState(() {
                     selectedFridge = value!;
+                    _loadFridgeCategoriesFromFirestore(selectedFridge!);
                   });
                 },
                 decoration: InputDecoration(
@@ -284,6 +299,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           : null,
     );
   }
+
   Widget _buildSections() {
     return Column(
       children: List.generate(storageSections.length, (index) {
@@ -321,6 +337,10 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
 
   // 물건을 추가할 수 있는 그리드
   Widget _buildGrid(int sectionIndex) {
+    if (sectionIndex >= itemLists.length) {
+      return Container(); // 인덱스가 범위를 벗어나면 빈 컨테이너 반환
+    }
+
     List<Map<String, int>> items = itemLists[sectionIndex];
     return DragTarget<String>(
       onAccept: (data) async {
@@ -350,8 +370,6 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                 .collection('fridge_items')
                 .doc(docId)
                 .update({'fridgeCategoryId': newFridgeCategoryId});
-
-            print("fridgeCategoryId updated for $data to $newFridgeCategoryId");
           } else {
             print("Item not found in fridge_items collection: $data");
           }

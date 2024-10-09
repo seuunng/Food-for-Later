@@ -13,33 +13,32 @@ class ShoppingListMainPage extends StatefulWidget {
 }
 
 class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
-  int _selectedIndex = 0;
+  // int _selectedIndex = 0;
 
-  List<Widget> _pages = <Widget>[
-    FridgeMainPage(), // 냉장고 페이지
-    ShoppingListMainPage(), // 예시로 장보기 페이지
-  ];
+  // List<Widget> _pages = <Widget>[
+  //   FridgeMainPage(), // 냉장고 페이지
+  //   ShoppingListMainPage(), // 예시로 장보기 페이지
+  // ];
+
+  // void _onItemTapped(int index) {
+  //   if (index < _pages.length) {
+  //     setState(() {
+  //       _selectedIndex = index;
+  //     });
+  //   }
+  // }
 
   List<String> fridgeName = [];
   String? selectedFridge = '';
 
-  void _onItemTapped(int index) {
-    if (index < _pages.length) {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
-
   List<ShoppingCategory> _categories = [];
   Map<String, List<String>> itemLists = {};
 
-  List<List<bool>> checkedItems =
-  List.generate(9, (_) => [false, false, false]);
-  List<List<bool>> strikeThroughItems =
-  List.generate(9, (_) => [false, false, false]);
+  Map<String, List<bool>> checkedItems = {};
+  Map<String, List<bool>> strikeThroughItems = {};
 
   bool showCheckBoxes = false;
+  Map<String, List<String>> groupedItems = {};
 
   @override
   void initState() {
@@ -48,6 +47,9 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     _loadCategoriesFromFirestore();
     _loadFridgeCategoriesFromFirestore('현재 유저아이디');
     _loadSelectedFridge();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _initializeCheckedItems();  // checkedItems 초기화
+    // });
   }
 
   void _loadItemsFromFirestore(String userId) async {
@@ -70,37 +72,55 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       for (var doc in snapshot.docs) {
         final data = doc.data(); // 각 문서 출력
 
-        final itemName = data['items']?.toString() ??
-            'Unknown Item'; // items 필드 추출
+        final itemName =
+            data['items']?.toString() ?? 'Unknown Item'; // items 필드 추출
         final isChecked = data['isChecked'] ?? false;
 
         final matchingFood = foodsList.firstWhere(
-              (food) => food.foodsName == itemName,
+          (food) => food.foodsName == itemName,
           // itemName과 foodsName이 일치하는지 확인
-          orElse: () =>
-              FoodsModel(
-                id: 'unknown',
-                foodsName: itemName,
-                defaultCategory: '기타',
-                defaultFridgeCategory: '기타',
-                shoppingListCategory: '기타',
-                expirationDate: 0,
-                shelfLife: 0,
-              ),
+          orElse: () => FoodsModel(
+            id: 'unknown',
+            foodsName: itemName,
+            defaultCategory: '기타',
+            defaultFridgeCategory: '기타',
+            shoppingListCategory: '기타',
+            expirationDate: 0,
+            shelfLife: 0,
+          ),
         );
 
         allItems.add({
           'category': matchingFood.shoppingListCategory,
-          // FoodsModel에서 가져온 카테고리 사용
           'itemName': itemName,
           'isChecked': isChecked,
-          // 필드명이 맞는지 확인하고 기본 값 설정
         });
       }
 
       setState(() {
         itemLists = _groupItemsByCategory(allItems); // 카테고리별로 아이템을 그룹화
+        // isChecked가 true인 항목을 처리
+        allItems.forEach((item) {
+          final category = item['category'];
+          final itemName = item['itemName'];
+          final isChecked = item['isChecked'];
+
+          // checkedItems와 strikeThroughItems를 초기화하고 isChecked가 true이면 값을 설정
+          if (itemLists.containsKey(category)) {
+            final itemIndex = itemLists[category]?.indexOf(itemName) ?? -1;
+            if (itemIndex != -1) {
+              checkedItems[category] ??= List<bool>.filled(itemLists[category]!.length, false, growable: true); // 수정!
+              strikeThroughItems[category] ??= List<bool>.filled(itemLists[category]!.length, false, growable: true); // 수정!
+
+              if (isChecked) {
+                checkedItems[category]![itemIndex] = true;
+                strikeThroughItems[category]![itemIndex] = true; // 취소선도 설정
+              }
+            }
+          }
+        });
       });
+
     } catch (e) {
       print('Firestore에서 아이템 불러오는 중 오류 발생: $e');
     }
@@ -108,10 +128,10 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
 
   Map<String, List<String>> _groupItemsByCategory(
       List<Map<String, dynamic>> items) {
-    Map<String, List<String>> groupedItems = {};
 
     for (var item in items) {
-      final category = item['category']!; // FoodsModel에서 가져온 shoppingListCategory
+      final category =
+          item['category']!; // FoodsModel에서 가져온 shoppingListCategory
       final itemName = item['itemName']!;
 
       if (groupedItems.containsKey(category)) {
@@ -122,7 +142,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     }
     return groupedItems;
   }
-
 
   Future<void> _loadCategoriesFromFirestore() async {
     final snapshot = await FirebaseFirestore.instance
@@ -141,9 +160,9 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   void _loadFridgeCategoriesFromFirestore(String userId) async {
     try {
       final snapshot =
-      await FirebaseFirestore.instance.collection('fridges').get();
+          await FirebaseFirestore.instance.collection('fridges').get();
       List<String> fridgeList =
-      snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
+          snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
 
       setState(() {
         fridgeName = fridgeList; // 불러온 냉장고 목록을 상태에 저장
@@ -164,20 +183,53 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   }
 
   // 취소선이 있는 아이템들은 자동으로 체크박스가 true
-  void _selectStrikeThroughItems() {
-    for (int section = 0; section < strikeThroughItems.length; section++) {
-      for (int index = 0; index < strikeThroughItems[section].length; index++) {
-        if (strikeThroughItems[section][index]) {
-          checkedItems[section][index] = true;
+  void _selectStrikeThroughItems() async {
+    for (var category in itemLists.keys) {
+      int itemCount = itemLists[category]?.length ?? 0;
+
+      checkedItems[category] ??= List<bool>.filled(itemCount, false, growable: true); // 수정!
+      strikeThroughItems[category] ??= List<bool>.filled(itemCount, false, growable: true); // 수정!
+
+      for (int index = 0; index < itemCount; index++) {
+        if (strikeThroughItems[category]![index]) {
+          checkedItems[category]![index] = true;
+
+          String itemName = itemLists[category]?[index] ?? '';
+
+          if (itemName.isNotEmpty) {
+            try {
+              // Firestore에서 해당 아이템을 찾아 'isChecked' 값을 true로 업데이트
+              final snapshot = await FirebaseFirestore.instance
+                  .collection('shopping_items')
+                  .where('items', isEqualTo: itemName) // 아이템 이름으로 문서 찾기
+                  .get();
+
+              if (snapshot.docs.isNotEmpty) {
+                for (var doc in snapshot.docs) {
+                  await FirebaseFirestore.instance
+                      .collection('shopping_items')
+                      .doc(doc.id) // 문서 ID를 사용하여 업데이트
+                      .update({
+                    'isChecked': true, // 'isChecked' 필드를 true로 업데이트
+                  });
+                }
+              } else {
+                print('Item not found in shopping_items: $itemName');
+              }
+            } catch (e) {
+              print('Error updating isChecked for $itemName: $e');
+            }
+          }
         }
       }
     }
+    setState(() {});
   }
 
 // 냉장고로 이동 버튼이 나타나는 조건
   bool shouldShowMoveToFridgeButton() {
-    for (var section in checkedItems) {
-      if (section.contains(true)) return true;
+    for (var category in checkedItems.keys) {
+      if (checkedItems[category]!.contains(true)) return true;
     }
     return false;
   }
@@ -186,20 +238,21 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     final fridgeId = selectedFridge != null && selectedFridge!.isNotEmpty
         ? selectedFridge
         : '기본 냉장고'; // 선택된 냉장고 ID 사용
-
     try {
-      for (int sectionIndex = 0; sectionIndex < checkedItems.length; sectionIndex++) {
-        final categoryItems = itemLists[_categories[sectionIndex].categoryName];
-        if (categoryItems == null || categoryItems.isEmpty) {
+      for (var category in checkedItems.keys) {
+        List<String> categoryItems = List<String>.from(itemLists[category]!);
+
+        if (categoryItems.isEmpty) {
           continue; // 카테고리에 아이템이 없으면 건너뜀
         }
 
-        for (int index = 0; index < checkedItems[sectionIndex].length; index++) {
-          if (checkedItems[sectionIndex][index]) {
-            // 사용자가 선택한 아이템 이름
-            String itemName = categoryItems[index];
+        List<int> itemsToRemove = [];
 
-            // FoodsModel에서 해당 itemName에 맞는 데이터를 찾기
+        for (int index = 0; index < checkedItems[category]!.length; index++) {
+            if (checkedItems[category]![index]) {
+              String itemName = categoryItems[index];
+
+              // FoodsModel에서 해당 itemName에 맞는 데이터를 찾기
             final matchingFood = await FirebaseFirestore.instance
                 .collection('foods')
                 .where('foodsName', isEqualTo: itemName)
@@ -211,9 +264,8 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             }
 
             final foodData = matchingFood.docs.first.data();
-            final fridgeCategoryId = foodData['defaultFridgeCategory']; // fridgeCategoryId 설정
-            final expirationDate = foodData['expirationDate'];
-            final shelfLife = foodData['shelfLife'];
+            final fridgeCategoryId =
+                foodData['defaultFridgeCategory']; // fridgeCategoryId 설정
 
             // 냉장고에 아이템 추가
             await FirebaseFirestore.instance.collection('fridge_items').add({
@@ -223,18 +275,36 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
               // 'expirationDate': expirationDate,
               // 'shelfLife': shelfLife,
             });
+
+              final snapshot = await FirebaseFirestore.instance
+                  .collection('shopping_items')
+                  .where('items', isEqualTo: itemName)
+                  .where('userId', isEqualTo: '현재 유저아이디') // 유저 ID로 필터
+                  .get();
+
+              if (snapshot.docs.isNotEmpty) {
+                for (var doc in snapshot.docs) {
+                  await FirebaseFirestore.instance
+                      .collection('shopping_items')
+                      .doc(doc.id) // 문서 ID를 사용하여 삭제
+                      .delete();
+                }
+              }
+              // 삭제할 인덱스를 기록
+              itemsToRemove.add(index);
           }
         }
+        setState(() {
+          // 역순으로 삭제하여 인덱스 오류 방지
+          for (int i = itemsToRemove.length - 1; i >= 0; i--) {
+            int removeIndex = itemsToRemove[i];
+            categoryItems.removeAt(removeIndex); // 수정!
+            checkedItems[category]!.removeAt(removeIndex); // 수정!
+            strikeThroughItems[category]!.removeAt(removeIndex); // 수정!
+          }
+          itemLists[category] = categoryItems;
+        });
       }
-
-      // 성공적으로 추가한 후 체크된 아이템 초기화
-      setState(() {
-        checkedItems = List.generate(9, (_) => [false, false, false]); // 초기화
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('선택한 아이템이 냉장고에 추가되었습니다.')),
-      );
     } catch (e) {
       print('아이템 추가 중 오류 발생: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -242,13 +312,35 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       );
     }
 
-    // 화면 닫기 (AddItem 끄기)
     Future.delayed(Duration(seconds: 1), () {
       if (mounted) {
-        // mounted 상태를 확인하여 위젯이 아직 활성화된 상태일 때만 pop을 호출
         Navigator.pop(context); // AddItem 화면을 종료
       }
     });
+  }
+
+  void _updateIsCheckedInFirestore(String itemName, bool isChecked) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('shopping_items')
+          .where('items', isEqualTo: itemName) // 아이템 이름으로 문서 찾기
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        for (var doc in snapshot.docs) {
+          await FirebaseFirestore.instance
+              .collection('shopping_items')
+              .doc(doc.id) // 문서 ID를 사용하여 업데이트
+              .update({
+            'isChecked': isChecked, // isChecked 필드를 업데이트
+          });
+        }
+      } else {
+        print('Item not found in shopping_items: $itemName');
+      }
+    } catch (e) {
+      print('Error updating isChecked for $itemName: $e');
+    }
   }
 
   @override
@@ -262,7 +354,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 value:
-                fridgeName.contains(selectedFridge) ? selectedFridge : null,
+                    fridgeName.contains(selectedFridge) ? selectedFridge : null,
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,
@@ -293,14 +385,13 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  AddItem(
-                    pageTitle: '장보기목록에 추가',
-                    addButton: '장보기목록에 추가',
-                    fridgeFieldIndex: '기본냉장고',
-                    basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
-                    sourcePage: 'shoppingList',
-                  ),
+              builder: (context) => AddItem(
+                pageTitle: '장보기목록에 추가',
+                addButton: '장보기목록에 추가',
+                fridgeFieldIndex: '기본냉장고',
+                basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
+                sourcePage: 'shoppingList',
+              ),
               fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
             ),
           );
@@ -309,65 +400,63 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       ),
       bottomNavigationBar: showCheckBoxes && shouldShowMoveToFridgeButton()
           ? Container(
-        color: Colors.transparent,
-        padding: EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                // BottomNavigationBarItem(icon: Icon(Icons.kitchen), label: '냉장고'),
-                onPressed: () {
-                  _addItemsToFridge();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            HomeScreen()), // FridgeScreen은 냉장고로 이동할 화면
-                  );
-                },
-                child: Text('냉장고로 이동'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                      vertical: 15),
-                  // 위아래 패딩을 조정하여 버튼 높이 축소
-                  // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+              color: Colors.transparent,
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      // BottomNavigationBarItem(icon: Icon(Icons.kitchen), label: '냉장고'),
+                      onPressed: () {
+                        _addItemsToFridge();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  HomeScreen()), // FridgeScreen은 냉장고로 이동할 화면
+                        );
+                      },
+                      child: Text('냉장고로 이동'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 15),
+                        // 위아래 패딩을 조정하여 버튼 높이 축소
+                        // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                        ),
+                        elevation: 5,
+                        textStyle: TextStyle(
+                          fontSize: 18, // 글씨 크기 조정
+                          fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                          letterSpacing: 1.2, //
+                        ),
+                      ),
+                    ),
                   ),
-                  elevation: 5,
-                  textStyle: TextStyle(
-                    fontSize: 18, // 글씨 크기 조정
-                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                    letterSpacing: 1.2, //
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {},
+                    child: Text('삭제'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      // 위아래 패딩을 조정하여 버튼 높이 축소
+                      // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                      ),
+                      elevation: 5,
+                      textStyle: TextStyle(
+                        fontSize: 18, // 글씨 크기 조정
+                        fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                        letterSpacing: 1.2, //
+                      ),
+                      // primary: isDeleteMode ? Colors.red : Colors.blue,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-            SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {},
-              child: Text('삭제'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                    vertical: 15),
-                // 위아래 패딩을 조정하여 버튼 높이 축소
-                // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                ),
-                elevation: 5,
-                textStyle: TextStyle(
-                  fontSize: 18, // 글씨 크기 조정
-                  fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                  letterSpacing: 1.2, //
-                ),
-                // primary: isDeleteMode ? Colors.red : Colors.blue,
-              ),
-            ),
-          ],
-        ),
-      )
+            )
           : null,
     );
   }
@@ -375,11 +464,10 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   Widget _buildSections() {
     return Column(
       children: itemLists.keys.map((category) {
-        int sectionIndex = itemLists.keys.toList().indexOf(category); // 각 카테고리의 인덱스를 가져옴
         return Column(
           children: [
             _buildSectionTitle(category), // 카테고리 타이틀
-            _buildGrid(itemLists[category]!, sectionIndex), // 해당 카테고리의 아이템 렌더링
+            _buildGrid(itemLists[category]!, category), // 해당 카테고리의 아이템 렌더링
           ],
         );
       }).toList(),
@@ -409,7 +497,17 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   }
 
   // 물건을 추가할 수 있는 그리드
-  Widget _buildGrid(List<String> items, int sectionIndex) {
+  Widget _buildGrid(List<String> items, String category) {
+    if (items.isEmpty) {
+      return Container();
+    }
+    if (!checkedItems.containsKey(category) || checkedItems[category]!.length != items.length) {
+      checkedItems[category] = List<bool>.filled(items.length, false, growable: true); // 수정!
+    }
+    if (!strikeThroughItems.containsKey(category) || strikeThroughItems[category]!.length != items.length) {
+      strikeThroughItems[category] = List<bool>.filled(items.length, false, growable: true); // 수정!
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -425,14 +523,33 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
         return GestureDetector(
           onTap: () {
             setState(() {
-              strikeThroughItems[sectionIndex][index] =
-              !strikeThroughItems[sectionIndex][index]; // 취소선 여부 설정
+              strikeThroughItems[category]![index] = !strikeThroughItems[category]![index];
+              checkedItems[category]![index] = strikeThroughItems[category]![index]; // 취소선 상태에 따라 체크박스 업데이트
+
+              // Firestore에서 isChecked 값 업데이트
+              String itemName = items[index];
+              _updateIsCheckedInFirestore(itemName, strikeThroughItems[category]![index]);
             });
           },
           onLongPress: () {
             setState(() {
-              showCheckBoxes = true;
-              _selectStrikeThroughItems(); // 취소선이 있는 아이템 체크박스 true
+              if (showCheckBoxes) {
+                // 체크박스가 보이는 상태일 때 다시 누르면 체크박스 숨김
+                showCheckBoxes = false;
+
+                // 모든 checkedItems를 false로 초기화
+                checkedItems.forEach((category, checkedList) {
+                  for (int i = 0; i < checkedList.length; i++) {
+                    checkedList[i] = false;
+                  }
+                });
+
+                // 냉장고로 이동 버튼을 감추기 위해 UI를 갱신
+              } else {
+                // 체크박스를 다시 보이게 할 때는 취소선이 있는 아이템 체크박스 true로 설정
+                showCheckBoxes = true;
+                _selectStrikeThroughItems(); // 취소선이 있는 아이템 체크박스 true
+              }
             });
           },
           child: Container(
@@ -444,10 +561,10 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
               children: [
                 if (showCheckBoxes)
                   Checkbox(
-                    value: checkedItems[sectionIndex][index], // 체크 상태
+                    value: checkedItems[category]![index], // 체크 상태
                     onChanged: (bool? value) {
                       setState(() {
-                        checkedItems[sectionIndex][index] = value!; // 체크박스 업데이트
+                        checkedItems[category]![index] = value!; // 체크박스 업데이트
                       });
                     },
                   ),
@@ -455,7 +572,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                   child: Text(
                     items[index],
                     style: TextStyle(
-                      decoration: strikeThroughItems[sectionIndex][index]
+                      decoration: strikeThroughItems[category]![index]
                           ? TextDecoration.lineThrough
                           : TextDecoration.none, // 취소선 여부
                     ),
