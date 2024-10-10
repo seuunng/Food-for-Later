@@ -367,6 +367,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                               '채식'
                             ], // 원하는 카테고리 리스트)
                             sourcePage: 'update_foods_category',
+                            onItemAdded: () {
+                              setState(() {});
+                            },
                           ),
                         ),
                       );

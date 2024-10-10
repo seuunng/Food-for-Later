@@ -110,6 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
               fridgeFieldIndex: '기본냉장고',
               basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
               sourcePage: 'update_foods_category',
+              onItemAdded: () {
+                setState(() {});
+              },
             ),
           ),
         );
@@ -124,6 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
               fridgeFieldIndex: '기본냉장고',
               basicFoodsCategories: ['비건', '다이어트', '무오신채', '알레르기', '채식'],
               sourcePage: 'update_foods_category',
+              onItemAdded: () {
+                setState(() {});
+              },
             ),
           ),
         );

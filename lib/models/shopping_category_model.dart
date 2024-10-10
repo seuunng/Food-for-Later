@@ -26,7 +26,6 @@ class ShoppingCategory {
 }
 
 List<ShoppingCategory> generateDefaultCategories() {
-  // 기본 카테고리 목록
   List<String> defaultCategories = [
     '과일/채소',
     '정육/수산',

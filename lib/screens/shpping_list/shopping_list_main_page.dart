@@ -13,20 +13,6 @@ class ShoppingListMainPage extends StatefulWidget {
 }
 
 class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
-  // int _selectedIndex = 0;
-
-  // List<Widget> _pages = <Widget>[
-  //   FridgeMainPage(), // 냉장고 페이지
-  //   ShoppingListMainPage(), // 예시로 장보기 페이지
-  // ];
-
-  // void _onItemTapped(int index) {
-  //   if (index < _pages.length) {
-  //     setState(() {
-  //       _selectedIndex = index;
-  //     });
-  //   }
-  // }
 
   List<String> fridgeName = [];
   String? selectedFridge = '';
@@ -47,9 +33,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     _loadCategoriesFromFirestore();
     _loadFridgeCategoriesFromFirestore('현재 유저아이디');
     _loadSelectedFridge();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _initializeCheckedItems();  // checkedItems 초기화
-    // });
   }
 
   void _loadItemsFromFirestore(String userId) async {
@@ -237,13 +220,13 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
   Future<void> _addItemsToFridge() async {
     final fridgeId = selectedFridge != null && selectedFridge!.isNotEmpty
         ? selectedFridge
-        : '기본 냉장고'; // 선택된 냉장고 ID 사용
+        : '기본 냉장고';
     try {
       for (var category in checkedItems.keys) {
         List<String> categoryItems = List<String>.from(itemLists[category]!);
 
         if (categoryItems.isEmpty) {
-          continue; // 카테고리에 아이템이 없으면 건너뜀
+          continue;
         }
 
         List<int> itemsToRemove = [];
@@ -267,14 +250,27 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             final fridgeCategoryId =
                 foodData['defaultFridgeCategory']; // fridgeCategoryId 설정
 
-            // 냉장고에 아이템 추가
-            await FirebaseFirestore.instance.collection('fridge_items').add({
-              'items': itemName,
-              'FridgeId': fridgeId, // 선택된 냉장고
-              'fridgeCategoryId': fridgeCategoryId,
-              // 'expirationDate': expirationDate,
-              // 'shelfLife': shelfLife,
-            });
+              final existingItem = await FirebaseFirestore.instance
+                  .collection('fridge_items')
+                  .where('items', isEqualTo: itemName.trim().toLowerCase())
+                  // .where('FridgeId', isEqualTo: fridgeId.trim())
+                  .get();
+
+              if (existingItem.docs.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('"$itemName"이(가) 이미 냉장고에 존재합니다.')),
+                );
+                // 중복되어도 장보기 목록에서만 삭제
+              } else {
+                // 냉장고에 아이템 추가 (중복되지 않은 경우)
+                await FirebaseFirestore.instance.collection('fridge_items').add({
+                  'items': itemName,
+                  'FridgeId': fridgeId, // 선택된 냉장고
+                  'fridgeCategoryId': fridgeCategoryId,
+                  // 'expirationDate': expirationDate,
+                  // 'shelfLife': shelfLife,
+                });
+              }
 
               final snapshot = await FirebaseFirestore.instance
                   .collection('shopping_items')
@@ -286,21 +282,19 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                 for (var doc in snapshot.docs) {
                   await FirebaseFirestore.instance
                       .collection('shopping_items')
-                      .doc(doc.id) // 문서 ID를 사용하여 삭제
+                      .doc(doc.id)
                       .delete();
                 }
               }
-              // 삭제할 인덱스를 기록
               itemsToRemove.add(index);
           }
         }
         setState(() {
-          // 역순으로 삭제하여 인덱스 오류 방지
           for (int i = itemsToRemove.length - 1; i >= 0; i--) {
             int removeIndex = itemsToRemove[i];
-            categoryItems.removeAt(removeIndex); // 수정!
-            checkedItems[category]!.removeAt(removeIndex); // 수정!
-            strikeThroughItems[category]!.removeAt(removeIndex); // 수정!
+            categoryItems.removeAt(removeIndex);
+            checkedItems[category]!.removeAt(removeIndex);
+            strikeThroughItems[category]!.removeAt(removeIndex);
           }
           itemLists[category] = categoryItems;
         });
@@ -311,12 +305,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
         SnackBar(content: Text('아이템 추가 중 오류가 발생했습니다.')),
       );
     }
-
-    Future.delayed(Duration(seconds: 1), () {
-      if (mounted) {
-        Navigator.pop(context); // AddItem 화면을 종료
-      }
-    });
   }
 
   void _updateIsCheckedInFirestore(String itemName, bool isChecked) async {
@@ -340,6 +328,60 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       }
     } catch (e) {
       print('Error updating isChecked for $itemName: $e');
+    }
+  }
+
+  Future<void> _deleteSelectedItems() async {
+    try {
+      for (var category in checkedItems.keys) {
+        List<String> categoryItems = List<String>.from(itemLists[category]!);
+
+        List<int> itemsToRemove = [];
+
+        for (int index = 0; index < checkedItems[category]!.length; index++) {
+          if (checkedItems[category]![index]) {
+            String itemName = categoryItems[index];
+
+            final snapshot = await FirebaseFirestore.instance
+                .collection('shopping_items')
+                .where('items', isEqualTo: itemName)
+                .where('userId', isEqualTo: '현재 유저아이디') // 유저 ID로 필터
+                .get();
+
+            if (snapshot.docs.isNotEmpty) {
+              for (var doc in snapshot.docs) {
+                await FirebaseFirestore.instance
+                    .collection('shopping_items')
+                    .doc(doc.id) // 문서 ID를 사용하여 삭제
+                    .delete();
+              }
+            }
+
+            // 로컬 상태에서도 아이템을 삭제
+            itemsToRemove.add(index);
+          }
+        }
+
+        setState(() {
+          // 역순으로 삭제하여 인덱스 오류 방지
+          for (int i = itemsToRemove.length - 1; i >= 0; i--) {
+            int removeIndex = itemsToRemove[i];
+            categoryItems.removeAt(removeIndex); // 아이템 삭제
+            checkedItems[category]!.removeAt(removeIndex); // 체크 상태 삭제
+            strikeThroughItems[category]!.removeAt(removeIndex); // 취소선 삭제
+          }
+          itemLists[category] = categoryItems;
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('아이템이 삭제되었습니다.')),
+      );
+    } catch (e) {
+      print('아이템 삭제 중 오류 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('아이템 삭제 중 오류가 발생했습니다.')),
+      );
     }
   }
 
@@ -381,8 +423,8 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       // 물건 추가 버튼
       floatingActionButton: FloatingActionButton(
         heroTag: 'shopping_add_button',
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => AddItem(
@@ -391,10 +433,18 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                 fridgeFieldIndex: '기본냉장고',
                 basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
                 sourcePage: 'shoppingList',
+                onItemAdded: () {
+                },
               ),
               fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
             ),
           );
+          setState(() {
+            itemLists.clear(); // 중복 방지를 위해 아이템 리스트 초기화
+            checkedItems.clear(); // 체크박스 상태 초기화
+            strikeThroughItems.clear(); // 취소선 상태 초기화
+            _loadItemsFromFirestore('현재 유저아이디');
+          });
         },
         child: Icon(Icons.add),
       ),
@@ -413,14 +463,14 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  HomeScreen()), // FridgeScreen은 냉장고로 이동할 화면
+                                  HomeScreen()),
                         );
                       },
                       child: Text('냉장고로 이동'),
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 15),
                         // 위아래 패딩을 조정하여 버튼 높이 축소
-                        // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
+                        // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent,
                         shape: RoundedRectangleBorder(
                           borderRadius:
                               BorderRadius.circular(12), // 버튼의 모서리를 둥글게
@@ -436,11 +486,12 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                   ),
                   SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      await _deleteSelectedItems();
+                    },
                     child: Text('삭제'),
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 15),
-                      // 위아래 패딩을 조정하여 버튼 높이 축소
                       // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게

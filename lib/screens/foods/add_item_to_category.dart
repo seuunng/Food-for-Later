@@ -1,11 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/default_food_model.dart';
+import 'package:food_for_later/models/foods_model.dart';
+import 'package:food_for_later/models/fridge_category_model.dart';
+import 'package:food_for_later/models/shopping_category_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:intl/intl.dart';
 
 class AddItemToCategory extends StatefulWidget {
-  final String categoryName;  // 선택된 카테고리명을 받을 변수
+  final String categoryName; // 선택된 카테고리명을 받을 변수
 
-  AddItemToCategory({required this.categoryName});  // 생성자에서 카테고리명 받기
+  AddItemToCategory({required this.categoryName}); // 생성자에서 카테고리명 받기
 
   @override
   _AddItemToCategoryState createState() => _AddItemToCategoryState();
@@ -13,18 +18,15 @@ class AddItemToCategory extends StatefulWidget {
 
 class _AddItemToCategoryState extends State<AddItemToCategory> {
   // 냉장고 카테고리 상수 리스트
-  static const List<String> fridgeCategories = ['냉장', '냉동', '상온'];
-  static const List<String> basicFoodsCategories = [
-    '육류',
-    '수산물',
-    '채소',
-    '과일',
-    '견과'
-  ];
+  List<FoodsModel> foodsCategories = [];
+  FoodsModel? selectedFoodsCategory;
+  // 냉장고 카테고리 상수 리스트
+  List<FridgeCategory> fridgeCategories = [];
+  FridgeCategory? selectedFridgeCategory;
 
-  // 드롭다운 선택된 값 저장 변수
-  String? selectedCategory;
-  String? selectedFoodsCategory;
+  List<ShoppingCategory> shoppingListCategories = [];
+  ShoppingCategory? selectedShoppingListCategory;
+
   int expirationDays = 1; // 유통기한 기본값
   int consumptionDays = 1; // 품질유지기한 기본값
 
@@ -38,13 +40,76 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
   @override
   void initState() {
     super.initState();
-    dateController.text = DateFormat('yyyy-MM-dd').format(currentDate); // 초기 등록일을 현재 날짜로 설정
-    // 선택된 카테고리가 기본 카테고리 목록에 있는지 확인
-    if (basicFoodsCategories.contains(widget.categoryName)) {
-      selectedFoodsCategory = widget.categoryName; // 유효한 경우 카테고리 설정
-    } else {
-      selectedFoodsCategory = null; // 유효하지 않으면 null로 설정
+    dateController.text =
+        DateFormat('yyyy-MM-dd').format(currentDate);
+    _loadFoodsCategoriesFromFirestore();
+    _loadFridgeCategoriesFromFirestore();
+    _loadShoppingListCategoriesFromFirestore();
+  }
+
+  // 기본식품 카테고리
+  void _loadFoodsCategoriesFromFirestore() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('foods').get();
+      final categories = snapshot.docs.map((doc) {
+        return FoodsModel.fromFirestore(doc);
+      }).toList();
+
+      final Map<String, FoodsModel> uniqueCategoriesMap = {};
+      for (var category in categories) {
+        if (!uniqueCategoriesMap.containsKey(category.defaultCategory)) {
+          uniqueCategoriesMap[category.defaultCategory] = category;
+        }
+      }
+
+      final uniqueCategories = uniqueCategoriesMap.values.toList();
+
+      setState(() {
+        foodsCategories = uniqueCategories;
+        if (widget.categoryName.isNotEmpty) {
+          selectedFoodsCategory = foodsCategories.firstWhere(
+                (category) => category.defaultCategory == widget.categoryName,
+            orElse: () => FoodsModel( // 기본값을 설정
+            id: 'unknown',
+            foodsName: '',
+            defaultCategory: '',
+            defaultFridgeCategory: '',
+            shoppingListCategory: '',
+            expirationDate: 0,
+            shelfLife: 0,
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      print("Error loading foods categories: $e");
     }
+  }
+
+  // 냉장고 카테고리
+  Future<void> _loadFridgeCategoriesFromFirestore() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('fridge_categories').get();
+
+    final categories = snapshot.docs.map((doc) {
+      return FridgeCategory.fromFirestore(doc);
+    }).toList();
+    setState(() {
+      fridgeCategories = categories;
+    });
+  }
+  // 쇼핑리스트 카테고리
+  Future<void> _loadShoppingListCategoriesFromFirestore() async {
+    final snapshot =
+    await FirebaseFirestore.instance.collection('shopping_categories').get();
+
+    final categories = snapshot.docs.map((doc) {
+      return ShoppingCategory.fromFirestore(doc);
+    }).toList();
+    setState(() {
+      shoppingListCategories = categories;
+    });
   }
 
   // 날짜 선택 함수
@@ -96,16 +161,18 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                       children: [
                         Text('카테고리명   ', style: TextStyle(fontSize: 18)),
                         SizedBox(width: 10),
-                        DropdownButton<String>(
-                          value: selectedFoodsCategory,
+                        DropdownButton<FoodsModel>(
+                          value: foodsCategories.contains(selectedFoodsCategory)
+                              ? selectedFoodsCategory
+                              : null,
                           hint: Text('카테고리 선택'),
-                          items: basicFoodsCategories.map((String value) {
-                            return DropdownMenuItem<String>(
+                          items: foodsCategories.map((FoodsModel value) {
+                            return DropdownMenuItem<FoodsModel>(
                               value: value,
-                              child: Text(value),
+                              child: Text(value.defaultCategory),
                             );
                           }).toList(),
-                          onChanged: (String? newValue) {
+                          onChanged: (FoodsModel? newValue) {
                             setState(() {
                               selectedFoodsCategory = newValue;
                             });
@@ -127,7 +194,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                             vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
                           ),
                         ),
-                    ),
+                      ),
                     ),
                   ],
                 ),
@@ -138,18 +205,41 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
               children: [
                 Text('냉장고 카테고리', style: TextStyle(fontSize: 18)),
                 Spacer(),
-                DropdownButton<String>(
-                  value: selectedCategory,
+                DropdownButton<FridgeCategory>(
+                  value: selectedFridgeCategory,
                   hint: Text('카테고리 선택'),
-                  items: fridgeCategories.map((String value) {
-                    return DropdownMenuItem<String>(
+                  items: fridgeCategories.map((FridgeCategory value) {
+                    return DropdownMenuItem<FridgeCategory>(
                       value: value,
-                      child: Text(value),
+                      child: Text(value.categoryName),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (FridgeCategory? newValue) {
                     setState(() {
-                      selectedCategory = newValue;
+                      selectedFridgeCategory = newValue;
+                    });
+                  },
+                ),
+                SizedBox(width: 20),
+              ],
+            ),
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Text('장보기 카테고리', style: TextStyle(fontSize: 18)),
+                Spacer(),
+                DropdownButton<ShoppingCategory>(
+                  value: selectedShoppingListCategory,
+                  hint: Text('카테고리 선택'),
+                  items: shoppingListCategories.map((ShoppingCategory value) {
+                    return DropdownMenuItem<ShoppingCategory>(
+                      value: value,
+                      child: Text(value.categoryName),
+                    );
+                  }).toList(),
+                  onChanged: (ShoppingCategory? newValue) {
+                    setState(() {
+                      selectedShoppingListCategory = newValue;
                     });
                   },
                 ),
@@ -244,15 +334,39 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
-              // 버튼 눌렀을 때 실행될 함수 추가
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('추가하기 버튼 클릭됨')),
-              );
+            onPressed: () async {
+              if (foodNameController.text.isNotEmpty &&
+                  selectedFoodsCategory != null &&
+                  selectedFridgeCategory != null &&
+                  selectedShoppingListCategory != null) {
+                try {
+                  await FirebaseFirestore.instance.collection('foods').add({
+                    'foodsName': foodNameController.text, // 식품명
+                    'defaultCategory': selectedFoodsCategory?.defaultCategory ?? '', // 선택된 카테고리
+                    'defaultFridgeCategory': selectedFridgeCategory?.categoryName ?? '', // 냉장고 카테고리
+                    'shoppingListCategory': selectedShoppingListCategory?.categoryName ?? '', // 쇼핑 리스트 카테고리
+                    'expirationDate': expirationDays, // 유통기한
+                    'shelfLife': consumptionDays, // 품질유지기한
+                  });
+
+                  Navigator.pop(context, true);
+                } catch (e) {
+                  // 저장 중 에러 발생 시 알림 메시지 표시
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('식품 추가 중 오류가 발생했습니다: $e')),
+                  );
+                }
+              } else {
+                // 필수 입력 항목이 누락된 경우 경고 메시지 표시
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('모든 필드를 입력해주세요.')),
+                );
+              }
             },
             child: Text('추가하기'),
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+              padding:
+                  EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
               // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
@@ -266,9 +380,8 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
               // primary: isDeleteMode ? Colors.red : Colors.blue,
             ),
           ),
-          ),
         ),
-
+      ),
     );
   }
 }

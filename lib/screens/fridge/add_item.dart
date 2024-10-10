@@ -12,6 +12,7 @@ class AddItem extends StatefulWidget {
   final List<String> basicFoodsCategories;
   final String fridgeFieldIndex;
   final String sourcePage;
+  final Function onItemAdded;
 
   AddItem({
     required this.pageTitle,
@@ -19,6 +20,7 @@ class AddItem extends StatefulWidget {
     required this.addButton,
     required this.fridgeFieldIndex,
     required this.sourcePage,
+    required this.onItemAdded,
   });
 
   @override
@@ -57,6 +59,22 @@ class _AddItemState extends State<AddItem> {
     super.initState();
     removeDuplicates(); // 중복 제거 함수 호출
     _loadCategoriesFromFirestore();
+  }
+
+  void _navigateToAddItemPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddItemToCategory(
+          categoryName: selectedCategory ?? '기타',
+        ),
+        fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
+      ),
+    );
+
+    if (result == true) {
+      _loadCategoriesFromFirestore();
+    }
   }
 
   void _loadCategoriesFromFirestore() async {
@@ -111,32 +129,41 @@ class _AddItemState extends State<AddItem> {
         // fridgeCategoryId로 matchingFood의 defaultFridgeCategory 사용
         final fridgeCategoryId = matchingFood.defaultFridgeCategory;
 
+        final existingItemSnapshot = await FirebaseFirestore.instance
+            .collection('fridge_items')
+            .where('items', isEqualTo: itemName.trim().toLowerCase()) // 이름 일치
+            .where('FridgeId', isEqualTo: fridgeId) // 냉장고 일치
+            .get();
+
+        if (existingItemSnapshot.docs.isEmpty) {
         await FirebaseFirestore.instance.collection('fridge_items').add({
           'items': itemName,
           'FridgeId': fridgeId, // Firestore에 저장할 필드
           'fridgeCategoryId': fridgeCategoryId,
         });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$itemName 아이템이 이미 냉장고에 있습니다.')),
+          );
+        }
       }
 
-      // 아이템 추가 후 상태 초기화
       setState(() {
         selectedItems.clear();
       });
 
+      widget.onItemAdded();
+
+      await Future.delayed(Duration(seconds: 1));
+      if (mounted) {
+        Navigator.pop(context, true); // Navigator.pop의 중복 실행 방지
+      }
     } catch (e) {
       print('아이템 추가 중 오류 발생: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('아이템 추가 중 오류가 발생했습니다.')),
       );
     }
-
-    // 화면 닫기 (AddItem 끄기)
-    Future.delayed(Duration(seconds: 1), () {
-      if (mounted) {
-        // mounted 상태를 확인하여 위젯이 아직 활성화된 상태일 때만 pop을 호출
-        Navigator.pop(context); // AddItem 화면을 종료
-      }
-    });
   }
 
     Future<void> _addItemsToShoppingList() async {
@@ -144,11 +171,25 @@ class _AddItemState extends State<AddItem> {
 
       try {
         for (String itemName in selectedItems) {
-          await FirebaseFirestore.instance.collection('shopping_items').add({
-            'items': itemName,
-            'userId': userId,
-            'isChecked': false, // 장바구니에 추가된 아이템은 기본적으로 체크되지 않음
-          });
+          final existingItemSnapshot = await FirebaseFirestore.instance
+              .collection('shopping_items')
+              .where('items', isEqualTo: itemName.trim().toLowerCase()) // 공백 및 대소문자 제거
+              .where('userId', isEqualTo: userId)
+              .get();
+
+          if (existingItemSnapshot.docs.isEmpty) {
+            await FirebaseFirestore.instance.collection('shopping_items').add({
+              'items': itemName,
+              'userId': userId,
+              'isChecked': false, // 장바구니에 추가된 아이템은 기본적으로 체크되지 않음
+            });
+          } else {
+
+            print("이미 냉장고에 존재하는 아이템: $itemName");
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('이미 냉장고에 존재하는 아이템입니다.')),
+            );
+          }
         }
 
         // 아이템 추가 후 상태 초기화
@@ -248,6 +289,7 @@ class _AddItemState extends State<AddItem> {
       itemsByCategory[category] = items.toSet().toList();
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -405,7 +447,6 @@ class _AddItemState extends State<AddItem> {
           //키워드 검색 결과 그리드 렌더링
           return GestureDetector(
             onTap: () {
-
               setState(() {
                 if (!selectedItems.contains(itemName)) {
                   selectedItems.add(itemName); // 아이템 선택
@@ -509,15 +550,7 @@ class _AddItemState extends State<AddItem> {
           //아이템 그리드 마지막에 +아이콘 그리드 렌더링
           return GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddItemToCategory(
-                    categoryName: selectedCategory ?? '기타',
-                  ),
-                  fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
-                ),
-              );
+              _navigateToAddItemPage();
             },
             child: Container(
               decoration: BoxDecoration(

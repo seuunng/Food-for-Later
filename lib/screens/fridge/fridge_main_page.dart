@@ -23,8 +23,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   List<FridgeCategory> storageSections = [];
   FridgeCategory? selectedSection;
 
-  // List<List<String>> itemLists = [[], [], []];
-  List<List<Map<String, int>>> itemLists = [[], [], []];
+  List<List<Map<String, dynamic>>> itemLists = [[], [], []];
 
   List<String> selectedItems = [];
   bool isDeleteMode = false;
@@ -33,9 +32,9 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   void initState() {
     super.initState();
     _loadSelectedFridge();
-    _loadFridgeCategoriesFromFirestore('현재 유저아이디');
     _loadCategoriesFromFirestore();
     _loadFridgeNameFromFirestore();
+    _loadCategoriesAndFridgeData();
   }
 
   @override
@@ -44,7 +43,18 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
   }
 
-  void _loadFridgeCategoriesFromFirestore(String fridgeId) async {
+  void _loadCategoriesAndFridgeData() async {
+    await _loadCategoriesFromFirestore();
+    if (storageSections.isNotEmpty) {
+      _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
+    }
+  }
+
+  void refreshFridgeItems() {
+    _loadFridgeCategoriesFromFirestore(selectedFridge); // 아이템 목록 새로고침
+  }
+
+  Future<void> _loadFridgeCategoriesFromFirestore(String? fridgeId) async {
     final fridgeId = selectedFridge;
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -59,11 +69,15 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
         print("storageSections is empty. Make sure it's loaded.");
         return;
       }
-      itemLists = List.generate(storageSections.length, (_) => [], growable: true);
+      setState(() {
+        itemLists =
+            List.generate(storageSections.length, (_) => [], growable: true);
+      });
 
       for (var itemData in items) {
         String fridgeCategoryId = itemData['fridgeCategoryId'] ?? '기타';
         String itemName = itemData['items'] ?? 'Unknown Item';
+
         try {
           final foodsSnapshot = await FirebaseFirestore.instance
               .collection('foods')
@@ -118,6 +132,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     final categories = snapshot.docs.map((doc) {
       return FridgeCategory.fromFirestore(doc);
     }).toList();
+
     setState(() {
       storageSections = categories;
     });
@@ -160,28 +175,6 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     return [];
   }
 
-  // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
-  void _deleteSelectedItems() {
-    setState(() {
-      if (selectedSection != null) {
-        List<String> items = _getItemsForSelectedSection();
-        items.removeWhere((item) => selectedItems.contains(item));
-      }
-      selectedItems.clear(); // 선택된 아이템 목록 초기화
-      isDeleteMode = false; // 삭제 모드 해제
-    });
-  }
-
-  // 삭제 모드 여부를 토글하는 함수
-  void _toggleDeleteMode() {
-    setState(() {
-      isDeleteMode = !isDeleteMode;
-      if (!isDeleteMode) {
-        selectedItems.clear(); // 삭제 모드 해제 시 선택 목록 초기화
-      }
-    });
-  }
-
 // 삭제 모드에서 선택된 아이템들을 삭제하기 전에 확인 다이얼로그를 띄우는 함수
   Future<void> _confirmDeleteItems() async {
     bool confirmDelete = await showDialog(
@@ -200,6 +193,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
             TextButton(
               child: Text('삭제'),
               onPressed: () {
+                _deleteSelectedItems();
                 Navigator.of(context).pop(true); // 삭제 시 true 반환
               },
             ),
@@ -213,6 +207,52 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       setState(() {
         isDeleteMode = false; // 삭제 작업 후 삭제 모드 해제
       });
+    }
+  }
+
+  // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
+  void _deleteSelectedItems() async {
+    if (selectedItems == null || selectedItems.isEmpty) {
+      print("선택된 아이템이 없습니다. 삭제할 수 없습니다.");
+      return;
+    }
+
+    List<String> itemsToDelete = List.from(selectedItems);
+
+    try {
+      for (String item in itemsToDelete) {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('fridge_items')
+            .where('items', isEqualTo: item) // 선택된 아이템 이름과 일치하는 문서 검색
+            .where('FridgeId', isEqualTo: selectedFridge) // 선택된 냉장고 ID 필터
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          for (var doc in snapshot.docs) {
+            await FirebaseFirestore.instance
+                .collection('fridge_items')
+                .doc(doc.id) // 문서 ID로 삭제
+                .delete();
+          }
+        }
+      }
+      // 로컬 상태에서도 삭제
+      setState(() {
+        for (String item in itemsToDelete) {
+          for (var section in itemLists) {
+            section.removeWhere((map) => map.keys.first == item);
+          }
+        }
+
+        selectedItems.clear(); // 선택된 아이템 목록 초기화
+        isDeleteMode = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('선택된 아이템이 삭제되었습니다.')),
+      );
+    } catch (e) {
+      print('Error deleting items from Firestore: $e');
     }
   }
 
@@ -265,9 +305,17 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                 fridgeFieldIndex: '기본냉장고',
                 basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
                 sourcePage: 'fridge',
+                onItemAdded: () {
+                  // selectedFridge 전달
+                  _loadFridgeCategoriesFromFirestore(
+                      selectedFridge ?? '기본 냉장고');
+                },
               ),
             ),
           );
+          setState(() {
+            _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
+          });
         },
         child: Icon(Icons.add),
       ),
@@ -306,7 +354,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
         return Column(
           children: [
             _buildSectionTitle(storageSections[index].categoryName), // 섹션 타이틀
-            _buildGrid(index), //
+            _buildDragTargetSection(index), // 드래그 타겟으로 각 섹션 구성
           ],
         );
       }),
@@ -335,20 +383,195 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     );
   }
 
+  Widget _buildGridForSection(List<Map<String, dynamic>> items, int sectionIndex) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(8.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5, // 한 줄에 5칸
+        crossAxisSpacing: 8.0,
+        mainAxisSpacing: 8.0,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        String currentItem = items[index].keys.first;  // 아이템 이름
+        int expirationDays = items[index].values.first;
+        bool isSelected = selectedItems.contains(currentItem);
+
+        return Draggable<String>(
+          data: currentItem, // 드래그할 데이터 (현재 아이템 이름)
+          feedback: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 80,
+              height: 80,
+              padding: EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.blueGrey[200],
+                borderRadius: BorderRadius.circular(8.0),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 10,
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  currentItem,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+          childWhenDragging: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Center(
+              child: Text(
+                currentItem,
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          child: GestureDetector(
+            onLongPress: () {
+              setState(() {
+                if (isDeleteMode) {
+                  isDeleteMode = false;
+                  selectedItems.clear();
+                } else {
+                  isDeleteMode = true;
+                  selectedItems.add(currentItem);
+                }
+              });
+            },
+            onTap: () {
+              if (isDeleteMode) {
+                setState(() {
+                  if (selectedItems.contains(currentItem)) {
+                    selectedItems.remove(currentItem);
+                  } else {
+                    selectedItems.add(currentItem);
+                  }
+                });
+              }
+            },
+            onDoubleTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FridgeItemDetails(
+                    categoryName: '과일',
+                    categoryFoodsName: currentItem,
+                    expirationDays: expirationDays,
+                    consumptionDays: 1,
+                    registrationDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDeleteMode && isSelected
+                    ? Colors.orange
+                    : _getBackgroundColor(expirationDays),
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Center(
+                child: Text(
+                  currentItem,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDragTargetSection(int sectionIndex) {
+    return DragTarget<String>(
+      onAccept: (draggedItem) async {
+        setState(() {
+          // 해당 섹션으로 아이템 이동
+          if (!itemLists[sectionIndex].any((map) => map['items'] == draggedItem)) {
+            itemLists[sectionIndex].add({'items': draggedItem, 'expirationDate': 7}); // 예시로 7일 유통기한 설정
+          }
+
+          // 기존 섹션에서 아이템 제거
+          for (var section in itemLists) {
+            section.removeWhere((item) => item['items'] == draggedItem);
+          }
+        });
+
+        // Firestore에서 fridgeCategoryId 업데이트
+        String newFridgeCategoryId = storageSections[sectionIndex].categoryName;
+
+        try {
+          // Firestore에서 해당 아이템을 찾아 fridgeCategoryId 업데이트
+          QuerySnapshot snapshot = await FirebaseFirestore.instance
+              .collection('fridge_items')
+              .where('items', isEqualTo: draggedItem)
+              .get();
+
+          if (snapshot.docs.isNotEmpty) {
+            String docId = snapshot.docs.first.id;
+
+            // fridgeCategoryId 업데이트
+            await FirebaseFirestore.instance
+                .collection('fridge_items')
+                .doc(docId)
+                .update({'fridgeCategoryId': newFridgeCategoryId});
+
+            refreshFridgeItems();
+          }
+        } catch (e) {
+          print('Error updating fridgeCategoryId: $e');
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        return _buildGridForSection(itemLists[sectionIndex], sectionIndex); // 섹션 내 그리드 빌드
+      },
+    );
+  }
+
+  Widget _buildItem(String itemName, int expirationDays) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _getBackgroundColor(expirationDays),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Center(
+        child: Text(
+          itemName,
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
+
   // 물건을 추가할 수 있는 그리드
   Widget _buildGrid(int sectionIndex) {
     if (sectionIndex >= itemLists.length) {
       return Container(); // 인덱스가 범위를 벗어나면 빈 컨테이너 반환
     }
 
-    List<Map<String, int>> items = itemLists[sectionIndex];
+    List<Map<String, dynamic>> items = itemLists[sectionIndex]?? [];
     return DragTarget<String>(
       onAccept: (data) async {
         setState(() {
-          // 드래그된 항목을 새로운 섹션에 추가하고 원래 섹션에서 삭제
-          itemLists[sectionIndex].add({data: 7});
-          itemLists.forEach((section) =>
-              section.removeWhere((item) => item.keys.first == data));
+          if (!itemLists[sectionIndex].any((map) => map.keys.first == data)) {
+            itemLists[sectionIndex].add({data: 7});
+          }
+
+          for (var section in itemLists) {
+            section.removeWhere((item) => item.keys.first == data);
+          }
         });
 
         // 드래그한 항목의 fridgeCategoryId 업데이트
@@ -389,7 +612,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {
-            String currentItem = items[index].keys.first;
+            String currentItem = items[index].keys.first?? 'Unknown Item' ;
             int expirationDays = items[index][currentItem]!;
             bool isSelected = selectedItems.contains(currentItem);
 
