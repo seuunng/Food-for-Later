@@ -106,9 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(
             builder: (context) => AddItem(
               pageTitle: '기본 식품 카테고리에 추가',
-              addButton: '카테고리에 추가', // 안나온다
-              fridgeFieldIndex: '기본냉장고',
-              basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
+              addButton: '카테고리에 추가',
               sourcePage: 'update_foods_category',
               onItemAdded: () {
                 setState(() {});
@@ -124,9 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context) => AddItem(
               pageTitle: '선호식품 카테고리에 추가',
               addButton: '카테고리에 추가',
-              fridgeFieldIndex: '기본냉장고',
-              basicFoodsCategories: ['비건', '다이어트', '무오신채', '알레르기', '채식'],
-              sourcePage: 'update_foods_category',
+              sourcePage: 'preferred_foods_category',
               onItemAdded: () {
                 setState(() {});
               },
@@ -145,10 +141,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => RecordSearchSettings()));
         break;
+
       case 'record_categories_setting':
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => EditRecordCategories()));
         break;
+
       default:
         break;
     }

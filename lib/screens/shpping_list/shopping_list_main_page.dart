@@ -428,10 +428,8 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             context,
             MaterialPageRoute(
               builder: (context) => AddItem(
-                pageTitle: '장보기목록에 추가',
-                addButton: '장보기목록에 추가',
-                fridgeFieldIndex: '기본냉장고',
-                basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
+                pageTitle: '장보기 목록에 추가',
+                addButton: '장보기 목록에 추가',
                 sourcePage: 'shoppingList',
                 onItemAdded: () {
                 },

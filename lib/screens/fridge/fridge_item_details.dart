@@ -1,17 +1,25 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/models/foods_model.dart';
+import 'package:food_for_later/models/fridge_category_model.dart';
+import 'package:food_for_later/models/shopping_category_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:intl/intl.dart';
 
 class FridgeItemDetails extends StatefulWidget {
-  final String categoryName; // 선택된 냉장고 카테고리명
-  final String categoryFoodsName; // 선택된 냉장고 카테고리명
-  final int expirationDays; // 유통기한
-  final int consumptionDays; // 품질유지기한
-  final String registrationDate; // 등록일
+  final String foodsName;
+  final String foodsCategory;
+  final String fridgeCategory;
+  final String shoppingListCategory;
+  final int expirationDays;
+  final int consumptionDays;
+  final String registrationDate;
 
   FridgeItemDetails({
-    required this.categoryName,
-    required this.categoryFoodsName,
+    required this.foodsName,
+    required this.foodsCategory,
+    required this.fridgeCategory,
+    required this.shoppingListCategory,
     required this.expirationDays,
     required this.consumptionDays,
     required this.registrationDate,
@@ -22,67 +30,20 @@ class FridgeItemDetails extends StatefulWidget {
 }
 
 class _FridgeItemDetailsState extends State<FridgeItemDetails> {
-  // 냉장고 카테고리 상수 리스트
-  static const List<String> fridgeCategories = ['냉장', '냉동', '상온'];
-  static const List<String> basicFoodsCategories = [
-    '육류',
-    '수산물',
-    '채소',
-    '과일',
-    '견과'
-  ];
-  // 각 카테고리별 아이템 리스트 (예시 데이터)
-  Map<String, List<String>> itemsByCategory = {
-    '육류': ['소고기', '돼지고기', '닭고기'],
-    '수산물': ['연어', '참치', '고등어'],
-    '채소': ['양파', '당근', '감자'],
-    '과일': [
-      '사과',
-      '바나나',
-      '포도',
-      '메론',
-      '자몽',
-      '블루베리',
-      '라즈베리',
-      '딸기',
-      '체리',
-      '오렌지',
-      '골드키위',
-      '참외',
-      '수박',
-      '감',
-      '복숭아',
-      '앵두',
-      '자두',
-      '배',
-      '코코넛',
-      '리치',
-      '망고',
-      '망고스틴',
-      '아보카도',
-      '복분자',
-      '샤인머스캣',
-      '용과',
-      '라임',
-      '레몬',
-      '천도복숭아',
-      '파인애플',
-      '애플망고',
-      '잭프릇',
-      '람보탄',
-      '아사히베리',
-      ''
-    ],
-    '견과': ['아몬드', '호두', '캐슈넛'],
-  };
 
-  // 드롭다운 선택된 값 저장 변수
-  String? selectedCategory;
-  String? selectedFoodsCategory;
-  String? selectedFoods;
-  int expirationDays = 1; // 유통기한 기본값
-  int consumptionDays = 1; // 품질유지기한 기본값
-  // Date registrationDate;
+  List<FoodsModel> foodsCategories = [];
+  FoodsModel? selectedFoodsCategory;
+
+  List<FridgeCategory> fridgeCategories = [];
+  FridgeCategory? selectedFridgeCategory;
+
+  List<ShoppingCategory> shoppingListCategories = [];
+  ShoppingCategory? selectedShoppingListCategory;
+
+  Map<String, List<String>> itemsByCategory = {};
+
+  int expirationDays = 1;
+  int consumptionDays = 1;
 
   // 입력 필드 컨트롤러
   TextEditingController foodNameController = TextEditingController();
@@ -95,23 +56,97 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
   void initState() {
     super.initState();
     dateController.text =
-        DateFormat('yyyy-MM-dd').format(currentDate); // 초기 등록일을 현재 날짜로 설정
-    // 선택된 카테고리가 기본 카테고리 목록에 있는지 확인
-    if (basicFoodsCategories.contains(widget.categoryName)) {
-      selectedFoodsCategory = widget.categoryName; // 유효한 경우 카테고리 설정
-    } else {
-      selectedFoodsCategory = null;
-    }
-    // 선택된 값이 itemsByCategory에서 정확하게 있는지 확인 후 없으면 null 설정
-    selectedFoods = itemsByCategory[widget.categoryName]
-                ?.contains(widget.categoryFoodsName) ==
-            true
-        ? widget.categoryFoodsName
-        : null;
+        DateFormat('yyyy-MM-dd').format(currentDate);
+    _loadFoodsCategoriesFromFirestore();
+    _loadFridgeCategoriesFromFirestore();
+    _loadShoppingListCategoriesFromFirestore();
+
     expirationDays = widget.expirationDays;
     consumptionDays = widget.consumptionDays;
     dateController.text = widget.registrationDate;
   }
+// 기본식품 카테고리
+  void _loadFoodsCategoriesFromFirestore() async {
+    try {
+      final snapshot =
+      await FirebaseFirestore.instance.collection('foods').get();
+      final categories = snapshot.docs.map((doc) {
+        return FoodsModel.fromFirestore(doc);
+      }).toList();
+
+      final Map<String, FoodsModel> uniqueCategoriesMap = {};
+      for (var category in categories) {
+        if (!uniqueCategoriesMap.containsKey(category.defaultCategory)) {
+          uniqueCategoriesMap[category.defaultCategory] = category;
+        }
+      }
+
+      final uniqueCategories = uniqueCategoriesMap.values.toList();
+
+      setState(() {
+        foodsCategories = uniqueCategories;
+        if (widget.foodsCategory.isNotEmpty) {
+          selectedFoodsCategory = foodsCategories.firstWhere(
+                (category) => category.defaultCategory == widget.foodsCategory,
+            orElse: () => FoodsModel( // 기본값을 설정
+              id: 'unknown',
+              foodsName: '',
+              defaultCategory: '',
+              defaultFridgeCategory: '',
+              shoppingListCategory: '',
+              expirationDate: 0,
+              shelfLife: 0,
+            ),
+          );
+        }
+      });
+
+    } catch (e) {
+      print("Error loading foods categories: $e");
+    }
+  }
+
+  // 냉장고 카테고리
+  Future<void> _loadFridgeCategoriesFromFirestore() async {
+    final snapshot =
+    await FirebaseFirestore.instance.collection('fridge_categories').get();
+
+    final categories = snapshot.docs.map((doc) {
+      return FridgeCategory.fromFirestore(doc);
+    }).toList();
+    setState(() {
+      fridgeCategories = categories;
+
+      selectedFridgeCategory = fridgeCategories.firstWhere(
+            (category) => category.categoryName == widget.fridgeCategory,
+        orElse: () => FridgeCategory(
+            id: 'unknown',
+            categoryName: '',
+          ),
+      );
+    });
+  }
+  // 쇼핑리스트 카테고리
+  Future<void> _loadShoppingListCategoriesFromFirestore() async {
+    final snapshot =
+    await FirebaseFirestore.instance.collection('shopping_categories').get();
+
+    final categories = snapshot.docs.map((doc) {
+      return ShoppingCategory.fromFirestore(doc);
+    }).toList();
+    setState(() {
+      shoppingListCategories = categories;
+
+      selectedShoppingListCategory = shoppingListCategories.firstWhere(
+            (category) => category.categoryName == widget.shoppingListCategory,
+        orElse: () => ShoppingCategory( // 기본 ShoppingCategory 반환
+              id: 'unknown',
+              categoryName: '',
+            ),
+      );
+    });
+  }
+
 
   // 날짜 선택 함수
   Future<void> _selectDate(BuildContext context) async {
@@ -134,6 +169,11 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
   Widget build(BuildContext context) {
     // 날짜를 "YYYY-MM-DD" 형식으로 포맷
     String formattedDate = DateFormat('yyyy-MM-dd').format(currentDate);
+
+    print('defaultCategory ${widget.foodsCategory} ${selectedFoodsCategory} ');
+    print('shoppingListCategory ${widget.shoppingListCategory} ${selectedShoppingListCategory}');
+    print(fridgeCategories.contains(selectedFridgeCategory));
+    print('defaultFridgeCategory ${widget.fridgeCategory} ${selectedFridgeCategory}');
 
     return Scaffold(
       appBar: AppBar(
@@ -163,16 +203,18 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                         children: [
                           Text('카테고리명   ', style: TextStyle(fontSize: 18)),
                           SizedBox(width: 10),
-                          DropdownButton<String>(
-                            value: selectedFoodsCategory,
+                          DropdownButton<FoodsModel>(
+                            value: foodsCategories.contains(selectedFoodsCategory)
+                                ? selectedFoodsCategory
+                                : null,
                             hint: Text('카테고리 선택'),
-                            items: basicFoodsCategories.map((String value) {
-                              return DropdownMenuItem<String>(
+                            items: foodsCategories.map((FoodsModel value) {
+                              return DropdownMenuItem<FoodsModel>(
                                 value: value,
-                                child: Text(value),
+                                child: Text(value.defaultCategory),
                               );
                             }).toList(),
-                            onChanged: (String? newValue) {
+                            onChanged: (FoodsModel? newValue) {
                               setState(() {
                                 selectedFoodsCategory = newValue;
                               });
@@ -190,7 +232,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                             // 원하는 크기로 설정
                             child: TextField(
                               controller: foodNameController
-                                ..text = selectedFoods ?? '',
+                                ..text = widget.foodsName ?? '',
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(),
                                 hintText: '식품명을 입력하세요',
@@ -208,18 +250,46 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                 children: [
                   Text('냉장고 카테고리', style: TextStyle(fontSize: 18)),
                   Spacer(),
-                  DropdownButton<String>(
-                    value: selectedCategory,
+                  DropdownButton<FridgeCategory>(
+                    value: fridgeCategories.contains(selectedFridgeCategory)
+                        ? selectedFridgeCategory
+                        : null,
                     hint: Text('카테고리 선택'),
-                    items: fridgeCategories.map((String value) {
-                      return DropdownMenuItem<String>(
+                    items: fridgeCategories.map((FridgeCategory value) {
+                      return DropdownMenuItem<FridgeCategory>(
                         value: value,
-                        child: Text(value),
+                        child: Text(value.categoryName),
                       );
                     }).toList(),
-                    onChanged: (String? newValue) {
+                    onChanged: (FridgeCategory? newValue) {
                       setState(() {
-                        selectedCategory = newValue;
+                        selectedFridgeCategory = newValue;
+                      });
+                    },
+                  ),
+                  SizedBox(width: 20),
+                ],
+              ),
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  Text('장보기 카테고리', style: TextStyle(fontSize: 18)),
+                  Spacer(),
+                  DropdownButton<ShoppingCategory>(
+                    value: shoppingListCategories.contains(selectedShoppingListCategory)
+                        ? selectedShoppingListCategory
+                        : null,
+
+                    hint: Text('카테고리 선택'),
+                    items: shoppingListCategories.map((ShoppingCategory value) {
+                      return DropdownMenuItem<ShoppingCategory>(
+                        value: value,
+                        child: Text(value.categoryName),
+                      );
+                    }).toList(),
+                    onChanged: (ShoppingCategory? newValue) {
+                      setState(() {
+                        selectedShoppingListCategory = newValue;
                       });
                     },
                   ),

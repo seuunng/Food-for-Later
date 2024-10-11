@@ -358,14 +358,6 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                           builder: (context) => AddItem(
                             pageTitle: '선호식품 카테고리에 추가',
                             addButton: '카테고리에 추가',
-                            fridgeFieldIndex: '기본냉장고',
-                            basicFoodsCategories: [
-                              '비건',
-                              '다이어트',
-                              '무오신채',
-                              '알레르기',
-                              '채식'
-                            ], // 원하는 카테고리 리스트)
                             sourcePage: 'update_foods_category',
                             onItemAdded: () {
                               setState(() {});

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
+import 'package:food_for_later/models/preferred_food_model.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:intl/intl.dart';
@@ -9,16 +10,14 @@ import 'package:intl/intl.dart';
 class AddItem extends StatefulWidget {
   final String pageTitle;
   final String addButton;
-  final List<String> basicFoodsCategories;
-  final String fridgeFieldIndex;
+  // final String fridgeFieldIndex;
   final String sourcePage;
   final Function onItemAdded;
 
   AddItem({
     required this.pageTitle,
-    required this.basicFoodsCategories,
     required this.addButton,
-    required this.fridgeFieldIndex,
+    // required this.fridgeFieldIndex,
     required this.sourcePage,
     required this.onItemAdded,
   });
@@ -27,7 +26,7 @@ class AddItem extends StatefulWidget {
   _AddItemState createState() => _AddItemState();
 }
 
-Map<String, List<Map<String, dynamic>>> itemsByCategory = {};
+// Map<String, List<Map<String, dynamic>>> itemsByCategory = {};
 
 class _AddItemState extends State<AddItem> {
   DateTime currentDate = DateTime.now();
@@ -51,6 +50,7 @@ class _AddItemState extends State<AddItem> {
   TextEditingController expirationDaysController = TextEditingController();
 
   Map<String, List<FoodsModel>> itemsByCategory = {};
+  Map<String, List<PreferredFoodModel>> itemsByPreferredCategory = {};
   List<FoodsModel> items = [];
 
   // initState 또는 빌드 직전에 중복 제거
@@ -58,7 +58,11 @@ class _AddItemState extends State<AddItem> {
   void initState() {
     super.initState();
     removeDuplicates(); // 중복 제거 함수 호출
-    _loadCategoriesFromFirestore();
+    if (widget.sourcePage == 'preferred_foods_category') {
+      _loadPreferredFoodsCategoriesFromFirestore();
+    } else {
+      _loadCategoriesFromFirestore();
+    }
   }
 
   void _navigateToAddItemPage() async {
@@ -91,12 +95,50 @@ class _AddItemState extends State<AddItem> {
         for (var category in categories) {
           // 기존 카테고리 리스트가 있으면 추가, 없으면 새 리스트 생성
           if (itemsByCategory.containsKey(category.defaultCategory)) {
-            itemsByCategory[category.defaultCategory]!.add(category); // 이미 있는 리스트에 추가
+            itemsByCategory[category.defaultCategory]!
+                .add(category); // 이미 있는 리스트에 추가
           } else {
-            itemsByCategory[category.defaultCategory] = [category]; // 새로운 리스트 생성
+            itemsByCategory[category.defaultCategory] = [
+              category
+            ]; // 새로운 리스트 생성
           }
         }
       });
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  void _loadPreferredFoodsCategoriesFromFirestore() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .get();
+      final categories = snapshot.docs.map((doc) {
+        return PreferredFoodModel.fromFirestore(doc);
+      }).toList();
+
+      setState(() {
+        itemsByPreferredCategory = {};
+
+        for (var categoryModel in categories) {
+          // 각 categoryModel의 category 필드(Map<String, List<String>>)에서 키를 추출
+          categoryModel.category.forEach((categoryName, itemList) {
+            // 해당 카테고리 이름으로 itemsByPreferredCategory에 데이터를 추가
+            if (itemsByPreferredCategory.containsKey(categoryName)) {
+              // 이미 있는 리스트에 categoryModel을 추가
+              itemsByPreferredCategory[categoryName]!.add(categoryModel);
+            } else {
+              // 새로운 리스트 생성 후 categoryModel 추가
+              itemsByPreferredCategory[categoryName] = [categoryModel];
+            }
+          });
+        }
+      });
+      print(itemsByPreferredCategory);
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -114,8 +156,7 @@ class _AddItemState extends State<AddItem> {
         // FoodsModel에서 해당 itemName에 맞는 데이터를 찾기
         final matchingFood = itemsByCategory.values.expand((x) => x).firstWhere(
               (food) => food.foodsName == itemName, // itemName과 일치하는지 확인
-          orElse: () =>
-              FoodsModel(
+              orElse: () => FoodsModel(
                 id: 'unknown',
                 foodsName: itemName,
                 defaultCategory: '기타',
@@ -124,7 +165,7 @@ class _AddItemState extends State<AddItem> {
                 expirationDate: 0,
                 shelfLife: 0,
               ),
-        );
+            );
 
         // fridgeCategoryId로 matchingFood의 defaultFridgeCategory 사용
         final fridgeCategoryId = matchingFood.defaultFridgeCategory;
@@ -136,11 +177,11 @@ class _AddItemState extends State<AddItem> {
             .get();
 
         if (existingItemSnapshot.docs.isEmpty) {
-        await FirebaseFirestore.instance.collection('fridge_items').add({
-          'items': itemName,
-          'FridgeId': fridgeId, // Firestore에 저장할 필드
-          'fridgeCategoryId': fridgeCategoryId,
-        });
+          await FirebaseFirestore.instance.collection('fridge_items').add({
+            'items': itemName,
+            'FridgeId': fridgeId, // Firestore에 저장할 필드
+            'fridgeCategoryId': fridgeCategoryId,
+          });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('$itemName 아이템이 이미 냉장고에 있습니다.')),
@@ -166,43 +207,42 @@ class _AddItemState extends State<AddItem> {
     }
   }
 
-    Future<void> _addItemsToShoppingList() async {
-      final userId = '현재 유저아이디'; // 여기에 실제 유저 ID를 추가하세요
+  Future<void> _addItemsToShoppingList() async {
+    final userId = '현재 유저아이디'; // 여기에 실제 유저 ID를 추가하세요
 
-      try {
-        for (String itemName in selectedItems) {
-          final existingItemSnapshot = await FirebaseFirestore.instance
-              .collection('shopping_items')
-              .where('items', isEqualTo: itemName.trim().toLowerCase()) // 공백 및 대소문자 제거
-              .where('userId', isEqualTo: userId)
-              .get();
+    try {
+      for (String itemName in selectedItems) {
+        final existingItemSnapshot = await FirebaseFirestore.instance
+            .collection('shopping_items')
+            .where('items',
+                isEqualTo: itemName.trim().toLowerCase()) // 공백 및 대소문자 제거
+            .where('userId', isEqualTo: userId)
+            .get();
 
-          if (existingItemSnapshot.docs.isEmpty) {
-            await FirebaseFirestore.instance.collection('shopping_items').add({
-              'items': itemName,
-              'userId': userId,
-              'isChecked': false, // 장바구니에 추가된 아이템은 기본적으로 체크되지 않음
-            });
-          } else {
-
-            print("이미 냉장고에 존재하는 아이템: $itemName");
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('이미 냉장고에 존재하는 아이템입니다.')),
-            );
-          }
+        if (existingItemSnapshot.docs.isEmpty) {
+          await FirebaseFirestore.instance.collection('shopping_items').add({
+            'items': itemName,
+            'userId': userId,
+            'isChecked': false, // 장바구니에 추가된 아이템은 기본적으로 체크되지 않음
+          });
+        } else {
+          print("이미 냉장고에 존재하는 아이템: $itemName");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('이미 냉장고에 존재하는 아이템입니다.')),
+          );
         }
-
-        // 아이템 추가 후 상태 초기화
-        setState(() {
-          selectedItems.clear();
-        });
-
-      } catch (e) {
-        print('아이템 추가 중 오류 발생: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('아이템 추가 중 오류가 발생했습니다.')),
-        );
       }
+
+      // 아이템 추가 후 상태 초기화
+      setState(() {
+        selectedItems.clear();
+      });
+    } catch (e) {
+      print('아이템 추가 중 오류 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('아이템 추가 중 오류가 발생했습니다.')),
+      );
+    }
 
     // 화면 닫기 (AddItem 끄기)
     Future.delayed(Duration(seconds: 1), () {
@@ -218,6 +258,28 @@ class _AddItemState extends State<AddItem> {
     List<FoodsModel> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
+
+      if (widget.sourcePage == 'preferred_foods_category') {
+        itemsByPreferredCategory.forEach((category, categoryModels) {
+          for (var categoryModel in categoryModels) {
+            categoryModel.category.forEach((_, items) {
+              tempFilteredItems.addAll(
+                items
+                    .where((item) => item.toLowerCase().contains(searchKeyword))
+                    .map((item) => FoodsModel(
+                          id: 'unknown', // 임시 ID 값 설정
+                          foodsName: item, // item은 String이므로 foodsName에 할당
+                          defaultCategory: category, // 카테고리명 할당
+                          defaultFridgeCategory: '기타', // 기타 필드 값은 임시로 설정
+                          shoppingListCategory: '기타',
+                          expirationDate: 0,
+                          shelfLife: 0,
+                        )),
+              );
+            });
+          }
+        });
+      } else {}
       itemsByCategory.forEach((category, items) {
         tempFilteredItems.addAll(
           items.where(
@@ -231,14 +293,26 @@ class _AddItemState extends State<AddItem> {
   // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
   void _deleteSelectedItems() {
     setState(() {
-      if (selectedCategory != null) {
-        deletedItems.addAll(selectedItems);
+      if (widget.sourcePage == 'preferred_foods_category') {
+        // PreferredFoodModel 삭제 로직
+        itemsByPreferredCategory.forEach((category, categoryModels) {
+          for (var categoryModel in categoryModels) {
+            categoryModel.category.forEach((categoryName, items) {
+              categoryModel.category[categoryName]!
+                  .removeWhere((item) => selectedItems.contains(item));
+            });
+          }
+        });
+      } else {
+        if (selectedCategory != null) {
+          deletedItems.addAll(selectedItems);
 
-        itemsByCategory[selectedCategory!]!
-            .removeWhere((item) => selectedItems.contains(item));
+          itemsByCategory[selectedCategory!]!
+              .removeWhere((item) => selectedItems.contains(item));
+        }
+        selectedItems.clear(); // 선택된 아이템 목록 초기화
+        isDeleteMode = false; // 삭제 모드 해제
       }
-      selectedItems.clear(); // 선택된 아이템 목록 초기화
-      isDeleteMode = false; // 삭제 모드 해제
     });
   }
 
@@ -289,7 +363,6 @@ class _AddItemState extends State<AddItem> {
       itemsByCategory[category] = items.toSet().toList();
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -344,7 +417,10 @@ class _AddItemState extends State<AddItem> {
                 child: _buildFilteredItemsGrid(),
               ),
             ] else ...[
-              _buildCategoryGrid(),
+              if (widget.sourcePage == 'preferred_foods_category')
+                _buildPreferredCategoryGrid()
+              else
+                _buildCategoryGrid(),
               if (selectedCategory != null) ...[
                 Divider(thickness: 2),
                 Padding(
@@ -356,15 +432,15 @@ class _AddItemState extends State<AddItem> {
           ],
         ),
       ),
-
-      bottomNavigationBar: selectedItems.isNotEmpty && widget.sourcePage != 'update_foods_category'
+      bottomNavigationBar: selectedItems.isNotEmpty &&
+              widget.sourcePage != 'update_foods_category'
           ? Container(
               color: Colors.transparent,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed:() {
+                  onPressed: () {
                     if (isDeleteMode) {
                       _confirmDeleteItems(); // 삭제 모드일 때
                     } else {
@@ -524,12 +600,80 @@ class _AddItemState extends State<AddItem> {
     );
   }
 
+  Widget _buildPreferredCategoryGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      // GridView의 크기를 콘텐츠에 맞게 줄임
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(8.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5, // 한 줄에 3칸
+        crossAxisSpacing: 8.0,
+        mainAxisSpacing: 8.0,
+        childAspectRatio: 1,
+      ),
+      itemCount: itemsByPreferredCategory.keys.length,
+      itemBuilder: (context, index) {
+        String category = itemsByPreferredCategory.keys.elementAt(index);
+        // 카테고리 그리드 렌더링
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              if (selectedCategory == category) {
+                selectedCategory = null;
+              } else {
+                selectedCategory = category;
+                // filteredItems = widget.itemsByCategory[category] ?? []; // null 확인
+              }
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: selectedCategory == category
+                  ? Colors.orange
+                  : Colors.blueAccent,
+              borderRadius: BorderRadius.circular(8.0),
+            ), // 카테고리 버튼 크기 설정
+            height: 60,
+            // margin: EdgeInsets.symmetric(vertical: 8.0),
+            child: Center(
+              child: Text(
+                category,
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // 카테고리별 아이템을 출력하는 그리드
   Widget _buildCategoryItemsGrid() {
     List<FoodsModel> items = [];
 
-    if (selectedCategory != null && itemsByCategory.containsKey(selectedCategory!)) {
-      items = itemsByCategory[selectedCategory!] ?? [];
+    if (selectedCategory != null) {
+      if (widget.sourcePage == 'preferred_foods_category') {
+        // preferred_foods_category에서 데이터를 로드
+        if (itemsByPreferredCategory.containsKey(selectedCategory!)) {
+          items = itemsByPreferredCategory[selectedCategory!]!
+              .expand(
+                  (categoryModel) => categoryModel.category[selectedCategory]!)
+              .map((itemName) => FoodsModel(
+                    id: 'unknown', // 임시 ID 값 설정
+                    foodsName: itemName, // 카테고리에서 아이템 이름 설정
+                    defaultCategory: selectedCategory!,
+                    defaultFridgeCategory: '기타',
+                    shoppingListCategory: '기타',
+                    expirationDate: 0,
+                    shelfLife: 0,
+                  ))
+              .toList();
+        }
+      } else if (itemsByCategory.containsKey(selectedCategory!)) {
+        // 일반 카테고리 데이터 로드
+        items = itemsByCategory[selectedCategory!] ?? [];
+      }
     }
 
     return GridView.builder(
@@ -579,22 +723,50 @@ class _AddItemState extends State<AddItem> {
                 }
               });
             },
-            onDoubleTap: () {
-              FoodsModel currentItem = items[index];
-              String itemName = currentItem.foodsName; // 아이템 이름 접근
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FridgeItemDetails(
-                    categoryName: selectedCategory ?? '기타',
-                    categoryFoodsName: itemName,
-                    expirationDays: 1,
-                    consumptionDays: 1,
-                    registrationDate:
-                        DateFormat('yyyy-MM-dd').format(DateTime.now()), // 예시 값
-                  ),
-                ),
-              );
+            onDoubleTap: () async {
+              try {
+                // Firestore에서 현재 선택된 아이템의 정보를 불러옵니다.
+                final foodsSnapshot = await FirebaseFirestore.instance
+                    .collection('foods')
+                    .where('foodsName',
+                        isEqualTo: currentItem) // 현재 아이템과 일치하는지 확인
+                    .get();
+
+                if (foodsSnapshot.docs.isNotEmpty) {
+                  final foodsData = foodsSnapshot.docs.first.data();
+
+                  // Firestore에서 불러온 데이터를 동적으로 할당
+                  String defaultCategory = foodsData['defaultCategory'] ?? '기타';
+                  String defaultFridgeCategory =
+                      foodsData['defaultFridgeCategory'] ?? '기타';
+                  String shoppingListCategory =
+                      foodsData['shoppingListCategory'] ?? '기타';
+                  int expirationDays = foodsData['expirationDate'] ?? 0;
+                  int shelfLife = foodsData['shelfLife'] ?? 0;
+
+                  // FridgeItemDetails로 동적으로 데이터를 전달
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FridgeItemDetails(
+                        foodsName: currentItem.foodsName, // 아이템 이름
+                        foodsCategory: defaultCategory, // 동적 카테고리
+                        fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
+                        shoppingListCategory:
+                            shoppingListCategory, // 쇼핑 리스트 카테고리
+                        expirationDays: expirationDays, // 유통기한
+                        consumptionDays: shelfLife, // 소비기한
+                        registrationDate:
+                            DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                      ),
+                    ),
+                  );
+                } else {
+                  print("Item not found in foods collection: $currentItem");
+                }
+              } catch (e) {
+                print('Error fetching food details: $e');
+              }
             },
             onLongPress: () {
               setState(() {

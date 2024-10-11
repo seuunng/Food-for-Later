@@ -302,11 +302,8 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
               builder: (context) => AddItem(
                 pageTitle: '냉장고에 추가',
                 addButton: '냉장고에 추가',
-                fridgeFieldIndex: '기본냉장고',
-                basicFoodsCategories: ['육류', '수산물', '채소', '과일', '견과'],
                 sourcePage: 'fridge',
                 onItemAdded: () {
-                  // selectedFridge 전달
                   _loadFridgeCategoriesFromFirestore(
                       selectedFridge ?? '기본 냉장고');
                 },
@@ -383,7 +380,8 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     );
   }
 
-  Widget _buildGridForSection(List<Map<String, dynamic>> items, int sectionIndex) {
+  Widget _buildGridForSection(
+      List<Map<String, dynamic>> items, int sectionIndex) {
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -395,7 +393,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        String currentItem = items[index].keys.first;  // 아이템 이름
+        String currentItem = items[index].keys.first; // 아이템 이름
         int expirationDays = items[index].values.first;
         bool isSelected = selectedItems.contains(currentItem);
 
@@ -460,19 +458,50 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                 });
               }
             },
-            onDoubleTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FridgeItemDetails(
-                    categoryName: '과일',
-                    categoryFoodsName: currentItem,
-                    expirationDays: expirationDays,
-                    consumptionDays: 1,
-                    registrationDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                  ),
-                ),
-              );
+            onDoubleTap: () async {
+              try {
+                // Firestore에서 현재 선택된 아이템의 정보를 불러옵니다.
+                final foodsSnapshot = await FirebaseFirestore.instance
+                    .collection('foods')
+                    .where('foodsName',
+                        isEqualTo: currentItem) // 현재 아이템과 일치하는지 확인
+                    .get();
+
+                if (foodsSnapshot.docs.isNotEmpty) {
+                  final foodsData = foodsSnapshot.docs.first.data();
+
+                  // Firestore에서 불러온 데이터를 동적으로 할당
+                  String defaultCategory = foodsData['defaultCategory'] ?? '기타';
+                  String defaultFridgeCategory =
+                      foodsData['defaultFridgeCategory'] ?? '기타';
+                  String shoppingListCategory =
+                      foodsData['shoppingListCategory'] ?? '기타';
+                  int expirationDays = foodsData['expirationDate'] ?? 0;
+                  int shelfLife = foodsData['shelfLife'] ?? 0;
+
+                  // FridgeItemDetails로 동적으로 데이터를 전달
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FridgeItemDetails(
+                        foodsName: currentItem, // 아이템 이름
+                        foodsCategory: defaultCategory, // 동적 카테고리
+                        fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
+                        shoppingListCategory:
+                            shoppingListCategory, // 쇼핑 리스트 카테고리
+                        expirationDays: expirationDays, // 유통기한
+                        consumptionDays: shelfLife, // 소비기한
+                        registrationDate:
+                            DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                      ),
+                    ),
+                  );
+                } else {
+                  print("Item not found in foods collection: $currentItem");
+                }
+              } catch (e) {
+                print('Error fetching food details: $e');
+              }
             },
             child: Container(
               decoration: BoxDecoration(
@@ -499,8 +528,10 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       onAccept: (draggedItem) async {
         setState(() {
           // 해당 섹션으로 아이템 이동
-          if (!itemLists[sectionIndex].any((map) => map['items'] == draggedItem)) {
-            itemLists[sectionIndex].add({'items': draggedItem, 'expirationDate': 7}); // 예시로 7일 유통기한 설정
+          if (!itemLists[sectionIndex]
+              .any((map) => map['items'] == draggedItem)) {
+            itemLists[sectionIndex].add(
+                {'items': draggedItem, 'expirationDate': 7}); // 예시로 7일 유통기한 설정
           }
 
           // 기존 섹션에서 아이템 제거
@@ -535,7 +566,8 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
         }
       },
       builder: (context, candidateData, rejectedData) {
-        return _buildGridForSection(itemLists[sectionIndex], sectionIndex); // 섹션 내 그리드 빌드
+        return _buildGridForSection(
+            itemLists[sectionIndex], sectionIndex); // 섹션 내 그리드 빌드
       },
     );
   }
@@ -561,7 +593,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       return Container(); // 인덱스가 범위를 벗어나면 빈 컨테이너 반환
     }
 
-    List<Map<String, dynamic>> items = itemLists[sectionIndex]?? [];
+    List<Map<String, dynamic>> items = itemLists[sectionIndex] ?? [];
     return DragTarget<String>(
       onAccept: (data) async {
         setState(() {
@@ -612,7 +644,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {
-            String currentItem = items[index].keys.first?? 'Unknown Item' ;
+            String currentItem = items[index].keys.first ?? 'Unknown Item';
             int expirationDays = items[index][currentItem]!;
             bool isSelected = selectedItems.contains(currentItem);
 
@@ -678,20 +710,51 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                     });
                   }
                 },
-                onDoubleTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FridgeItemDetails(
-                        categoryName: '과일', //동적데이터 필요
-                        categoryFoodsName: currentItem,
-                        expirationDays: expirationDays,
-                        consumptionDays: 1,
-                        registrationDate: DateFormat('yyyy-MM-dd')
-                            .format(DateTime.now()), // 예시 값
-                      ),
-                    ),
-                  );
+                onDoubleTap: () async {
+                  try {
+                    // Firestore에서 현재 선택된 아이템의 정보를 불러옵니다.
+                    final foodsSnapshot = await FirebaseFirestore.instance
+                        .collection('foods')
+                        .where('foodsName',
+                            isEqualTo: currentItem) // 현재 아이템과 일치하는지 확인
+                        .get();
+
+                    if (foodsSnapshot.docs.isNotEmpty) {
+                      final foodsData = foodsSnapshot.docs.first.data();
+
+                      // Firestore에서 불러온 데이터를 동적으로 할당
+                      String defaultCategory =
+                          foodsData['defaultCategory'] ?? '기타';
+                      String defaultFridgeCategory =
+                          foodsData['defaultFridgeCategory'] ?? '기타';
+                      String shoppingListCategory =
+                          foodsData['shoppingListCategory'] ?? '기타';
+                      int expirationDays = foodsData['expirationDate'] ?? 0;
+                      int shelfLife = foodsData['shelfLife'] ?? 0;
+
+                      // FridgeItemDetails로 동적으로 데이터를 전달
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FridgeItemDetails(
+                            foodsName: currentItem, // 아이템 이름
+                            foodsCategory: defaultCategory, // 동적 카테고리
+                            fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
+                            shoppingListCategory:
+                                shoppingListCategory, // 쇼핑 리스트 카테고리
+                            expirationDays: expirationDays, // 유통기한
+                            consumptionDays: shelfLife, // 소비기한
+                            registrationDate:
+                                DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                          ),
+                        ),
+                      );
+                    } else {
+                      print("Item not found in foods collection: $currentItem");
+                    }
+                  } catch (e) {
+                    print('Error fetching food details: $e');
+                  }
                 },
                 child: Container(
                   decoration: BoxDecoration(

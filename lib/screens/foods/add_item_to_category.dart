@@ -17,10 +17,10 @@ class AddItemToCategory extends StatefulWidget {
 }
 
 class _AddItemToCategoryState extends State<AddItemToCategory> {
-  // 냉장고 카테고리 상수 리스트
+
   List<FoodsModel> foodsCategories = [];
   FoodsModel? selectedFoodsCategory;
-  // 냉장고 카테고리 상수 리스트
+
   List<FridgeCategory> fridgeCategories = [];
   FridgeCategory? selectedFridgeCategory;
 
