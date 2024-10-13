@@ -170,11 +170,6 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
     // 날짜를 "YYYY-MM-DD" 형식으로 포맷
     String formattedDate = DateFormat('yyyy-MM-dd').format(currentDate);
 
-    print('defaultCategory ${widget.foodsCategory} ${selectedFoodsCategory} ');
-    print('shoppingListCategory ${widget.shoppingListCategory} ${selectedShoppingListCategory}');
-    print(fridgeCategories.contains(selectedFridgeCategory));
-    print('defaultFridgeCategory ${widget.fridgeCategory} ${selectedFridgeCategory}');
-
     return Scaffold(
       appBar: AppBar(
         title: Text('상세보기'),
@@ -354,27 +349,27 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                   ),
                 ],
               ),
-              SizedBox(height: 20),
-              Row(
-                children: [
-                  Text('등록일', style: TextStyle(fontSize: 18)),
-                  Spacer(),
-                  SizedBox(
-                    width: 150, // 필드 크기
-                    child: TextField(
-                      controller: dateController,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        hintText: '날짜 선택',
-                        border: OutlineInputBorder(),
-                      ),
-                      readOnly: true,
-                      onTap: () => _selectDate(context), // 날짜 선택 다이얼로그 호출
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                ],
-              ),
+              // SizedBox(height: 20),
+              // Row(
+              //   children: [
+              //     Text('등록일', style: TextStyle(fontSize: 18)),
+              //     Spacer(),
+              //     SizedBox(
+              //       width: 150, // 필드 크기
+              //       child: TextField(
+              //         controller: dateController,
+              //         textAlign: TextAlign.center,
+              //         decoration: InputDecoration(
+              //           hintText: '날짜 선택',
+              //           border: OutlineInputBorder(),
+              //         ),
+              //         readOnly: true,
+              //         onTap: () => _selectDate(context), // 날짜 선택 다이얼로그 호출
+              //       ),
+              //     ),
+              //     SizedBox(height: 20),
+              //   ],
+              // ),
             ],
           ),
         ),
@@ -386,10 +381,46 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('추가하기 버튼 클릭됨')),
-              );
+            onPressed: () async {
+              // 식품 데이터 수집
+              final updatedData = {
+                'foodsName': foodNameController.text,  // 사용자가 입력한 식품명
+                'defaultCategory': selectedFoodsCategory?.defaultCategory ?? '',
+                'defaultFridgeCategory': selectedFridgeCategory?.categoryName ?? '',
+                'shoppingListCategory': selectedShoppingListCategory?.categoryName ?? '',
+                'expirationDate': expirationDays,
+                'shelfLife': consumptionDays,
+              };
+
+              try {
+                // foods 컬렉션에서 foodsName이 일치하는 문서를 찾아 업데이트
+                final snapshot = await FirebaseFirestore.instance
+                    .collection('foods')
+                    .where('foodsName', isEqualTo: widget.foodsName)
+                    .get();
+
+                if (snapshot.docs.isNotEmpty) {
+                  // 문서가 존재할 경우 업데이트
+                  final docId = snapshot.docs.first.id;  // 첫 번째 문서의 ID를 가져옴
+
+                  await FirebaseFirestore.instance
+                      .collection('foods')
+                      .doc(docId)
+                      .update(updatedData);
+
+                } else {
+                  // 문서를 찾지 못한 경우
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('해당 데이터를 찾을 수 없습니다.')),
+                  );
+                }
+                Navigator.pop(context);
+              } catch (e) {
+                print('Error updating data: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('데이터 저장 중 오류가 발생했습니다.')),
+                );
+              }
             },
             child: Text(
               '저장하기',

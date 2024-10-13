@@ -28,7 +28,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   List<bool> selectedIngredients = []; // 선택된 재료 상태 저장
   List<String> shoppingList = []; // 장바구니 목록
 
-  List<String> fridgeIngredients = ['닭고기']; // 냉장고에 있는 재료들
+  List<String> fridgeIngredients = []; // 냉장고에 있는 재료들
   List<String> searchKeywords = []; // 검색 키워드
 
   bool isLiked = false; // 좋아요 상태
@@ -39,6 +39,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Future<Map<String, dynamic>> fetchRecipeData(String recipeId) async {
+
     try {
       DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
           .instance
@@ -57,11 +58,11 @@ class _ReadRecipeState extends State<ReadRecipe> {
   void initState() {
     super.initState();
     searchKeywords = widget.searchKeywords;
-    print(searchKeywords);
     selectedIngredients = List.generate(ingredients.length, (index) {
       return !fridgeIngredients.contains(ingredients[index]);
     });
     _fetchInitialRecipeName();
+    loadScrapedData(widget.recipeID);
   }
 
   Future<void> _fetchInitialRecipeName() async {
@@ -69,6 +70,25 @@ class _ReadRecipeState extends State<ReadRecipe> {
     setState(() {
       recipeName = data['recipeName'] ?? 'Unnamed Recipe';
     });
+  }
+
+  Future<void> loadScrapedData(String recipeId) async {
+    final userId = '현재 유저아이디';
+    try {
+      QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
+          .instance
+          .collection('scraped_recipes')
+          .where('recipeId', isEqualTo: recipeId)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      setState(() {
+        isScraped = snapshot.docs.first.data()['isScraped'] ?? false;
+      });
+
+    }catch (e) {
+      print("Error fetching recipe data: $e");
+    }
   }
 
   void _toggleLike() {
@@ -81,18 +101,93 @@ class _ReadRecipeState extends State<ReadRecipe> {
     });
   }
 
-  void _toggleScraped() {
-    setState(() {
-      if (isScraped) {
-        isScraped = false;
+  void _toggleScraped() async {
+    final userId = '현재 유저아이디'; // 실제 사용자의 ID로 대체해야 함
+
+    try {
+      // 스크랩 상태 확인을 위한 쿼리
+      QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
+          await FirebaseFirestore.instance
+              .collection('scraped_recipes')
+              .where('recipeId', isEqualTo: widget.recipeID)
+              .where('userId', isEqualTo: userId)
+              .get();
+
+      if (existingScrapedRecipes.docs.isEmpty) {
+        // 스크랩이 존재하지 않으면 새로 추가
+        await FirebaseFirestore.instance.collection('scraped_recipes').add({
+          'userId': userId,
+          'recipeId': widget.recipeID,
+          'isScraped': true,
+        });
+
+        setState(() {
+          isScraped = true; // 스크랩 상태로 변경
+        });
+
       } else {
-        isScraped = true;
+        // 스크랩이 존재하면 업데이트
+        DocumentSnapshot<Map<String, dynamic>> doc =
+            existingScrapedRecipes.docs.first;
+        bool currentIsScraped = doc.data()?['isScraped'] ?? false;
+
+        await FirebaseFirestore.instance
+            .collection('scraped_recipes')
+            .doc(doc.id)
+            .update({'isScraped': !currentIsScraped});
+
+        setState(() {
+          isScraped = !currentIsScraped; // 스크랩 상태 변경
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isScraped ? '스크랩이 추가되었습니다.' : '스크랩이 해제되었습니다.'),
+        ));
       }
-    });
+    } catch (e) {
+      print('Error scraping recipe: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('레시피 스크랩 중 오류가 발생했습니다.'),
+      ));
+    }
   }
 
-  void _addToShoppingListDialog() {
-    showDialog(
+  void _addToShoppingListDialog() async {
+    Future<void> _addToShoppingList(List<String> ingredients) async {
+      try {
+        for (int i = 0; i < ingredients.length; i++) {
+          if (selectedIngredients[i] &&
+              !shoppingList.contains(ingredients[i])) {
+            final existingItemSnapshot = await FirebaseFirestore.instance
+                .collection('shopping_items')
+                .where('items', isEqualTo: ingredients[i])
+                .where('userId', isEqualTo: '현재 유저아이디') // 현재 유저의 아이템만 확인
+                .get();
+
+            if (existingItemSnapshot.docs.isEmpty) {
+              // 중복되지 않은 경우에만 추가
+              await FirebaseFirestore.instance
+                  .collection('shopping_items')
+                  .add({
+                'items': ingredients[i],
+                'isChecked': false, // 체크되지 않은 상태로 저장
+                'userId': '현재 유저아이디', // 사용자 ID
+              });
+            } else {
+              print('"${ingredients[i]}"이(가) 이미 장바구니에 있습니다.');
+            }
+          }
+        }
+      } catch (e) {
+        print('Error adding items to shopping list: $e');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('장바구니에 추가하는 도중 오류가 발생했습니다.'),
+        ));
+      }
+    }
+
+    void _showAddToShoppingListDialog(List<String> ingredients) {
+      showDialog(
         context: context,
         builder: (BuildContext context) {
           return StatefulBuilder(
@@ -115,7 +210,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                           },
                         );
                       }
-                      return SizedBox.shrink(); // 냉장고에 있는 재료는 표시하지 않음
+                      return SizedBox.shrink();
                     }).toList(),
                   ),
                 ),
@@ -129,13 +224,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                   TextButton(
                     child: Text('추가'),
                     onPressed: () {
-                      // 선택된 재료들을 장바구니에 추가
-                      for (int i = 0; i < ingredients.length; i++) {
-                        if (selectedIngredients[i] &&
-                            !shoppingList.contains(ingredients[i])) {
-                          shoppingList.add(ingredients[i]);
-                        }
-                      }
+                      _addToShoppingList(ingredients);
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text('선택한 재료를 장바구니에 추가했습니다.'),
@@ -146,7 +235,35 @@ class _ReadRecipeState extends State<ReadRecipe> {
               );
             },
           );
+        },
+      );
+    }
+
+    Future<void> _loadFridgeItemsFromFirestore() async {
+      try {
+        var recipeData = await fetchRecipeData(widget.recipeID);
+        List<String> ingredients = List<String>.from(recipeData['foods'] ?? []);
+
+        final snapshot =
+            await FirebaseFirestore.instance.collection('fridge_items').get();
+
+        setState(() {
+          fridgeIngredients =
+              snapshot.docs.map((doc) => doc['items'] as String).toList();
+          selectedIngredients = List<bool>.filled(ingredients.length, true);
         });
+
+        if (ingredients.isNotEmpty) {
+          _showAddToShoppingListDialog(ingredients);
+        } else {
+          print('Ingredients 배열이 비어있습니다.');
+        }
+      } catch (e) {
+        print('Error loading fridge items: $e');
+      }
+    }
+
+    _loadFridgeItemsFromFirestore(); // 데이터를 모두 로드한 후에 다이얼로그를 표시
   }
 
   void _deleteRecipe() {
@@ -167,15 +284,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
               child: Text('삭제'),
               onPressed: () async {
                 try {
-                  // Firestore에서 레시피 삭제
                   await FirebaseFirestore.instance
                       .collection('recipe')
                       .doc(widget.recipeID)
                       .delete();
 
-                  // 삭제 완료 후 대화상자를 닫고 이전 화면으로 돌아갑니다.
                   Navigator.of(context).pop();
-                  Navigator.of(context).pop(true); // true 값을 반환하여 이전 화면에서 처리
                 } catch (e) {
                   print('레시피 삭제 실패: $e');
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -191,10 +305,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _refreshRecipeData() async {
-    // 새로운 데이터를 가져옵니다.
     var newData = await fetchRecipeData(widget.recipeID);
 
-    // setState로 화면을 다시 렌더링합니다.
     setState(() {
       recipeName = newData['recipeName'] ?? 'Unnamed Recipe';
       ingredients = List<String>.from(newData['foods'] ?? []);
@@ -266,7 +378,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Image.network(mainImage,
-                      height: 400, width: 400, fit: BoxFit.cover), // 요리 완성 사진
+                      height: 400, width: 400, fit: BoxFit.cover),
                   _buildInfoSection(data),
                   _buildIngredientsSection(ingredients),
                   _buildCookingStepsSection(methods),
@@ -370,31 +482,35 @@ class _ReadRecipeState extends State<ReadRecipe> {
                     ],
                   ),
                   RecipeReview(),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  AddRecipeReview()), // FridgeScreen은 냉장고로 이동할 화면
-                        );
-                      },
-                      child: Text('리뷰쓰기'),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                  Container(
+                    color: Colors.transparent,
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    AddRecipeReview()), // FridgeScreen은 냉장고로 이동할 화면
+                          );
+                        },
+                        child: Text('리뷰쓰기'),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(12), // 버튼의 모서리를 둥글게
+                          ),
+                          elevation: 5,
+                          textStyle: TextStyle(
+                            fontSize: 18, // 글씨 크기 조정
+                            fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+                            letterSpacing: 1.2, //
+                          ),
+                          // primary: isDeleteMode ? Colors.red : Colors.blue,
                         ),
-                        elevation: 5,
-                        textStyle: TextStyle(
-                          fontSize: 18, // 글씨 크기 조정
-                          fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                          letterSpacing: 1.2, //
-                        ),
-                        // primary: isDeleteMode ? Colors.red : Colors.blue,
                       ),
                     ),
                   )

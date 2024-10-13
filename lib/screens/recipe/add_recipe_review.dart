@@ -54,11 +54,6 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
       return;
     }
 
-    // 저장 처리 로직
-    print('리뷰 내용: $reviewContent');
-    print('별점: $selectedRating');
-    print('첨부 이미지: $selectedImages');
-    // 예시로 저장 완료 후 뒤로 이동
     Navigator.pop(context);
   }
 

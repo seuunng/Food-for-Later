@@ -11,8 +11,6 @@ class RecipeModel {
   final List<Map<String, String>> steps;
   final List<String> mainImages;
   final double rating;
-  final bool isScraped;
-  final bool isLiked;
   final int views;
 
   RecipeModel({
@@ -28,8 +26,6 @@ class RecipeModel {
     required this.steps,
     required this.mainImages,
     this.rating = 0.0,
-    this.isScraped = false,
-    this.isLiked = false,
     this.views = 0,
   });
 
@@ -56,10 +52,6 @@ class RecipeModel {
       userID: data['userID'] ?? '',
       mainImages: List<String>.from(data['mainImages'] ?? []),
       rating: (data['rating'] ?? 0.0).toDouble(),
-      isScraped: data['isScraped'] is bool
-          ? data['isScraped']
-          : false, // 문자열을 bool로 변환
-      isLiked: data['isLiked'] is bool ? data['isLiked'] : false,
       views: data['views'] ?? 0,
     );
   }
@@ -93,8 +85,6 @@ class RecipeModel {
           .toList(),
       'mainImages': mainImages, // 메인사진 저장
       'rating': rating, // 별점 저장
-      'isScraped': isScraped, // 스크랩 여부 저장
-      'isLiked': isLiked, // 좋아요 여부 저장
       'views': views,
     };
   }

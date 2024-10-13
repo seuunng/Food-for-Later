@@ -243,7 +243,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
 
             if (matchingFood.docs.isEmpty) {
               print("일치하는 음식이 없습니다: $itemName");
-              continue; // 일치하는 데이터가 없으면 건너뜀
+              continue;
             }
 
             final foodData = matchingFood.docs.first.data();
@@ -357,7 +357,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
               }
             }
 
-            // 로컬 상태에서도 아이템을 삭제
             itemsToRemove.add(index);
           }
         }

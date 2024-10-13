@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
+import 'package:food_for_later/models/items_in_fridge.dart';
 import 'package:food_for_later/models/recipe_method_model.dart';
 import 'package:food_for_later/models/recipe_thema_model.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
@@ -27,7 +28,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
   List<String> categories = []; // 카테고리를 저장할 필드 추가
   Map<String, List<String>> methodCategories = {};
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
   final List<Tab> myTabs = <Tab>[
     Tab(text: '재료별'),
     Tab(text: '테마별'),
@@ -36,6 +36,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
 
   // 검색된 아이템 상태를 관리할 리스트
   List<String> filteredItems = [];
+  List<String> fridgeIngredients = [];
 
   late TabController _tabController;
 
@@ -46,6 +47,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     _loadCategoriesFromFirestore(); // Firestore로부터 카테고리 데이터 로드
     _loadThemaFromFirestore();  // Firestore로부터 카테고리 데이터 로드
     _loadMethodFromFirestore();
+    _loadItemsInFridgeFromFirestore();
   }
 
   void _loadCategoriesFromFirestore() async {
@@ -122,6 +124,26 @@ class _RecipeMainPageState extends State<RecipeMainPage>
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  void _loadItemsInFridgeFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('fridge_items').get();
+      final itemsInFridge = snapshot.docs.map((doc) {
+        return ItemsInFridge.fromFirestore(doc);
+      }).toList();
+
+      setState(() {
+        this.fridgeIngredients = itemsInFridge.expand((item) {
+          return item.items.map((itemMap) => itemMap['itemName'] ?? 'Unknown Item');
+        }).toList();});
+
+    } catch (e) {
+      print('냉장고 재료를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('냉장고 재료를 불러오는 데 실패했습니다.')),
       );
     }
   }
@@ -225,12 +247,12 @@ class _RecipeMainPageState extends State<RecipeMainPage>
             Expanded(
               child: ElevatedButton(
                 onPressed:(){
-                  if (widget.category.isNotEmpty) {
+                  if ( fridgeIngredients.isNotEmpty) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ViewResearchList(
-                          category: widget.category,
+                          category: fridgeIngredients,
                         ),
                       ),
                     );

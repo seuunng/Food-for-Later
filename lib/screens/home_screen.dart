@@ -24,20 +24,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  static const List<String> basicFoodsCategories = [
-    '육류',
-    '수산물',
-    '채소',
-    '과일',
-    '견과'
-  ];
+  // static const List<String> basicFoodsCategories = [
+  //   '육류',
+  //   '수산물',
+  //   '채소',
+  //   '과일',
+  //   '견과'
+  // ];
   String? selectedCategory;
   // 각 페이지를 저장하는 리스트
   List<Widget> _pages = <Widget>[
     FridgeMainPage(), // 냉장고 페이지
     ShoppingListMainPage(), // 예시로 장보기 페이지
     RecipeMainPage(
-      category: ['닭고기', '양파'],
+      category: [],
     ), // 예시로 레시피 페이지
     ViewRecordMain(), // 예시로 기록 페이지
   ];
