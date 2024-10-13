@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/preferred_food_model.dart';
@@ -439,7 +440,9 @@ class _AddItemState extends State<AddItem> {
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child:
+                NavbarButton(
+                  buttonTitle: isDeleteMode ? '삭제 하기' : widget.addButton,
                   onPressed: () {
                     if (isDeleteMode) {
                       _confirmDeleteItems(); // 삭제 모드일 때
@@ -452,22 +455,6 @@ class _AddItemState extends State<AddItem> {
                       }
                     }
                   },
-                  child: Text(isDeleteMode ? '삭제 하기' : widget.addButton),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                        vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                    // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                    ),
-                    elevation: 5,
-                    textStyle: TextStyle(
-                      fontSize: 18, // 글씨 크기 조정
-                      fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                      letterSpacing: 1.2, //
-                    ),
-                    // primary: isDeleteMode ? Colors.red : Colors.blue,
-                  ),
                 ),
               ),
             )
@@ -725,7 +712,6 @@ class _AddItemState extends State<AddItem> {
             },
             onDoubleTap: () async {
               try {
-                // Firestore에서 현재 선택된 아이템의 정보를 불러옵니다.
                 final foodsSnapshot = await FirebaseFirestore.instance
                     .collection('foods')
                     .where('foodsName',
@@ -735,7 +721,6 @@ class _AddItemState extends State<AddItem> {
                 if (foodsSnapshot.docs.isNotEmpty) {
                   final foodsData = foodsSnapshot.docs.first.data();
 
-                  // Firestore에서 불러온 데이터를 동적으로 할당
                   String defaultCategory = foodsData['defaultCategory'] ?? '기타';
                   String defaultFridgeCategory =
                       foodsData['defaultFridgeCategory'] ?? '기타';

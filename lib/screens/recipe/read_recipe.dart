@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/add_recipe_review.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
@@ -39,7 +40,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Future<Map<String, dynamic>> fetchRecipeData(String recipeId) async {
-
     try {
       DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
           .instance
@@ -63,6 +63,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
     });
     _fetchInitialRecipeName();
     loadScrapedData(widget.recipeID);
+    loadLikedData(widget.recipeID);
   }
 
   Future<void> _fetchInitialRecipeName() async {
@@ -85,20 +86,77 @@ class _ReadRecipeState extends State<ReadRecipe> {
       setState(() {
         isScraped = snapshot.docs.first.data()['isScraped'] ?? false;
       });
-
-    }catch (e) {
+    } catch (e) {
       print("Error fetching recipe data: $e");
     }
   }
 
-  void _toggleLike() {
-    setState(() {
-      if (isLiked) {
-        isLiked = false;
+  Future<void> loadLikedData(String recipeId) async {
+    final userId = '현재 유저아이디';
+    try {
+      QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
+          .instance
+          .collection('liked_recipes')
+          .where('recipeId', isEqualTo: recipeId)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      setState(() {
+        isScraped = snapshot.docs.first.data()['isLiked'] ?? false;
+      });
+    } catch (e) {
+      print("Error fetching recipe data: $e");
+    }
+  }
+
+  void _toggleLike() async {
+    final userId = '현재 유저아이디'; // 실제 사용자의 ID로 대체해야 함
+
+    try {
+      // 스크랩 상태 확인을 위한 쿼리
+      QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
+          await FirebaseFirestore.instance
+              .collection('liked_recipes')
+              .where('recipeId', isEqualTo: widget.recipeID)
+              .where('userId', isEqualTo: userId)
+              .get();
+
+      if (existingScrapedRecipes.docs.isEmpty) {
+        // 스크랩이 존재하지 않으면 새로 추가
+        await FirebaseFirestore.instance.collection('liked_recipes').add({
+          'userId': userId,
+          'recipeId': widget.recipeID,
+          'isLiked': true,
+        });
+
+        setState(() {
+          isLiked = true; // 스크랩 상태로 변경
+        });
       } else {
-        isLiked = true;
+        // 스크랩이 존재하면 업데이트
+        DocumentSnapshot<Map<String, dynamic>> doc =
+            existingScrapedRecipes.docs.first;
+        bool currentIsScraped = doc.data()?['isLiked'] ?? false;
+
+        await FirebaseFirestore.instance
+            .collection('scraped_recipes')
+            .doc(doc.id)
+            .update({'isLiked': !currentIsScraped});
+
+        setState(() {
+          isLiked = !currentIsScraped; // 스크랩 상태 변경
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isLiked ? '스크랩이 추가되었습니다.' : '스크랩이 해제되었습니다.'),
+        ));
       }
-    });
+    } catch (e) {
+      print('Error scraping recipe: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('레시피 스크랩 중 오류가 발생했습니다.'),
+      ));
+    }
   }
 
   void _toggleScraped() async {
@@ -124,7 +182,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
         setState(() {
           isScraped = true; // 스크랩 상태로 변경
         });
-
       } else {
         // 스크랩이 존재하면 업데이트
         DocumentSnapshot<Map<String, dynamic>> doc =
@@ -323,7 +380,14 @@ class _ReadRecipeState extends State<ReadRecipe> {
       appBar: AppBar(
         title: Row(
           children: [
-            Text(recipeName),
+            Container(
+              width: MediaQuery.of(context).size.width * 0.4,
+              child: Text(
+                recipeName,
+                maxLines: 1, // 최대 1줄만 보여줌
+                overflow: TextOverflow.ellipsis, // 넘칠 경우 말줄임표로 표시
+              ),
+            ),
             Spacer(),
             IconButton(
               visualDensity: const VisualDensity(horizontal: -4),
@@ -487,7 +551,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child:
+                      NavbarButton(
+                        buttonTitle: '리뷰쓰기',
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -496,21 +562,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
                                     AddRecipeReview()), // FridgeScreen은 냉장고로 이동할 화면
                           );
                         },
-                        child: Text('리뷰쓰기'),
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                          ),
-                          elevation: 5,
-                          textStyle: TextStyle(
-                            fontSize: 18, // 글씨 크기 조정
-                            fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                            letterSpacing: 1.2, //
-                          ),
-                          // primary: isDeleteMode ? Colors.red : Colors.blue,
-                        ),
                       ),
                     ),
                   )

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/fridge_category_model.dart';
 import 'package:food_for_later/screens/fridge/fridge_category_search.dart';
 import 'package:intl/intl.dart';
@@ -243,7 +244,6 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
             section.removeWhere((map) => map.keys.first == item);
           }
         }
-
         selectedItems.clear(); // 선택된 아이템 목록 초기화
         isDeleteMode = false;
       });
@@ -322,22 +322,9 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: NavbarButton(
+                  buttonTitle: '삭제 하기',
                   onPressed: _confirmDeleteItems,
-                  child: Text('삭제 하기'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                    ),
-                    elevation: 5,
-                    textStyle: TextStyle(
-                      fontSize: 18, // 글씨 크기 조정
-                      fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                      letterSpacing: 1.2, //
-                    ),
-                    // primary: isDeleteMode ? Colors.red : Colors.blue,
-                  ),
                 ),
               ),
             )

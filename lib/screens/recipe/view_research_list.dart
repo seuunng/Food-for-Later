@@ -322,12 +322,16 @@ class _ViewResearchListState extends State<ViewResearchList> {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  recipeName,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                                Container(
+                                  width: MediaQuery.of(context).size.width * 0.3,
+                                  child: Text(
+                                    recipeName,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 Spacer(),
@@ -343,39 +347,48 @@ class _ViewResearchListState extends State<ViewResearchList> {
                               ],
                             ),
                             // 키워드
-                            Wrap(
-                              spacing: 6.0,
-                              runSpacing: 1.0,
-                              children: keywordList.map((ingredient) {
-                                bool inFridge =
-                                    fridgeIngredients.contains(ingredient);
-                                bool isKeyword = keywords.contains(ingredient);
-                                return Container(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 2.0, horizontal: 4.0),
-                                  decoration: BoxDecoration(
-                                    color: isKeyword
-                                        ? Colors.lightGreen
-                                        : inFridge
-                                            ? Colors.grey
-                                            : Colors.transparent,
-                                    border: Border.all(
-                                      color: Colors.grey,
-                                      width: 0.5,
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      spacing: 6.0,
+                                      runSpacing: 4.0,
+                                      children: keywordList.map((ingredient) {
+                                        bool inFridge =
+                                            fridgeIngredients.contains(ingredient);
+                                        bool isKeyword = keywords.contains(ingredient);
+                                        return Container(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 2.0, horizontal: 4.0),
+                                          decoration: BoxDecoration(
+                                            color: isKeyword
+                                                ? Colors.lightGreen
+                                                : inFridge
+                                                    ? Colors.grey
+                                                    : Colors.transparent,
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                              width: 0.5,
+                                            ),
+                                            borderRadius: BorderRadius.circular(8.0),
+                                          ),
+                                          child: Text(
+                                            ingredient,
+                                            style: TextStyle(
+                                              fontSize: 12.0,
+                                              color: inFridge
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
                                     ),
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  child: Text(
-                                    ingredient,
-                                    style: TextStyle(
-                                      fontSize: 12.0,
-                                      color: inFridge
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),

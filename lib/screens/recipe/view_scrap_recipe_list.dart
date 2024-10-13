@@ -55,21 +55,22 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       // 각 문서의 recipeId로 레시피 정보를 불러옴
       // List<RecipeModel> recipes = [];
       for (var doc in snapshot.docs) {
-        Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?; // 데이터를 Map<String, dynamic>으로 캐스팅
+        Map<String, dynamic>? data = doc.data()
+            as Map<String, dynamic>?; // 데이터를 Map<String, dynamic>으로 캐스팅
         String? recipeId = data?['recipeId']; // null 안전하게 접근
         if (recipeId != null && recipeId.isNotEmpty) {
-          DocumentSnapshot<Map<String, dynamic>> recipeSnapshot = await FirebaseFirestore
-              .instance
-              .collection('recipe')
-              .doc(recipeId)
-              .get();
+          DocumentSnapshot<Map<String, dynamic>> recipeSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('recipe')
+                  .doc(recipeId)
+                  .get();
 
           if (recipeSnapshot.exists && recipeSnapshot.data() != null) {
             recipeList.add(RecipeModel.fromFirestore(recipeSnapshot.data()!));
           }
         }
       }
-      
+
       return recipeList;
     } catch (e) {
       print('Error fetching matching recipes: $e');
@@ -80,7 +81,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   Future<void> _loadFridgeItemsFromFirestore() async {
     try {
       final snapshot =
-      await FirebaseFirestore.instance.collection('fridge_items').get();
+          await FirebaseFirestore.instance.collection('fridge_items').get();
 
       setState(() {
         fridgeIngredients =
@@ -90,6 +91,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       print('Error loading fridge items: $e');
     }
   }
+
   Future<bool> loadScrapedData(String recipeId) async {
     try {
       QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
@@ -109,16 +111,16 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       return false;
     }
   }
-  void _toggleScraped(String recipeId) async {
 
+  void _toggleScraped(String recipeId) async {
     try {
       // 스크랩 상태 확인을 위한 쿼리
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
-      await FirebaseFirestore.instance
-          .collection('scraped_recipes')
-          .where('recipeId', isEqualTo: recipeId)
-          .where('userId', isEqualTo: userId)
-          .get();
+          await FirebaseFirestore.instance
+              .collection('scraped_recipes')
+              .where('recipeId', isEqualTo: recipeId)
+              .where('userId', isEqualTo: userId)
+              .get();
 
       if (existingScrapedRecipes.docs.isEmpty) {
         // 스크랩이 존재하지 않으면 새로 추가
@@ -131,20 +133,18 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
         setState(() {
           isScraped = true; // 스크랩 상태로 변경
         });
-
       } else {
         // 스크랩이 존재하면 업데이트
         DocumentSnapshot<Map<String, dynamic>> doc =
             existingScrapedRecipes.docs.first;
-        bool currentIsScraped = doc.data()?['isScraped'] ?? false;
 
         await FirebaseFirestore.instance
             .collection('scraped_recipes')
-            .doc(doc.id)
-            .update({'isScraped': !currentIsScraped});
+            .doc(doc.id) // 문서 ID로 삭제
+            .delete();
 
         setState(() {
-          isScraped = !currentIsScraped; // 스크랩 상태 변경
+          isScraped = false; // 스크랩 해제 상태로 변경
         });
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -243,94 +243,104 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
         List<String> themes = recipe.themes;
         bool hasMainImage = recipe.mainImages.isNotEmpty;
         // 카테고리 그리드 렌더링
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => ReadRecipe(
-                          recipeID: recipe.id,
-                          searchKeywords: [],
-                        )));
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.green, width: 2),
-              borderRadius: BorderRadius.circular(8.0),
-            ), // 카테고리 버튼 크기 설정
-            child: Row(
-              children: [
-                // 왼쪽에 정사각형 그림
-                Container(
-                  width: 60.0,
-                  height: 60.0,
+        return FutureBuilder<bool>(
+            future: loadScrapedData(recipe.id), // 각 레시피별로 스크랩 상태를 확인
+            builder: (context, snapshot) {
+              bool isScraped = snapshot.data ?? false;
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => ReadRecipe(
+                                recipeID: recipe.id,
+                                searchKeywords: [],
+                              )));
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
                   decoration: BoxDecoration(
-                    color: Colors.grey, // Placeholder color for image
-                    borderRadius: BorderRadius.circular(4.0),
-                  ),
-                  child: hasMainImage
-                      ? Image.network(
-                    recipe.mainImages[0],
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.error);
-                    },
-                  )
-                      : Icon(
-                          Icons.image, // 이미지가 없을 경우 대체할 아이콘
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                ),
-                SizedBox(width: 10), // 간격 추가
-                // 요리 이름과 키워드를 포함하는 Column
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    color: Colors.white,
+                    border: Border.all(color: Colors.green, width: 2),
+                    borderRadius: BorderRadius.circular(8.0),
+                  ), // 카테고리 버튼 크기 설정
+                  child: Row(
                     children: [
-                      // 요리명
-                      Row(
-                        children: [
-                          Text(
-                            recipeName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Spacer(),
-                          Text(ratings),
-                          IconButton(
-                            icon: Icon(
-                                isScraped
-                                    ? Icons.bookmark
-                                    : Icons.bookmark_border,
-                                size: 20), // 스크랩 아이콘 크기 조정
-                            onPressed: () => _toggleScraped(recipe.id),
-                          ),
-                        ],
-                      ), // 간격 추가
-                      // 재료
-                      _buildTagSection("재료", ingredients),
-                      // 조리방법
-                      _buildTagSection("조리 방법", methods),
-                      // 테마
-                      _buildTagSection("테마", themes),
+                      // 왼쪽에 정사각형 그림
+                      Container(
+                        width: 60.0,
+                        height: 60.0,
+                        decoration: BoxDecoration(
+                          color: Colors.grey, // Placeholder color for image
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        child: hasMainImage
+                            ? Image.network(
+                                recipe.mainImages[0],
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(Icons.error);
+                                },
+                              )
+                            : Icon(
+                                Icons.image, // 이미지가 없을 경우 대체할 아이콘
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                      ),
+                      SizedBox(width: 10), // 간격 추가
+                      // 요리 이름과 키워드를 포함하는 Column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 요리명
+                            Row(
+                              children: [
+                                Container(
+                                  width: MediaQuery.of(context).size.width * 0.3,
+                                  child: Text(
+                                    recipeName,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Spacer(),
+                                Text(ratings),
+                                IconButton(
+                                  icon: Icon(
+                                      isScraped
+                                          ? Icons.bookmark
+                                          : Icons.bookmark_border,
+                                      size: 20), // 스크랩 아이콘 크기 조정
+                                  onPressed: () => _toggleScraped(recipe.id),
+                                ),
+                              ],
+                            ), // 간격 추가
+                            // 재료
+                            _buildTagSection("재료", ingredients),
+                            // 조리방법
+                            _buildTagSection("조리 방법", methods),
+                            // 테마
+                            _buildTagSection("테마", themes),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
+              );
+            });
       },
     );
   }
+
   Widget _buildTagSection(String title, List<String> tags) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,9 +353,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             return Container(
               padding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
               decoration: BoxDecoration(
-                color: inFridge
-                    ? Colors.grey
-                    : Colors.transparent,
+                color: inFridge ? Colors.grey : Colors.transparent,
                 border: Border.all(
                   color: Colors.grey,
                   width: 0.5,

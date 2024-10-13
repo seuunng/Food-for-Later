@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/foods/manage_categories.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/components/custom_dropdown.dart';
@@ -421,21 +422,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
+        child: NavbarButton(
+          buttonTitle: '저장',
           onPressed: _saveSettings,
-          child: Text('저장'),
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: 15),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 5,
-            textStyle: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.2,
-            ),
-          ),
         ),
       ),
     );

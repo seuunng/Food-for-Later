@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/preferred_food_model.dart';
 import 'package:food_for_later/models/recipe_method_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
@@ -167,22 +168,10 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
         child: SizedBox(
           width: double.infinity,
           height: 50, // 버튼 높이 설정
-          child: ElevatedButton(
+          child: NavbarButton(
+            buttonTitle: '설정 저장',
             onPressed: () {
             },
-            child: Text('설정 저장'),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 5,
-              textStyle: TextStyle(
-                fontSize: 16, // 글씨 크기 조정
-                fontWeight: FontWeight.w500,
-                letterSpacing: 1.2, //
-              ),
-            ),
           ),
         ),
       ),

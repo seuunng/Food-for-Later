@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/shopping_category_model.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
@@ -452,8 +453,8 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
               child: Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      // BottomNavigationBarItem(icon: Icon(Icons.kitchen), label: '냉장고'),
+                    child: NavbarButton(
+                      buttonTitle: '냉장고로 이동',
                       onPressed: () {
                         _addItemsToFridge();
                         Navigator.push(
@@ -463,44 +464,14 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
                                   HomeScreen()),
                         );
                       },
-                      child: Text('냉장고로 이동'),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        // 위아래 패딩을 조정하여 버튼 높이 축소
-                        // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                        ),
-                        elevation: 5,
-                        textStyle: TextStyle(
-                          fontSize: 18, // 글씨 크기 조정
-                          fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                          letterSpacing: 1.2, //
-                        ),
-                      ),
                     ),
                   ),
                   SizedBox(width: 10),
-                  ElevatedButton(
+                  NavbarButton(
+                    buttonTitle: '삭제',
                     onPressed: () async {
                       await _deleteSelectedItems();
                     },
-                    child: Text('삭제'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                      ),
-                      elevation: 5,
-                      textStyle: TextStyle(
-                        fontSize: 18, // 글씨 크기 조정
-                        fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                        letterSpacing: 1.2, //
-                      ),
-                      // primary: isDeleteMode ? Colors.red : Colors.blue,
-                    ),
                   ),
                 ],
               ),

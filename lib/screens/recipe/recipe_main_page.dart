@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/items_in_fridge.dart';
@@ -112,7 +113,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         return RecipeMethodModel.fromFirestore(doc);
       }).toList();
 
-      // itemsByCategory에 데이터를 추가
       setState(() {
         methodCategories = {
           for (var category in categories)
@@ -245,41 +245,16 @@ class _RecipeMainPageState extends State<RecipeMainPage>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: ElevatedButton(
-                onPressed:(){
-                  if ( fridgeIngredients.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ViewResearchList(
-                          category: fridgeIngredients,
-                        ),
-                      ),
-                    );
-                  } else {
-                    // Handle the case where category is empty
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('카테고리를 입력해주세요.'),
-                      ),
-                    );
-                  }
+              child: NavbarButton(
+                buttonTitle: '냉장고 재료 레시피 추천',
+                onPressed: () { // 람다식으로 함수 전달
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ViewResearchList(category: fridgeIngredients),
+                    ),
+                  );
                 },
-                child: Text('냉장고 재료 레시피 추천'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                  // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                  ),
-                  elevation: 5,
-                  textStyle: TextStyle(
-                    fontSize: 18, // 글씨 크기 조정
-                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                    letterSpacing: 1.2, //
-                  ),
-                  // primary: isDeleteMode ? Colors.red : Colors.blue,
-                ),
               ),
             ),
             SizedBox(width: 20),

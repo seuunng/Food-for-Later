@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 
 class FeedbackSubmission extends StatefulWidget {
   @override
@@ -20,8 +21,6 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
 
     // 입력값을 처리하는 로직을 여기에 추가 (예: 서버로 전송 또는 로컬 저장)
     if (title.isNotEmpty && content.isNotEmpty) {
-      print('Title: $title');
-      print('Content: $content');
 
       // 입력 후 초기화 및 메시지 보여주기
       ScaffoldMessenger.of(context).showSnackBar(
@@ -107,22 +106,9 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
+          child: NavbarButton(
+            buttonTitle: '의견 보내기',
             onPressed: _submitFeedback,
-            child: Text('의견 보내기'),
-            style: ElevatedButton.styleFrom(
-              padding:
-                  EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-              ),
-              elevation: 5,
-              textStyle: TextStyle(
-                fontSize: 18, // 글씨 크기 조정
-                fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                letterSpacing: 1.2, //
-              ),
-            ),
           ),
         ),
       ),

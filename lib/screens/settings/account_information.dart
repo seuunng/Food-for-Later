@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 
 class AccountInformation extends StatefulWidget {
   @override
@@ -124,44 +125,21 @@ class _AccountInformationState extends State<AccountInformation> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, // 버튼 사이 간격을 균등하게 설정
           children: [
             Expanded(
-              child: ElevatedButton(
-                onPressed: () {
+              child: NavbarButton(
+                buttonTitle: '회원탈퇴',
+                onPressed: () { // 람다식으로 함수 전달
                   _withdrawAlertDialog();
                 },
-                child: Text('회원탈퇴'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                  ),
-                  elevation: 5,
-                  textStyle: TextStyle(
-                    fontSize: 18, // 글씨 크기 조정
-                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                    letterSpacing: 1.2, //
-                  ),
-                ),
               ),
             ),
             SizedBox(width: 20), // 두 버튼 사이 간격
             Expanded(
-              child: ElevatedButton(
-                onPressed: () {
+              child:
+              NavbarButton(
+                buttonTitle: '로그아웃',
+                onPressed: () { // 람다식으로 함수 전달
                   _logoutAlertDialog();
                 },
-                child: Text('로그아웃'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                  ),
-                  elevation: 5,
-                  textStyle: TextStyle(
-                    fontSize: 18, // 글씨 크기 조정
-                    fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                    letterSpacing: 1.2, //
-                  ),
-                ),
               ),
             ),
           ],
