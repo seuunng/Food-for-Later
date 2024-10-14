@@ -70,7 +70,6 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
           }
         }
       }
-
       return recipeList;
     } catch (e) {
       print('Error fetching matching recipes: $e');

@@ -19,6 +19,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
 
   // 사용자 데이터
   List<Map<String, dynamic>> userData = [];
+  List<Map<String, dynamic>> originalData = [];
 
   // 선택된 행의 인덱스를 저장하는 리스트
   List<int> selectedRows = [];
@@ -56,6 +57,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
 
     setState(() {
       userData = methods;
+      originalData = List.from(methods);
     });
   }
 
@@ -222,28 +224,33 @@ class _HowtocookTableState extends State<HowtocookTable> {
   }
 
   void _sortBy(String columnName, SortState currentState) {
+    // 정렬 상태 변경 로직
+    SortState newSortState;
+    if (currentState == SortState.none) {
+      newSortState = SortState.ascending;
+    } else if (currentState == SortState.ascending) {
+      newSortState = SortState.descending;
+    } else {
+      newSortState = SortState.none;
+    }
+
     setState(() {
-      // 열의 정렬 상태를 업데이트
+      // 선택한 열에 대한 상태만 업데이트
       for (var column in columns) {
         if (column['name'] == columnName) {
-          column['state'] = currentState == SortState.none
-              ? SortState.ascending
-              : (currentState == SortState.ascending
-                  ? SortState.descending
-                  : SortState.none);
+          column['state'] = newSortState;
         } else {
           column['state'] = SortState.none;
         }
       }
 
-      // 정렬 수행
-      if (currentState == SortState.none) {
-        userData.sort((a, b) => a['연번'].compareTo(b['연번']));
+      // 정렬 동작
+      if (newSortState == SortState.none) {
+        userData = List.from(originalData);  // 원본 데이터로 복원
       } else {
         userData.sort((a, b) {
-          int result;
-          result = a[columnName].compareTo(b[columnName]);
-          return currentState == SortState.ascending ? result : -result;
+          int result = a[columnName].compareTo(b[columnName]);
+          return newSortState == SortState.ascending ? result : -result;
         });
       }
     });
@@ -271,7 +278,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(80),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(160),
               3: FixedColumnWidth(80),
             },
@@ -326,7 +333,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(80),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(160),
               3: FixedColumnWidth(80),
             },
@@ -411,7 +418,7 @@ class _HowtocookTableState extends State<HowtocookTable> {
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(80),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(160),
               3: FixedColumnWidth(80),
             },

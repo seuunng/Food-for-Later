@@ -17,20 +17,7 @@ class _BasicfoodscategoryTableState extends State<BasicfoodscategoryTable> {
   ];
 
   // 사용자 데이터
-  List<Map<String, dynamic>> userData = [
-    {
-      '연번': 1,
-      '기본식품 카테고리': '과일',
-    },
-    {
-      '연번': 2,
-      '기본식품 카테고리': '육류'
-    },
-    {
-      '연번': 3,
-      '기본식품 카테고리': '조미료',
-    },
-  ];
+  List<Map<String, dynamic>> userData = [];
 
   // 선택된 행의 인덱스를 저장하는 리스트
   List<int> selectedRows = [];

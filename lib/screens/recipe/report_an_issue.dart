@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 
@@ -10,6 +11,9 @@ class ReportAnIssue extends StatefulWidget {
 }
 
 class _ReportAnIssueState extends State<ReportAnIssue> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  String userId = '현재 유저아이디';
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   // 드롭다운 선택을 위한 변수
@@ -17,20 +21,37 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
   final List<String> _categories = ['일반', '버그 신고', '기능 요청', '기타'];
 
   // 의견 제출 함수
-  void _submitFeedback() {
+  void _submitFeedback() async {
     String title = _titleController.text;
     String content = _contentController.text;
 
     // 입력값을 처리하는 로직을 여기에 추가 (예: 서버로 전송 또는 로컬 저장)
     if (title.isNotEmpty && content.isNotEmpty) {
+      try {
+        // Firestore에 데이터 저장
+        await _db.collection('feedback').add({
+          'title': title,
+          'content': content,
+          'category': _selectedCategory,
+          'timestamp': FieldValue.serverTimestamp(), // 서버 시간을 저장
+          'postType': widget.postNo,
+          'postNo': widget.postNo,
+          'author': userId,
+        });
 
-      // 입력 후 초기화 및 메시지 보여주기
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('의견이 성공적으로 전송되었습니다!')),
-      );
-      _titleController.clear();
-      _contentController.clear();
-      Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('의견이 성공적으로 전송되었습니다!')),
+        );
+
+        _titleController.clear();
+        _contentController.clear();
+        Navigator.pop(context);
+      } catch (e) {
+        // 오류 발생 시
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('의견 전송 중 오류가 발생했습니다. 다시 시도해주세요.')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('제목과 내용을 모두 입력해주세요!')),
@@ -81,21 +102,25 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
                   '게시물유형',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
                 ),
-            Spacer(),
-            Text(
-              widget.postNo.toString(),
-              style: TextStyle(fontSize: 18, ),
-            ),
                 Spacer(),
-            Text(
-              '게시물번호',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
-            ),
+                Text(
+                  widget.postNo.toString(),
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
+                ),
                 Spacer(),
-            Text(
-                widget.postNo.toString(),
-              style: TextStyle(fontSize: 18, ),
-            ),
+                Text(
+                  '게시물번호',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
+                ),
+                Spacer(),
+                Text(
+                  widget.postNo.toString(),
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
+                ),
               ],
             ),
             SizedBox(height: 16),
@@ -134,7 +159,8 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
             onPressed: _submitFeedback,
             child: Text('의견 보내기'),
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
+              padding:
+                  EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
               // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게

@@ -24,6 +24,7 @@ class _PreferredfoodscategoryTableState
   bool isEditing = false;
   int? selectedFoodIndex; // 수정할 아이템의 인덱스
   List<Map<String, dynamic>> userData = [];
+  List<Map<String, dynamic>> originalData = [];
   List<int> selectedRows = [];
   final List<String> categoryOptions = [];
   final Map<String, List<String>> itemsByCategory = {};
@@ -77,6 +78,7 @@ class _PreferredfoodscategoryTableState
       setState(() {
         categoryOptions.addAll(tempCategories.toSet().toList()); // 카테고리 목록 설정
         itemsByCategory.addAll(tempItemsByCategory); // 카테고리별 식품 목록 설정
+        originalData = List.from(userData);
       });
     } catch (e) {
       print('Firestore 데이터를 불러오는 중 오류 발생: $e');
@@ -237,29 +239,33 @@ class _PreferredfoodscategoryTableState
   }
 
   void _sortBy(String columnName, SortState currentState) {
+    // 정렬 상태 변경 로직
+    SortState newSortState;
+    if (currentState == SortState.none) {
+      newSortState = SortState.ascending;
+    } else if (currentState == SortState.ascending) {
+      newSortState = SortState.descending;
+    } else {
+      newSortState = SortState.none;
+    }
+
     setState(() {
-      // 열의 정렬 상태를 업데이트
+      // 선택한 열에 대한 상태만 업데이트
       for (var column in columns) {
         if (column['name'] == columnName) {
-          column['state'] = currentState == SortState.none
-              ? SortState.ascending
-              : (currentState == SortState.ascending
-                  ? SortState.descending
-                  : SortState.none);
+          column['state'] = newSortState;
         } else {
           column['state'] = SortState.none;
         }
       }
 
-      // 정렬 수행
-      if (currentState == SortState.none) {
-        // 정렬 없으면 원래 데이터 순서 유지
-        userData.sort((a, b) => a['연번'].compareTo(b['연번']));
+      // 정렬 동작
+      if (newSortState == SortState.none) {
+        userData = List.from(originalData);  // 원본 데이터로 복원
       } else {
         userData.sort((a, b) {
-          int result;
-          result = a[columnName].compareTo(b[columnName]);
-          return currentState == SortState.ascending ? result : -result;
+          int result = a[columnName].compareTo(b[columnName]);
+          return newSortState == SortState.ascending ? result : -result;
         });
       }
     });
@@ -278,7 +284,7 @@ class _PreferredfoodscategoryTableState
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(80),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(150),
               3: FixedColumnWidth(90),
               4: FixedColumnWidth(80),
@@ -334,7 +340,7 @@ class _PreferredfoodscategoryTableState
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(80),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(150),
               3: FixedColumnWidth(90),
               4: FixedColumnWidth(80),
@@ -450,7 +456,7 @@ class _PreferredfoodscategoryTableState
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(80),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(150),
               3: FixedColumnWidth(90),
               4: FixedColumnWidth(80),

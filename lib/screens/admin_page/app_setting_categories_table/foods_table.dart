@@ -29,6 +29,7 @@ class _FoodsTableState extends State<FoodsTable> {
   bool isEditing = false;
   int? selectedFoodIndex; // 수정할 아이템의 인덱스
   List<Map<String, dynamic>> userData = [];
+  List<Map<String, dynamic>> originalData = [];
   List<int> selectedRows = [];
 
   // 드롭다운 선택 항목들
@@ -109,6 +110,7 @@ class _FoodsTableState extends State<FoodsTable> {
       });
       setState(() {
         userData = foods;
+        originalData = List.from(foods);
       });
     });
   }
@@ -285,26 +287,33 @@ class _FoodsTableState extends State<FoodsTable> {
   }
 
   void _sortBy(String columnName, SortState currentState) {
+    // 정렬 상태 변경 로직
+    SortState newSortState;
+    if (currentState == SortState.none) {
+      newSortState = SortState.ascending;
+    } else if (currentState == SortState.ascending) {
+      newSortState = SortState.descending;
+    } else {
+      newSortState = SortState.none;
+    }
+
     setState(() {
+      // 선택한 열에 대한 상태만 업데이트
       for (var column in columns) {
         if (column['name'] == columnName) {
-          column['state'] = currentState == SortState.none
-              ? SortState.ascending
-              : (currentState == SortState.ascending
-                  ? SortState.descending
-                  : SortState.none);
+          column['state'] = newSortState;
         } else {
           column['state'] = SortState.none;
         }
       }
 
-      if (currentState == SortState.none) {
-        userData.sort((a, b) => a['연번'].compareTo(b['연번']));
+      // 정렬 동작
+      if (newSortState == SortState.none) {
+        userData = List.from(originalData);  // 원본 데이터로 복원
       } else {
         userData.sort((a, b) {
-          int result;
-          result = a[columnName].compareTo(b[columnName]);
-          return currentState == SortState.ascending ? result : -result;
+          int result = a[columnName].compareTo(b[columnName]);
+          return newSortState == SortState.ascending ? result : -result;
         });
       }
     });
@@ -339,7 +348,7 @@ class _FoodsTableState extends State<FoodsTable> {
             ),
             columnWidths: const {
               0: FixedColumnWidth(40), // 체크박스 열 크기
-              1: FixedColumnWidth(60),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(120),
               3: FixedColumnWidth(100),
               4: FixedColumnWidth(120),
@@ -375,8 +384,7 @@ class _FoodsTableState extends State<FoodsTable> {
                                     Icon(
                                       column['state'] == SortState.ascending
                                           ? Icons.arrow_upward
-                                          : column['state'] ==
-                                                  SortState.descending
+                                          : column['state'] == SortState.descending
                                               ? Icons.arrow_downward
                                               : Icons.sort,
                                       size: 12,
@@ -399,7 +407,7 @@ class _FoodsTableState extends State<FoodsTable> {
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(60),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(120),
               3: FixedColumnWidth(100),
               4: FixedColumnWidth(120),
@@ -644,7 +652,7 @@ class _FoodsTableState extends State<FoodsTable> {
             ),
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(60),
+              1: FixedColumnWidth(40),
               2: FixedColumnWidth(120),
               3: FixedColumnWidth(100),
               4: FixedColumnWidth(120),
