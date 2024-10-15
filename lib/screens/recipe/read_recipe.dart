@@ -87,7 +87,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
         isScraped = snapshot.docs.first.data()['isScraped'] ?? false;
       });
     } catch (e) {
-      print("Error fetching recipe data: $e");
+      print("Error fetching recipe isScraped data: $e");
     }
   }
 
@@ -105,7 +105,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
         isScraped = snapshot.docs.first.data()['isLiked'] ?? false;
       });
     } catch (e) {
-      print("Error fetching recipe data: $e");
+      print("Error fetching recipe isLiked data: $e");
     }
   }
 
@@ -133,13 +133,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
           isLiked = true; // 스크랩 상태로 변경
         });
       } else {
-        // 스크랩이 존재하면 업데이트
         DocumentSnapshot<Map<String, dynamic>> doc =
             existingScrapedRecipes.docs.first;
         bool currentIsScraped = doc.data()?['isLiked'] ?? false;
 
         await FirebaseFirestore.instance
-            .collection('scraped_recipes')
+            .collection('liked_recipes')
             .doc(doc.id)
             .update({'isLiked': !currentIsScraped});
 
@@ -147,9 +146,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
           isLiked = !currentIsScraped; // 스크랩 상태 변경
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(isLiked ? '스크랩이 추가되었습니다.' : '스크랩이 해제되었습니다.'),
-        ));
+        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        //   content: Text(isLiked ? '스크랩이 추가되었습니다.' : '스크랩이 해제되었습니다.'),
+        // ));
       }
     } catch (e) {
       print('Error scraping recipe: $e');
@@ -561,7 +560,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => AddRecipeReview(
-                                recipeId: widget.recipeId,  // recipeId를 전달
+                                recipeId: widget.recipeId,
                               ),
                             ),
                           );

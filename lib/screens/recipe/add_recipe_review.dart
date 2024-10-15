@@ -8,9 +8,11 @@ import 'package:image_picker/image_picker.dart';
 
 class AddRecipeReview extends StatefulWidget {
   late final String recipeId;
+  late final String? reviewId;
 
   AddRecipeReview({
     required this.recipeId,
+    this.reviewId,
   });
 
   @override
@@ -25,6 +27,36 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
   List<String>? _imageFiles = [];
   List<String> reviewImages = [];
   String imageUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.reviewId != null) {
+      _loadReviewData();
+    }
+  }
+
+  // 리뷰 데이터를 Firestore에서 불러와서 초기화
+  Future<void> _loadReviewData() async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> reviewSnapshot =
+      await FirebaseFirestore.instance
+          .collection('recipe_reviews')
+          .doc(widget.reviewId) // reviewId로 불러옴
+          .get();
+
+      if (reviewSnapshot.exists) {
+        final reviewData = reviewSnapshot.data();
+        setState(() {
+          reviewContentController.text = reviewData?['content'] ?? '';
+          selectedRating = reviewData?['rating'] ?? 0;
+          selectedImages = List<String>.from(reviewData?['images'] ?? []);
+        });
+      }
+    } catch (e) {
+      print('Error loading review: $e');
+    }
+  }
 
   // 사진 추가 버튼 (예시로 로컬 파일 경로 리스트에 추가)
   Future<String> _addImage(File imageFile) async {
@@ -90,7 +122,7 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
 
     try {
       // Generate unique reviewId
-      String reviewId =
+      String reviewId = widget.reviewId ??
           FirebaseFirestore.instance.collection('recipe_reviews').doc().id;
 
       // Get the current user's ID (assuming Firebase Authentication is used)
@@ -108,7 +140,7 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
         'content': reviewContent,
         'images': selectedImages, // Assuming selectedImages contains image URLs
         'timestamp': FieldValue.serverTimestamp(), // Save the current timestamp
-      });
+      }, SetOptions(merge: true));
 
       // Success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +164,7 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
   Widget _buildReviewsAddSection() {
     return Scaffold(
         appBar: AppBar(
-          title: Text('리뷰쓰기'),
+          title: Text(widget.reviewId == null ? '리뷰쓰기' : '리뷰수정하기'),
         ),
         body: SingleChildScrollView(
           child: Padding(
@@ -168,41 +200,6 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
                   maxLines: 4,
                 ),
                 SizedBox(height: 16),
-                // Row(
-                //   children: [
-                //     if (reviewImages.length < 4) // 이미지가 4장 미만일 때만 선택 가능
-                //       IconButton(
-                //         icon: Icon(Icons.camera_alt_outlined),
-                //         onPressed: _selectImage, // 이미지 선택 메서드 호출
-                //       ),
-                //     ...reviewImages.map((imageUrl) {
-                //       return Stack(
-                //         children: [
-                //           Padding(
-                //             padding: const EdgeInsets.all(4.0),
-                //             child: Image.network(imageUrl,
-                //                 width: 50, height: 50, fit: BoxFit.cover),
-                //           ),
-                //           Positioned(
-                //             right: 0,
-                //             top: 0,
-                //             child: GestureDetector(
-                //               onTap: () {
-                //                 setState(() {
-                //                   reviewImages.remove(imageUrl); // 이미지 삭제
-                //                 });
-                //               },
-                //               child: Container(
-                //                 color: Colors.black54,
-                //                 child: Icon(Icons.close, size: 18, color: Colors.white),
-                //               ),
-                //             ),
-                //           ),
-                //         ],
-                //       );
-                //     }).toList(),
-                //   ],
-                // ),
                 TextButton(
                   onPressed: () async {
                     String selectedImagePath =
