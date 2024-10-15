@@ -273,7 +273,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
                     context,
                     MaterialPageRoute(
                         builder: (context) => ReadRecipe(
-                            recipeID: recipe.id, searchKeywords: keywords)),
+                            recipeId: recipe.id, searchKeywords: keywords)),
                   ).then((result) {
                     if (result == true) {
                       _refreshRecipeData();

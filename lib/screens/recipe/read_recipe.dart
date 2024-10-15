@@ -7,11 +7,11 @@ import 'package:food_for_later/screens/recipe/recipe_review.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 
 class ReadRecipe extends StatefulWidget {
-  final String recipeID;
+  final String recipeId;
   final List<String> searchKeywords;
 
   ReadRecipe({
-    required this.recipeID,
+    required this.recipeId,
     required this.searchKeywords,
   });
 
@@ -36,7 +36,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   bool isScraped = false; // 스크랩 상태
 
   Future<Map<String, dynamic>> _fetchRecipeData() async {
-    return await fetchRecipeData(widget.recipeID); // Firestore에서 데이터 가져오기
+    return await fetchRecipeData(widget.recipeId); // Firestore에서 데이터 가져오기
   }
 
   Future<Map<String, dynamic>> fetchRecipeData(String recipeId) async {
@@ -62,12 +62,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
       return !fridgeIngredients.contains(ingredients[index]);
     });
     _fetchInitialRecipeName();
-    loadScrapedData(widget.recipeID);
-    loadLikedData(widget.recipeID);
+    loadScrapedData(widget.recipeId);
+    loadLikedData(widget.recipeId);
   }
 
   Future<void> _fetchInitialRecipeName() async {
-    var data = await fetchRecipeData(widget.recipeID);
+    var data = await fetchRecipeData(widget.recipeId);
     setState(() {
       recipeName = data['recipeName'] ?? 'Unnamed Recipe';
     });
@@ -117,7 +117,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
           await FirebaseFirestore.instance
               .collection('liked_recipes')
-              .where('recipeId', isEqualTo: widget.recipeID)
+              .where('recipeId', isEqualTo: widget.recipeId)
               .where('userId', isEqualTo: userId)
               .get();
 
@@ -125,7 +125,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
         // 스크랩이 존재하지 않으면 새로 추가
         await FirebaseFirestore.instance.collection('liked_recipes').add({
           'userId': userId,
-          'recipeId': widget.recipeID,
+          'recipeId': widget.recipeId,
           'isLiked': true,
         });
 
@@ -167,7 +167,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
           await FirebaseFirestore.instance
               .collection('scraped_recipes')
-              .where('recipeId', isEqualTo: widget.recipeID)
+              .where('recipeId', isEqualTo: widget.recipeId)
               .where('userId', isEqualTo: userId)
               .get();
 
@@ -175,7 +175,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
         // 스크랩이 존재하지 않으면 새로 추가
         await FirebaseFirestore.instance.collection('scraped_recipes').add({
           'userId': userId,
-          'recipeId': widget.recipeID,
+          'recipeId': widget.recipeId,
           'isScraped': true,
         });
 
@@ -298,7 +298,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
 
     Future<void> _loadFridgeItemsFromFirestore() async {
       try {
-        var recipeData = await fetchRecipeData(widget.recipeID);
+        var recipeData = await fetchRecipeData(widget.recipeId);
         List<String> ingredients = List<String>.from(recipeData['foods'] ?? []);
 
         final snapshot =
@@ -343,7 +343,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                 try {
                   await FirebaseFirestore.instance
                       .collection('recipe')
-                      .doc(widget.recipeID)
+                      .doc(widget.recipeId)
                       .delete();
 
                   Navigator.of(context).pop();
@@ -362,7 +362,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _refreshRecipeData() async {
-    var newData = await fetchRecipeData(widget.recipeID);
+    var newData = await fetchRecipeData(widget.recipeId);
 
     setState(() {
       recipeName = newData['recipeName'] ?? 'Unnamed Recipe';
@@ -497,7 +497,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                                 MaterialPageRoute(
                                     builder: (context) =>
                                         AddRecipe(recipeData: {
-                                          'id': widget.recipeID,
+                                          'id': widget.recipeId,
                                           'recipeName': recipeName,
                                           'mainImages': List<String>.from(
                                               data['mainImages'] ?? []),
@@ -545,7 +545,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
                       ),
                     ],
                   ),
-                  RecipeReview(),
+                  RecipeReview(
+                    recipeId: widget.recipeId,
+                  ),
                   Container(
                     color: Colors.transparent,
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -558,8 +560,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                    AddRecipeReview()), // FridgeScreen은 냉장고로 이동할 화면
+                              builder: (context) => AddRecipeReview(
+                                recipeId: widget.recipeId,  // recipeId를 전달
+                              ),
+                            ),
                           );
                         },
                       ),
