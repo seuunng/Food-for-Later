@@ -223,24 +223,20 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          category,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
         Wrap(
           spacing: 8.0,
           runSpacing: 4.0,
-          children: models.expand((model) => model.category[category]!).map((item) {
-            final isSelected = selectedPreferredFoods.contains(item);
+          children: models.map((model) {
+            final isSelected = selectedPreferredFoods.contains(category);
             return ChoiceChip(
-              label: Text(item),
+              label: Text(category), // category를 라벨로 설정
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
-                    selectedPreferredFoods.add(item);
+                    selectedPreferredFoods.add(category);
                   } else {
-                    selectedPreferredFoods.remove(item);
+                    selectedPreferredFoods.remove(category);
                   }
                 });
               },
@@ -249,7 +245,6 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             );
           }).toList(),
         ),
-        SizedBox(height: 8),
       ],
     );
   }

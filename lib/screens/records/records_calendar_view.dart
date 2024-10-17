@@ -51,127 +51,10 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
     }).toList();
   }
 
-// 선택된 날짜 기준으로 일주일을 렌더링하는 함수
-  Widget _buildWeekContainer() {
-    List<DateTime> weekDates = _getWeekDates(_selectedDate);
-
-    return Container(
-      child: ListView.builder(
-        shrinkWrap: true, // ListView가 자식에 맞게 크기를 조정
-        physics: NeverScrollableScrollPhysics(), // 부모 스크롤에 맞게 비활성화
-        itemCount: weekDates.length,
-        itemBuilder: (context, index) {
-          DateTime date = weekDates[index];
-          List<RecordModel>? recordsForDate = getRecordsForDate(date);
-          return Container(
-              margin: EdgeInsets.symmetric(vertical: 5.0),
-              constraints: BoxConstraints(
-                minHeight: 100, // 각 컬럼의 최소 높이 설정
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white, // 배경을 흰색으로 설정
-                borderRadius: BorderRadius.circular(10), // 둥근 모서리
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5), // 그림자 색상
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: Offset(0, 3), // 그림자의 위치
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(3.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
-                        textAlign: TextAlign.left,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      if (recordsForDate != null && recordsForDate.isNotEmpty)
-                        ...recordsForDate.map((record) {
-                          return Column(
-                            children: record.records.map<Widget>((rec) {
-                              // if (rec is Map<String, dynamic> && rec.containsKey('images')) {
-                              //   List<String> images = rec['images'];
-                              return GestureDetector(
-                                onTap: () {
-                                  // if (recordsList.indexOf(record) >= 0 &&
-                                  //     recordsList.indexOf(record) <
-                                  //         recordsList.length) {
-                                  // Map<String, dynamic> recordData = {
-                                  //   'record': record, // 상위 레코드
-                                  //   'rec': rec, // 개별 레코드
-                                  // };
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ReadRecord(
-                                        recordId:
-                                            record.id ?? 'default_record_id',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    _buildImageWidget(rec.images),
-                                    SizedBox(width: 15),
-                                    Text(
-                                      rec.contents ?? '내용이 없습니다',
-                                      style: TextStyle(fontSize: 16),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        }).toList(),
-                    ],
-                  ),
-                ),
-              ));
-        },
-      ),
-    );
-  }
-
-  Widget _buildImageWidget(List<String> images) {
-    if (images.isEmpty) {
-      return Icon(Icons.image);
-    }
-    String imageUrl = images[0];
-    if (Uri.parse(imageUrl).isAbsolute) {
-      // 네트워크 URL인 경우
-      return Image.network(
-        imageUrl,
-        height: 50,
-        width: 50,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.broken_image, size: 55, color: Colors.grey);
-        },
-      );
-    } else {
-      // 로컬 파일인 경우
-      return Image.file(
-        File(imageUrl),
-        height: 50,
-        width: 50,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.broken_image, size: 55, color: Colors.grey);
-        },
-      );
-    }
+  // 이번 달의 일수를 반환하는 함수
+  int _daysInMonth(DateTime date) {
+    final nextMonth = DateTime(date.year, date.month + 1, 1);
+    return nextMonth.subtract(Duration(days: 1)).day;
   }
 
   @override
@@ -363,27 +246,21 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                                             MaterialPageRoute(
                                                               builder:
                                                                   (context) =>
-                                                                      ReadRecord(
-                                                                recordId:
-                                                                    record.id!,
+                                                                      ReadRecord(recordId: record.id!,
                                                               ),
                                                             ),
                                                           );
                                                         },
                                                         child: Container(
                                                           padding:
-                                                              EdgeInsets.only(
-                                                                  left: 4.0),
+                                                              EdgeInsets.only(left: 4.0),
                                                           child: Row(
                                                             children: [
-                                                              Text(
-                                                                rec.contents ??
+                                                              Text(rec.contents ??
                                                                     '내용이 없습니다',
-                                                                style: TextStyle(
-                                                                    fontSize: 8),
+                                                                style: TextStyle(fontSize: 8),
                                                                 overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
+                                                                    TextOverflow.ellipsis,
                                                               ),
                                                             ],
                                                           ),
@@ -413,10 +290,126 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
       ),
     );
   }
+// 선택된 날짜 기준으로 일주일을 렌더링하는 함수
+  Widget _buildWeekContainer() {
+    List<DateTime> weekDates = _getWeekDates(_selectedDate);
 
-  // 이번 달의 일수를 반환하는 함수
-  int _daysInMonth(DateTime date) {
-    final nextMonth = DateTime(date.year, date.month + 1, 1);
-    return nextMonth.subtract(Duration(days: 1)).day;
+    return Container(
+      child: ListView.builder(
+        shrinkWrap: true, // ListView가 자식에 맞게 크기를 조정
+        physics: NeverScrollableScrollPhysics(), // 부모 스크롤에 맞게 비활성화
+        itemCount: weekDates.length,
+        itemBuilder: (context, index) {
+          DateTime date = weekDates[index];
+          List<RecordModel>? recordsForDate = getRecordsForDate(date);
+          return Container(
+              margin: EdgeInsets.symmetric(vertical: 5.0),
+              constraints: BoxConstraints(
+                minHeight: 100, // 각 컬럼의 최소 높이 설정
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white, // 배경을 흰색으로 설정
+                borderRadius: BorderRadius.circular(10), // 둥근 모서리
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5), // 그림자 색상
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: Offset(0, 3), // 그림자의 위치
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(3.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
+                        textAlign: TextAlign.left,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      if (recordsForDate != null && recordsForDate.isNotEmpty)
+                        ...recordsForDate.map((record) {
+                          return Column(
+                            children: record.records.map<Widget>((rec) {
+                              // if (rec is Map<String, dynamic> && rec.containsKey('images')) {
+                              //   List<String> images = rec['images'];
+                              return GestureDetector(
+                                onTap: () {
+                                  // if (recordsList.indexOf(record) >= 0 &&
+                                  //     recordsList.indexOf(record) <
+                                  //         recordsList.length) {
+                                  // Map<String, dynamic> recordData = {
+                                  //   'record': record, // 상위 레코드
+                                  //   'rec': rec, // 개별 레코드
+                                  // };
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReadRecord(
+                                        recordId:
+                                        record.id ?? 'default_record_id',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    _buildImageWidget(rec.images),
+                                    SizedBox(width: 15),
+                                    Text(
+                                      rec.contents ?? '내용이 없습니다',
+                                      style: TextStyle(fontSize: 16),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }).toList(),
+                    ],
+                  ),
+                ),
+              ));
+        },
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(List<String> images) {
+    if (images.isEmpty) {
+      return Icon(Icons.image);
+    }
+    String imageUrl = images[0];
+    if (Uri.parse(imageUrl).isAbsolute) {
+      // 네트워크 URL인 경우
+      return Image.network(
+        imageUrl,
+        height: 50,
+        width: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.broken_image, size: 55, color: Colors.grey);
+        },
+      );
+    } else {
+      // 로컬 파일인 경우
+      return Image.file(
+        File(imageUrl),
+        height: 50,
+        width: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.broken_image, size: 55, color: Colors.grey);
+        },
+      );
+    }
   }
 }

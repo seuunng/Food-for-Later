@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
@@ -395,6 +396,8 @@ class _AddItemState extends State<AddItem> {
                         decoration: InputDecoration(
                           hintText: '검색어 입력',
                           border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                              vertical: 8.0, horizontal: 10.0),
                         ),
                         onChanged: (value) {
                           _searchItems(value); // 검색어 입력 시 아이템 필터링
@@ -402,11 +405,12 @@ class _AddItemState extends State<AddItem> {
                       ),
                     ),
                     SizedBox(width: 10),
-                    ElevatedButton(
+                    BasicElevatedButton(
                       onPressed: () {
                         _searchItems(searchKeyword); // 검색 버튼 클릭 시 검색어 필터링
                       },
-                      child: Text('검색'),
+                      iconTitle: Icons.search,
+                      buttonTitle: '검색',
                     ),
                   ],
                 ),
@@ -440,8 +444,7 @@ class _AddItemState extends State<AddItem> {
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
-                child:
-                NavbarButton(
+                child: NavbarButton(
                   buttonTitle: isDeleteMode ? '삭제 하기' : widget.addButton,
                   onPressed: () {
                     if (isDeleteMode) {

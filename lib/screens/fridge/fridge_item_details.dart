@@ -195,69 +195,52 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey, width: 2),
+                  Text('카테고리명', style: TextStyle(fontSize: 18)),
+                  Spacer(),
+                  DropdownButton<FoodsModel>(
+                    value: foodsCategories.contains(selectedFoodsCategory)
+                        ? selectedFoodsCategory
+                        : null,
+                    hint: Text('카테고리 선택'),
+                    items: foodsCategories.map((FoodsModel value) {
+                      return DropdownMenuItem<FoodsModel>(
+                        value: value,
+                        child: Text(
+                          value.defaultCategory,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (FoodsModel? newValue) {
+                      setState(() {
+                        selectedFoodsCategory = newValue;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Text(
+                    '식품명',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  Spacer(),
+                  SizedBox(
+                    width: 200,
+                    // 원하는 크기로 설정
+                    child: TextField(
+                      controller: foodNameController
+                        ..text = widget.foodsName ?? '',
+                      // textAlign: TextAlign.,
+                      focusNode: _focusNode,
+                      decoration: InputDecoration(
+                        border: _focusNode.hasFocus
+                            ? OutlineInputBorder() // 포커스가 있을 때만 테두리 표시
+                            : InputBorder.none,
+                        hintText: '식품명을 입력하세요',
+                      ),
                     ),
-                    child: Center(child: Icon(Icons.image, size: 50)),
-                  ), // 이미지 추가 예시
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '카테고리명',
-                        style: TextStyle(fontSize: 18)
-                      ),
-                      Row(
-                        children: [
-                          DropdownButton<FoodsModel>(
-                            value: foodsCategories
-                                    .contains(selectedFoodsCategory)
-                                ? selectedFoodsCategory
-                                : null,
-                            hint: Text('카테고리 선택'),
-                            items: foodsCategories.map((FoodsModel value) {
-                              return DropdownMenuItem<FoodsModel>(
-                                value: value,
-                                child: Text(
-                                  value.defaultCategory,
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (FoodsModel? newValue) {
-                              setState(() {
-                                selectedFoodsCategory = newValue;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Text('식품명', style: TextStyle(fontSize: 18),),
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 150,
-                            // 원하는 크기로 설정
-                            child: TextField(
-                              controller: foodNameController
-                                ..text = widget.foodsName ?? '',
-                              textAlign: TextAlign.right,
-                              focusNode: _focusNode,
-                              decoration: InputDecoration(
-                                border: _focusNode.hasFocus
-                                    ? OutlineInputBorder() // 포커스가 있을 때만 테두리 표시
-                                    : InputBorder.none,
-                                hintText: '식품명을 입력하세요',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -409,9 +392,9 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                 'foodsName': foodNameController.text, // 사용자가 입력한 식품명
                 'defaultCategory': selectedFoodsCategory?.defaultCategory ?? '',
                 'defaultFridgeCategory':
-                selectedFridgeCategory?.categoryName ?? '',
+                    selectedFridgeCategory?.categoryName ?? '',
                 'shoppingListCategory':
-                selectedShoppingListCategory?.categoryName ?? '',
+                    selectedShoppingListCategory?.categoryName ?? '',
                 'expirationDate': expirationDays,
                 'shelfLife': consumptionDays,
               };

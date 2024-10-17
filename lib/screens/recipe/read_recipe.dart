@@ -35,6 +35,29 @@ class _ReadRecipeState extends State<ReadRecipe> {
   bool isLiked = false; // 좋아요 상태
   bool isScraped = false; // 스크랩 상태
 
+  PageController _pageController = PageController();
+  int _currentPage = 0;
+
+
+
+  @override
+  void initState() {
+    super.initState();
+    searchKeywords = widget.searchKeywords;
+    selectedIngredients = List.generate(ingredients.length, (index) {
+      return !fridgeIngredients.contains(ingredients[index]);
+    });
+    _fetchInitialRecipeName();
+    loadScrapedData(widget.recipeId);
+    loadLikedData(widget.recipeId);
+    _pageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose(); // 페이지 컨트롤러 해제
+    super.dispose();
+  }
   Future<Map<String, dynamic>> _fetchRecipeData() async {
     return await fetchRecipeData(widget.recipeId); // Firestore에서 데이터 가져오기
   }
@@ -53,24 +76,13 @@ class _ReadRecipeState extends State<ReadRecipe> {
       return {};
     }
   }
-
-  @override
-  void initState() {
-    super.initState();
-    searchKeywords = widget.searchKeywords;
-    selectedIngredients = List.generate(ingredients.length, (index) {
-      return !fridgeIngredients.contains(ingredients[index]);
-    });
-    _fetchInitialRecipeName();
-    loadScrapedData(widget.recipeId);
-    loadLikedData(widget.recipeId);
-  }
-
   Future<void> _fetchInitialRecipeName() async {
     var data = await fetchRecipeData(widget.recipeId);
     setState(() {
       recipeName = data['recipeName'] ?? 'Unnamed Recipe';
+      mainImages = List<String>.from(data['mainImages'] ?? []); // mainImages 업데이트
     });
+    print(mainImages);
   }
 
   Future<void> loadScrapedData(String recipeId) async {
@@ -339,11 +351,43 @@ class _ReadRecipeState extends State<ReadRecipe> {
             TextButton(
               child: Text('삭제'),
               onPressed: () async {
+                // bool isScraped = recipe[index]['isScraped'] ?? false;
+                // bool isLiked = recipe[index]['isLiked'] ?? false;
+
                 try {
                   await FirebaseFirestore.instance
                       .collection('recipe')
                       .doc(widget.recipeId)
                       .delete();
+
+                  // 관련된 스크랩된 데이터 삭제
+                  QuerySnapshot<Map<String, dynamic>> scrapedRecipesSnapshot =
+                  await FirebaseFirestore.instance
+                      .collection('scraped_recipes')
+                      .where('recipeId', isEqualTo: widget.recipeId)
+                      .get();
+
+                  for (var doc in scrapedRecipesSnapshot.docs) {
+                    await FirebaseFirestore.instance
+                        .collection('scraped_recipes')
+                        .doc(doc.id)
+                        .delete();
+                  }
+
+                  // 관련된 좋아요 데이터 삭제
+                  QuerySnapshot<Map<String, dynamic>> likedRecipesSnapshot =
+                  await FirebaseFirestore.instance
+                      .collection('liked_recipes')
+                      .where('recipeId', isEqualTo: widget.recipeId)
+                      .get();
+
+                  for (var doc in likedRecipesSnapshot.docs) {
+                    await FirebaseFirestore.instance
+                        .collection('liked_recipes')
+                        .doc(doc.id)
+                        .delete();
+                  }
+
 
                   Navigator.of(context).pop();
                 } catch (e) {
@@ -434,14 +478,14 @@ class _ReadRecipeState extends State<ReadRecipe> {
               return Map<String, String>.from(step as Map<String, dynamic>);
             }));
             recipeName = data['recipeName'] ?? 'Unnamed Recipe';
-            String mainImage = data['mainImages'][0] ?? '';
+            List<String> mainImages =
+                List<String>.from(data['mainImages'] ?? []);
 
             return SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.network(mainImage,
-                      height: 400, width: 400, fit: BoxFit.cover),
+                  _buildMainImageSection(mainImages),
                   _buildInfoSection(data),
                   _buildIngredientsSection(ingredients),
                   _buildCookingStepsSection(methods),
@@ -482,7 +526,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
-                                      ReportAnIssue(postNo: 1)));
+                                      ReportAnIssue(
+                                          postNo: widget.recipeId,
+                                          postType: '레시피',
+                                      )));
                         },
                       ),
                       SizedBox(width: 4),
@@ -552,8 +599,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: SizedBox(
                       width: double.infinity,
-                      child:
-                      NavbarButton(
+                      child: NavbarButton(
                         buttonTitle: '리뷰쓰기',
                         onPressed: () {
                           Navigator.push(
@@ -576,6 +622,78 @@ class _ReadRecipeState extends State<ReadRecipe> {
           }
         },
       ),
+    );
+  }
+
+  Widget _buildMainImageSection(List<String> mainImages) {
+    if (mainImages.isEmpty) {
+      return Container(
+        height: 400,
+        color: Colors.grey, // 이미지가 없을 경우 배경색을 회색으로 설정
+        child: Icon(Icons.image, color: Colors.white, size: 100), // 대체 아이콘
+      );
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 400,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: mainImages.length,
+            onPageChanged: (int index) {
+              setState(() {
+                _currentPage = index; // 현재 페이지를 저장
+              });
+
+              print("Current Page: $_currentPage"); // 페이지 변경 시 출력
+
+              // 순환 기능을 추가하기 위한 체크
+              // if (index == mainImages.length - 1) {
+              //   // 마지막 페이지에 도달하면 첫 번째로 돌아감
+              //   Future.delayed(Duration(milliseconds: 200), () {
+              //     _pageController.jumpToPage(0);
+              //   });
+              // } else if (index == 0) {
+              //   // 첫 페이지에서 뒤로 넘기면 마지막으로 돌아감
+              //   Future.delayed(Duration(milliseconds: 200), () {
+              //     _pageController.jumpToPage(mainImages.length - 1);
+              //   });
+              // }
+            },
+            itemBuilder: (context, index) {
+              return Image.network(
+                mainImages[index], // 현재 페이지의 이미지 URL
+                width: double.infinity,
+                fit: BoxFit.cover, // 이미지를 꽉 채우도록 설정
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                      child: Icon(Icons.error,
+                          color: Colors.red, size: 100)); // 이미지 로딩 실패 시 아이콘 표시
+                },
+              );
+            },
+          ),
+        ),
+        SizedBox(height: 10,),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(mainImages.length, (index) {
+            return AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              margin: EdgeInsets.symmetric(horizontal: 5),
+              width: _currentPage == index ? 12 : 8,
+              height: _currentPage == index ? 12 : 8,
+              decoration: BoxDecoration(
+                color: _currentPage == index
+                    ? Colors.black
+                    : Colors.grey,
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 

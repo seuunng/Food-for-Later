@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 
 class AccountInformation extends StatefulWidget {
@@ -35,19 +36,12 @@ class _AccountInformationState extends State<AccountInformation> {
                   style: TextStyle(fontSize: 16),
                 ),
                 Spacer(),
-                ElevatedButton(
+                BasicElevatedButton(
                   onPressed: () {
-                    // 로그아웃 로직 추가
-                    _showNicknameChangeDialog();
+                    _showNicknameChangeDialog();// 검색 버튼 클릭 시 검색어 필터링
                   },
-                  child: Text('수정'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                    // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                    ),
-                  ),
+                  iconTitle: Icons.edit,
+                  buttonTitle: '수정',
                 ),
               ],
             ),
@@ -79,20 +73,13 @@ class _AccountInformationState extends State<AccountInformation> {
               children: [
                 Spacer(),
                 // 비밀번호 변경 버튼
-                ElevatedButton(
+                BasicElevatedButton(
                   onPressed: () {
-                    // 비밀번호 변경 로직 추가
-                    _showPasswordSendDialog();
+                    _showPasswordSendDialog();// 검색 버튼 클릭 시 검색어 필터링
                   },
-                  child: Text('수정'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-                    // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                    ),
-                  ),
-                ),
+                  iconTitle: Icons.edit,
+                  buttonTitle: '수정',
+                )
               ],
             ),
 

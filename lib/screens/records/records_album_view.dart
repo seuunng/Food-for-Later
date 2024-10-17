@@ -26,6 +26,38 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
     return null;
   }
 
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('record').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          final recordsList = snapshot.data!.docs.map((doc) {
+            return RecordModel.fromJson(
+              doc.data() as Map<String, dynamic>,
+              id: doc.id,
+            );
+          }).toList();
+
+          return _buildImageGrid(recordsList);
+        },
+      ),
+    );
+  }
   Widget _buildImageGrid(List<RecordModel> recordsList) {
     List<String> allImages = [];
     for (var record in recordsList) {
@@ -54,7 +86,7 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
           onTap: () {
             if (record != null) {
               // print("Found recordsList: ${record}");
-            Navigator.push(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ReadRecord(
@@ -92,36 +124,5 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
         },
       );
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('record').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
-            );
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          final recordsList = snapshot.data!.docs.map((doc) {
-            return RecordModel.fromJson(
-              doc.data() as Map<String, dynamic>,
-              id: doc.id,
-            );
-          }).toList();
-
-          return _buildImageGrid(recordsList);
-        },
-      ),
-    );
   }
 }

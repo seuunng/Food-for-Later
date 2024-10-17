@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/records_album_view.dart';
 import 'package:food_for_later/screens/records/records_calendar_view.dart';
@@ -14,6 +15,7 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
   PageController _pageController = PageController();
   int _currentPage = 0; // 현재 페이지 상태
   final int _totalPages = 3; // 총 페이지 수
+  bool isTruth = true;
 
   void _goToNextTable() {
     if (_currentPage == _totalPages - 1) {
@@ -120,10 +122,10 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
               ),
             ),
           ),
-
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton:
+      FloatingAddButton(
         heroTag: 'record_add_button',
         onPressed: () {
           Navigator.push(
@@ -134,11 +136,6 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
             ),
           );
         },
-        child: Icon(Icons.add),
-        // shape: RoundedRectangleBorder(
-        //   borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-        // ),
-
       ),
     );
   }

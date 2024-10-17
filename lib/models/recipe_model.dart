@@ -10,8 +10,8 @@ class RecipeModel {
   final String recipeName;
   final List<Map<String, String>> steps;
   final List<String> mainImages;
-  final double rating;
-  final int views;
+  double rating;
+  int views;
 
   RecipeModel({
     required this.id,
@@ -51,7 +51,7 @@ class RecipeModel {
       time: data['time'] ?? 0,
       userID: data['userID'] ?? '',
       mainImages: List<String>.from(data['mainImages'] ?? []),
-      rating: (data['rating'] ?? 0.0).toDouble(),
+      rating: (data['rating'] ?? 0).toDouble(),
       views: data['views'] ?? 0,
     );
   }

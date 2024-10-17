@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class FeedbackDetailPage extends StatefulWidget {
@@ -37,6 +38,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
   late String confirmationNote; // 상태로 관리될 확인사항 변수
   late String selectedStatus; // 상태로 관리될 처리 결과 변수
   late TextEditingController _confirmationController; // TextEditingController 선언
+  Map<String, dynamic>? reportedContent; // 신고된 레시피나 리뷰 데이터
 
 
   @override
@@ -45,13 +47,19 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
     confirmationNote = widget.confirmationNote;
     selectedStatus = widget.selectedStatus;
     _confirmationController = TextEditingController(text: widget.confirmationNote);
-    print('status ${widget.selectedStatus}');
-    print('statusOptions ${widget.statusOptions}');
+    _loadReportedContent();
   }
   @override
   void dispose() {
     _confirmationController.dispose(); // 메모리 누수를 방지하기 위해 dispose
     super.dispose();
+  }
+
+  Future<void> _loadReportedContent() async {
+    final content = await fetchReportedContent(widget.postNo, widget.postType);
+    setState(() {
+      reportedContent = content; // 신고된 내용 저장
+    });
   }
 
   Future<void> _sendEmail(String email) async {
@@ -93,7 +101,32 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
       );
     }
   }
+  Future<Map<String, dynamic>?> fetchReportedContent(String postNo, String postType) async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> snapshot;
 
+      if (postType == '레시피') {
+        // 레시피일 경우
+        snapshot = await FirebaseFirestore.instance
+            .collection('recipe') // 레시피 컬렉션
+            .doc(postNo) // postNo는 레시피 ID
+            .get();
+      } else if (postType == '리뷰') {
+        // 리뷰일 경우
+        snapshot = await FirebaseFirestore.instance
+            .collection('recipe_reviews') // 리뷰 컬렉션
+            .doc(postNo) // postNo는 리뷰 ID
+            .get();
+      } else {
+        return null;
+      }
+
+      return snapshot.data();
+    } catch (e) {
+      print('Error fetching reported content: $e');
+      return null;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,7 +153,12 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                 Text(widget.createdDate.toLocal().toString().split(' ')[0]),
                 SizedBox(width: 10),
                 Text(widget.author),
-                SizedBox(width: 10),
+
+              ],
+            ),
+            Row(
+              children: [
+                Spacer(),
                 GestureDetector(
                   onTap: () {
                     _sendEmail(widget.authorEmail);  // 이메일 보내기 함수 호출
@@ -144,20 +182,19 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                 Text(
                   widget.postType.toString(),
                 ),
-                SizedBox(width: 10),
-                Text(
-                  '게시물번호',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  widget.postNo.toString(),
-                ),
+
               ],
             ),
-            SizedBox(height: 10),
-            Text(widget.content),
             SizedBox(height: 20),
+            Text(widget.content),
+            Divider(),
+            SizedBox(height: 20),
+            if (reportedContent != null)
+              _buildReportedContentWidget(),
+            SizedBox(height: 10),
+            if (reportedContent != null)
+              _buildNavigateButton(),
+            Divider(),
             Text(
               '확인사항',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -197,8 +234,9 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                 ),
               ],
             ),
-          ],
+            ],
         ),
+
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -207,6 +245,65 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
           child: Text('저장'),
         ),
       ),
+    );
+  }
+  Widget _buildReportedContentWidget() {
+    if (widget.postType == '레시피') {
+      // 레시피의 경우 해당 내용을 보여줌
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('신고된 레시피 원본 내용', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('해당 레시피 작성자: ${reportedContent?['userId'] ?? '알 수 없음'}'),
+          Text('레시피 이름: ${reportedContent?['recipeName'] ?? '알 수 없음'}'),
+
+          // 레시피의 기타 정보들...
+        ],
+      );
+    } else if (widget.postType == '리뷰') {
+      // 리뷰의 경우 해당 내용을 보여줌
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('신고된 리뷰 원본 내용', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('해당 리뷰 작성자: ${reportedContent?['userId'] ?? '알 수 없음'}'),
+          Text('${reportedContent?['content'] ?? '없음'}'),
+          // 리뷰의 기타 정보들...
+        ],
+      );
+    } else {
+      return Text('알 수 없는 게시물 유형입니다.');
+    }
+  }
+  // 레시피 또는 리뷰로 이동하는 버튼 추가
+  Widget _buildNavigateButton() {
+    return ElevatedButton(
+      onPressed: () {
+        if (widget.postType == '레시피') {
+          // 레시피 페이지로 이동
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReadRecipe(
+                recipeId: widget.postNo,  // postNo는 레시피 ID
+                searchKeywords: [],  // 필요한 경우 검색 키워드 전달
+              ),
+            ),
+          );
+        } else if (widget.postType == '리뷰') {
+          // 리뷰 페이지로 이동 (리뷰 ID를 전달)
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReadRecipe(
+                recipeId: reportedContent?['recipeId'] ?? '', // 리뷰가 속한 레시피로 이동
+                searchKeywords: [],  // 필요한 경우 검색 키워드 전달
+              ),
+            ),
+          );
+        }
+      },
+      child: Text('${widget.postType} 페이지로 이동'),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
@@ -166,6 +167,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text('레시피'),
       ),
@@ -239,8 +241,10 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         ],
       ),
       bottomNavigationBar: Container(
-        color: Colors.transparent,
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.3),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -259,7 +263,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
             ),
             SizedBox(width: 20),
             // 물건 추가 버튼
-            FloatingActionButton(
+            FloatingAddButton(
               heroTag: 'recipe_add_button',
               onPressed: () {
                 Navigator.push(
@@ -270,8 +274,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                   ),
                 );
               },
-              child: Icon(Icons.add),
-
             ),
           ],
         ),

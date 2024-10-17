@@ -27,16 +27,18 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
     if (title.isNotEmpty && content.isNotEmpty) {
       try {
         // Firestore에 데이터 저장
-        await _db.collection('feedback').add({
+        DocumentReference docRef = await _db.collection('feedback').add({
           'title': title,
           'content': content,
           'category': _selectedCategory,
           'timestamp': FieldValue.serverTimestamp(), // 서버 시간을 저장
           'postType': '의견보내기',
-          'postNo': '의견보내기',
           'author' : userId,
         });
-
+        String postNo = docRef.id;
+        await _db.collection('feedback').doc(docRef.id).update({
+          'postNo': postNo, // 고유 postNo 업데이트
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('의견이 성공적으로 전송되었습니다!')),
         );

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -40,10 +41,10 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
   Future<void> _loadReviewData() async {
     try {
       DocumentSnapshot<Map<String, dynamic>> reviewSnapshot =
-      await FirebaseFirestore.instance
-          .collection('recipe_reviews')
-          .doc(widget.reviewId) // reviewId로 불러옴
-          .get();
+          await FirebaseFirestore.instance
+              .collection('recipe_reviews')
+              .doc(widget.reviewId) // reviewId로 불러옴
+              .get();
 
       if (reviewSnapshot.exists) {
         final reviewData = reviewSnapshot.data();
@@ -109,6 +110,33 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
     return _imageFiles!.isNotEmpty ? _imageFiles!.first : '';
   }
 
+  Future<void> updateRecipeRating(String recipeId) async {
+    try {
+      QuerySnapshot<Map<String, dynamic>> reviewsSnapshot =
+          await FirebaseFirestore.instance
+              .collection('recipe_reviews')
+              .where('recipeId', isEqualTo: recipeId)
+              .get();
+
+      if (reviewsSnapshot.docs.isNotEmpty) {
+        double totalRating = 0.0;
+        for (var doc in reviewsSnapshot.docs) {
+          totalRating += (doc['rating'] as num).toDouble();
+        }
+
+        double averageRating = totalRating / reviewsSnapshot.docs.length;
+
+        // 평균 별점 Firestore에 업데이트
+        await FirebaseFirestore.instance
+            .collection('recipe')
+            .doc(recipeId)
+            .update({'rating': averageRating});
+      }
+    } catch (e) {
+      print('Error calculating and updating recipe rating: $e');
+    }
+  }
+
   // 저장 버튼 클릭 시 처리
   void _saveReview() async {
     String reviewContent = reviewContentController.text;
@@ -141,6 +169,8 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
         'images': selectedImages, // Assuming selectedImages contains image URLs
         'timestamp': FieldValue.serverTimestamp(), // Save the current timestamp
       }, SetOptions(merge: true));
+
+      await updateRecipeRating(widget.recipeId);
 
       // Success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -206,7 +236,8 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
                         await _selectImage(); // 이미지 선택 후 경로 반환
                     File imageFile = File(selectedImagePath);
                     imageUrl = await _addImage(imageFile);
-                    if (selectedImagePath.isNotEmpty) { // Firebase에 이미지 업로드
+                    if (selectedImagePath.isNotEmpty) {
+                      // Firebase에 이미지 업로드
                       if (imageUrl.isNotEmpty) {
                         setState(() {
                           selectedImages.add(imageUrl); // 업로드된 이미지 URL을 리스트에 추가
@@ -255,12 +286,14 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  selectedImages.remove(imagePath); // 선택한 이미지 삭제
+                                  selectedImages
+                                      .remove(imagePath); // 선택한 이미지 삭제
                                 });
                               },
                               child: Container(
                                 color: Colors.black54,
-                                child: Icon(Icons.close, size: 18, color: Colors.white),
+                                child: Icon(Icons.close,
+                                    size: 18, color: Colors.white),
                               ),
                             ),
                           ),
@@ -280,22 +313,9 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: NavbarButton(
+              buttonTitle: '저장하기',
               onPressed: _saveReview,
-              child: Text('저장하기'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-                ),
-                elevation: 5,
-                textStyle: TextStyle(
-                  fontSize: 18, // 글씨 크기 조정
-                  fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                  letterSpacing: 1.2, //
-                ),
-                // primary: isDeleteMode ? Colors.red : Colors.blue,
-              ),
             ),
           ),
         ));

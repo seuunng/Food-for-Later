@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
-import 'package:food_for_later/screens/foods/manage_categories.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/components/custom_dropdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -351,7 +351,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Spacer(),
-                  ElevatedButton(
+                  BasicElevatedButton(
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -367,23 +367,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                         ),
                       );
                     },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit, size: 18), // 작은 크기의 수정 아이콘 추가
-                        SizedBox(width: 8), // 아이콘과 텍스트 사이의 간격
-                        Text('수정'),
-                      ],
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white, backgroundColor: Colors. blueGrey, // 텍스트 및 아이콘 색상
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20), // 버튼 내부 패딩
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20), // 버튼 모서리 둥글게
-                      ),
-                      elevation: 5, // 버튼 그림자
-                    ),
-
+                    iconTitle: Icons.edit,
+                    buttonTitle: '수정',
                   ),
                 ],
               ),

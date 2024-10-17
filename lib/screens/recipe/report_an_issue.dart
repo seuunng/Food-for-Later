@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 
 class ReportAnIssue extends StatefulWidget {
-  final int postNo; // 게시물 제목정보
+  final String postType; // 게시물 유형 (레시피, 리뷰)
+  final String postNo; // 게시물 ID (레시피 ID, 리뷰 ID)
 
-  ReportAnIssue({required this.postNo});
+  ReportAnIssue({
+    required this.postType,
+    required this.postNo
+  });
+
   @override
   _ReportAnIssueState createState() => _ReportAnIssueState();
 }
@@ -34,7 +39,7 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
           'content': content,
           'category': _selectedCategory,
           'timestamp': FieldValue.serverTimestamp(), // 서버 시간을 저장
-          'postType': widget.postNo,
+          'postType': widget.postType,
           'postNo': widget.postNo,
           'author': userId,
         });
@@ -92,33 +97,6 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
                         _selectedCategory = newValue!;
                       });
                     },
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Text(
-                  '게시물유형',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
-                ),
-                Spacer(),
-                Text(
-                  widget.postNo.toString(),
-                  style: TextStyle(
-                    fontSize: 18,
-                  ),
-                ),
-                Spacer(),
-                Text(
-                  '게시물번호',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
-                ),
-                Spacer(),
-                Text(
-                  widget.postNo.toString(),
-                  style: TextStyle(
-                    fontSize: 18,
                   ),
                 ),
               ],

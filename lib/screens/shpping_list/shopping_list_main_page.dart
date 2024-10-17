@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/shopping_category_model.dart';
@@ -421,7 +422,8 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       ),
 
       // 물건 추가 버튼
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !showCheckBoxes || !shouldShowMoveToFridgeButton() ?
+      FloatingAddButton(
         heroTag: 'shopping_add_button',
         onPressed: () async {
           await Navigator.push(
@@ -444,8 +446,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
             _loadItemsFromFirestore('현재 유저아이디');
           });
         },
-        child: Icon(Icons.add),
-      ),
+      ):null,
       bottomNavigationBar: showCheckBoxes && shouldShowMoveToFridgeButton()
           ? Container(
               color: Colors.transparent,

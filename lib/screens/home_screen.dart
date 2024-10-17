@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_login.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
-import 'package:food_for_later/screens/foods/manage_categories.dart';
 import 'package:food_for_later/screens/fridge/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/recipe/recipe_main_page.dart';
@@ -24,13 +23,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  // static const List<String> basicFoodsCategories = [
-  //   '육류',
-  //   '수산물',
-  //   '채소',
-  //   '과일',
-  //   '견과'
-  // ];
   String? selectedCategory;
   // 각 페이지를 저장하는 리스트
   List<Widget> _pages = <Widget>[
@@ -257,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.kitchen), label: '냉장고'),
+          BottomNavigationBarItem(icon: Icon(Icons.kitchen), label: '냉장고',),
           BottomNavigationBarItem(
               icon: Icon(Icons.shopping_cart), label: '장보기'),
           BottomNavigationBarItem(icon: Icon(Icons.restaurant), label: '레시피'),

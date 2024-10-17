@@ -26,7 +26,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   List<String> filteredItems = [];
 
-  String ratings = '★★★★☆';
+  double rating = 0.0;
   bool isScraped = false;
   List<String> fridgeIngredients = [];
 
@@ -255,6 +255,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
         itemBuilder: (context, index) {
           RecipeModel recipe = matchingRecipes[index];
           String recipeName = recipe.recipeName;
+          double recipeRating = recipe.rating;
           bool hasMainImage = recipe.mainImages.isNotEmpty; // 이미지가 있는지 확인
 
           List<String> keywordList = [
@@ -284,7 +285,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
                   padding: EdgeInsets.all(8.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: Colors.green, width: 2),
+                    // border: Border.all(color: Colors.green, width: 2),
                     borderRadius: BorderRadius.circular(8.0),
                   ), // 카테고리 버튼 크기 설정
 
@@ -323,7 +324,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
                             Row(
                               children: [
                                 Container(
-                                  width: MediaQuery.of(context).size.width * 0.3,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.3,
                                   child: Text(
                                     recipeName,
                                     style: TextStyle(
@@ -335,7 +337,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                   ),
                                 ),
                                 Spacer(),
-                                Text(ratings),
+                                _buildRatingStars(recipeRating),
                                 IconButton(
                                   icon: Icon(
                                       isScraped
@@ -356,9 +358,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                       spacing: 6.0,
                                       runSpacing: 4.0,
                                       children: keywordList.map((ingredient) {
-                                        bool inFridge =
-                                            fridgeIngredients.contains(ingredient);
-                                        bool isKeyword = keywords.contains(ingredient);
+                                        bool inFridge = fridgeIngredients
+                                            .contains(ingredient);
+                                        bool isKeyword =
+                                            keywords.contains(ingredient);
                                         return Container(
                                           padding: EdgeInsets.symmetric(
                                               vertical: 2.0, horizontal: 4.0),
@@ -372,7 +375,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                               color: Colors.grey,
                                               width: 0.5,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           child: Text(
                                             ingredient,
@@ -400,5 +404,34 @@ class _ViewResearchListState extends State<ViewResearchList> {
             },
           );
         });
+  }
+
+  Widget _buildRatingStars(double rating) {
+    int fullStars = rating.floor(); // 정수 부분의 별
+    bool hasHalfStar = (rating - fullStars) >= 0.5; // 반 별이 필요한지 확인
+
+    return Row(
+      children: List.generate(5, (index) {
+        if (index < fullStars) {
+          return Icon(
+            Icons.star,
+            color: Colors.amber,
+            size: 14,
+          );
+        } else if (index == fullStars && hasHalfStar) {
+          return Icon(
+            Icons.star_half,
+            color: Colors.amber,
+            size: 14,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            color: Colors.amber,
+            size: 14,
+          );
+        }
+      }),
+    );
   }
 }

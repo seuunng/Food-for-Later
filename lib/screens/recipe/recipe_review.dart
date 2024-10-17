@@ -134,10 +134,6 @@ class _RecipeReviewState extends State<RecipeReview> {
           .doc(docId)
           .delete();
 
-      setState(() {
-        recipeReviews.removeAt(index); // 삭제 후 목록에서 제거
-      });
-
       if (isNiced) {
         QuerySnapshot<Map<String, dynamic>> nicedReviewSnapshot =
             await FirebaseFirestore.instance
@@ -236,9 +232,25 @@ class _RecipeReviewState extends State<RecipeReview> {
         children: [
           Text('리뷰',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SizedBox(
-            height: 500,
-            child: ListView.builder(
+      SizedBox(height: 16),
+      recipeReviews.isEmpty
+          ? Center( // 리뷰가 없을 때 표시될 메시지
+        child: Column(
+          children: [
+            Icon(Icons.comment, size: 50, color: Colors.grey),
+            SizedBox(height: 10),
+            Text(
+              '아직 리뷰가 없습니다.',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            Text(
+              '첫번째 리뷰를 작성해주세요!',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      )
+          : ListView.builder(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
               itemCount: recipeReviews.length,
@@ -294,8 +306,11 @@ class _RecipeReviewState extends State<RecipeReview> {
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
-                                                ReportAnIssue(postNo: 1)));
+                                                ReportAnIssue(
+                                                  postNo: recipeReviews[index]['reviewId'],
+                                                  postType: '리뷰',)));
                                   },
+
                                   child:
                                       Icon(Icons.feedback_outlined, size: 12),
                                 ),
@@ -369,7 +384,7 @@ class _RecipeReviewState extends State<RecipeReview> {
                 );
               },
             ),
-          ),
+
         ],
       ),
     );

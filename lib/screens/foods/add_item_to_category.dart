@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/floating_add_button.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/fridge_category_model.dart';
@@ -17,7 +19,6 @@ class AddItemToCategory extends StatefulWidget {
 }
 
 class _AddItemToCategoryState extends State<AddItemToCategory> {
-
   List<FoodsModel> foodsCategories = [];
   FoodsModel? selectedFoodsCategory;
 
@@ -40,8 +41,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
   @override
   void initState() {
     super.initState();
-    dateController.text =
-        DateFormat('yyyy-MM-dd').format(currentDate);
+    dateController.text = DateFormat('yyyy-MM-dd').format(currentDate);
     _loadFoodsCategoriesFromFirestore();
     _loadFridgeCategoriesFromFirestore();
     _loadShoppingListCategoriesFromFirestore();
@@ -69,15 +69,16 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
         foodsCategories = uniqueCategories;
         if (widget.categoryName.isNotEmpty) {
           selectedFoodsCategory = foodsCategories.firstWhere(
-                (category) => category.defaultCategory == widget.categoryName,
-            orElse: () => FoodsModel( // 기본값을 설정
-            id: 'unknown',
-            foodsName: '',
-            defaultCategory: '',
-            defaultFridgeCategory: '',
-            shoppingListCategory: '',
-            expirationDate: 0,
-            shelfLife: 0,
+            (category) => category.defaultCategory == widget.categoryName,
+            orElse: () => FoodsModel(
+              // 기본값을 설정
+              id: 'unknown',
+              foodsName: '',
+              defaultCategory: '',
+              defaultFridgeCategory: '',
+              shoppingListCategory: '',
+              expirationDate: 0,
+              shelfLife: 0,
             ),
           );
         }
@@ -99,10 +100,12 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
       fridgeCategories = categories;
     });
   }
+
   // 쇼핑리스트 카테고리
   Future<void> _loadShoppingListCategoriesFromFirestore() async {
-    final snapshot =
-    await FirebaseFirestore.instance.collection('shopping_categories').get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('shopping_categories')
+        .get();
 
     final categories = snapshot.docs.map((doc) {
       return ShoppingCategory.fromFirestore(doc);
@@ -143,60 +146,53 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey, width: 2),
-                  ),
-                  child: Center(child: Icon(Icons.image, size: 50)),
-                ), // 이미지 추가 예시
-                SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text('카테고리명   ', style: TextStyle(fontSize: 18)),
-                        SizedBox(width: 10),
-                        DropdownButton<FoodsModel>(
-                          value: foodsCategories.contains(selectedFoodsCategory)
-                              ? selectedFoodsCategory
-                              : null,
-                          hint: Text('카테고리 선택'),
-                          items: foodsCategories.map((FoodsModel value) {
-                            return DropdownMenuItem<FoodsModel>(
-                              value: value,
-                              child: Text(value.defaultCategory),
-                            );
-                          }).toList(),
-                          onChanged: (FoodsModel? newValue) {
-                            setState(() {
-                              selectedFoodsCategory = newValue;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 10),
-                    Text('식품명', style: TextStyle(fontSize: 18)),
-                    SizedBox(
-                      width: 200, // 원하는 크기로 설정
-                      child: TextField(
-                        controller: foodNameController,
-                        decoration: InputDecoration(
-                          // border: OutlineInputBorder(),
-                          hintText: '식품명을 입력하세요',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
-                            vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
-                          ),
-                        ),
-                      ),
+                    Text('카테고리명   ', style: TextStyle(fontSize: 18)),
+
+                    Spacer(),
+                    DropdownButton<FoodsModel>(
+                      value: foodsCategories.contains(selectedFoodsCategory)
+                          ? selectedFoodsCategory
+                          : null,
+                      hint: Text('카테고리 선택'),
+                      items: foodsCategories.map((FoodsModel value) {
+                        return DropdownMenuItem<FoodsModel>(
+                          value: value,
+                          child: Text(value.defaultCategory),
+                        );
+                      }).toList(),
+                      onChanged: (FoodsModel? newValue) {
+                        setState(() {
+                          selectedFoodsCategory = newValue;
+                        });
+                      },
                     ),
                   ],
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Text('식품명', style: TextStyle(fontSize: 18)),
+                Spacer(),
+                SizedBox(
+                  width: 200, // 원하는 크기로 설정
+                  child: TextField(
+                    controller: foodNameController,
+                    decoration: InputDecoration(
+                      // border: OutlineInputBorder(),
+                      hintText: '식품명을 입력하세요',
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
+                        vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -220,7 +216,6 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                     });
                   },
                 ),
-                SizedBox(width: 20),
               ],
             ),
             SizedBox(height: 20),
@@ -243,7 +238,6 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                     });
                   },
                 ),
-                SizedBox(width: 20),
               ],
             ),
             SizedBox(height: 20),
@@ -321,7 +315,6 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                     onTap: () => _selectDate(context), // 날짜 선택 다이얼로그 호출
                   ),
                 ),
-                SizedBox(width: 20),
               ],
             ),
           ],
@@ -333,8 +326,9 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () async {
+          child:  NavbarButton(
+              buttonTitle:'추가하기',
+              onPressed: () async {
               if (foodNameController.text.isNotEmpty &&
                   selectedFoodsCategory != null &&
                   selectedFridgeCategory != null &&
@@ -342,9 +336,13 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                 try {
                   await FirebaseFirestore.instance.collection('foods').add({
                     'foodsName': foodNameController.text, // 식품명
-                    'defaultCategory': selectedFoodsCategory?.defaultCategory ?? '', // 선택된 카테고리
-                    'defaultFridgeCategory': selectedFridgeCategory?.categoryName ?? '', // 냉장고 카테고리
-                    'shoppingListCategory': selectedShoppingListCategory?.categoryName ?? '', // 쇼핑 리스트 카테고리
+                    'defaultCategory': selectedFoodsCategory?.defaultCategory ??
+                        '', // 선택된 카테고리
+                    'defaultFridgeCategory':
+                        selectedFridgeCategory?.categoryName ?? '', // 냉장고 카테고리
+                    'shoppingListCategory':
+                        selectedShoppingListCategory?.categoryName ??
+                            '', // 쇼핑 리스트 카테고리
                     'expirationDate': expirationDays, // 유통기한
                     'shelfLife': consumptionDays, // 품질유지기한
                   });
@@ -363,22 +361,6 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                 );
               }
             },
-            child: Text('추가하기'),
-            style: ElevatedButton.styleFrom(
-              padding:
-                  EdgeInsets.symmetric(vertical: 15), // 위아래 패딩을 조정하여 버튼 높이 축소
-              // backgroundColor: isDeleteMode ? Colors.red : Colors.blueAccent, // 삭제 모드일 때 빨간색, 아닐 때 파란색
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
-              ),
-              elevation: 5,
-              textStyle: TextStyle(
-                fontSize: 18, // 글씨 크기 조정
-                fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-                letterSpacing: 1.2, //
-              ),
-              // primary: isDeleteMode ? Colors.red : Colors.blue,
-            ),
           ),
         ),
       ),

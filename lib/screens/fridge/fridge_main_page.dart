@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/fridge_category_model.dart';
 import 'package:food_for_later/screens/fridge/fridge_category_search.dart';
@@ -27,7 +28,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   List<List<Map<String, dynamic>>> itemLists = [[], [], []];
 
   List<String> selectedItems = [];
-  bool isDeleteMode = false;
+  bool isDeletedMode = false;
 
   @override
   void initState() {
@@ -36,6 +37,9 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     _loadCategoriesFromFirestore();
     _loadFridgeNameFromFirestore();
     _loadCategoriesAndFridgeData();
+    setState(() {
+      isDeletedMode = false;
+    });
   }
 
   @override
@@ -165,16 +169,16 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   }
 
 // 선택된 섹션에 해당하는 아이템을 가져오는 함수
-  List<String> _getItemsForSelectedSection() {
-    if (selectedSection != null) {
-      int index = storageSections
-          .indexWhere((section) => section.id == selectedSection!.id);
-      if (index >= 0 && index < itemLists.length) {
-        return itemLists[index].map((item) => item.keys.first).toList();
-      }
-    }
-    return [];
-  }
+//   List<String> _getItemsForSelectedSection() {
+//     if (selectedSection != null) {
+//       int index = storageSections
+//           .indexWhere((section) => section.id == selectedSection!.id);
+//       if (index >= 0 && index < itemLists.length) {
+//         return itemLists[index].map((item) => item.keys.first).toList();
+//       }
+//     }
+//     return [];
+//   }
 
 // 삭제 모드에서 선택된 아이템들을 삭제하기 전에 확인 다이얼로그를 띄우는 함수
   Future<void> _confirmDeleteItems() async {
@@ -206,7 +210,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     if (confirmDelete) {
       _deleteSelectedItems(); // 실제 삭제 로직 실행
       setState(() {
-        isDeleteMode = false; // 삭제 작업 후 삭제 모드 해제
+        isDeletedMode = false; // 삭제 작업 후 삭제 모드 해제
       });
     }
   }
@@ -245,7 +249,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           }
         }
         selectedItems.clear(); // 선택된 아이템 목록 초기화
-        isDeleteMode = false;
+        isDeletedMode = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -293,32 +297,33 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       ),
 
       // 물건 추가 버튼
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !isDeletedMode?
+      FloatingAddButton(
         heroTag: 'fridge_add_button',
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddItem(
-                pageTitle: '냉장고에 추가',
-                addButton: '냉장고에 추가',
-                sourcePage: 'fridge',
-                onItemAdded: () {
-                  _loadFridgeCategoriesFromFirestore(
-                      selectedFridge ?? '기본 냉장고');
-                },
-              ),
+              builder: (context) =>
+                  AddItem(
+                    pageTitle: '냉장고에 추가',
+                    addButton: '냉장고에 추가',
+                    sourcePage: 'fridge',
+                    onItemAdded: () {
+                      _loadFridgeCategoriesFromFirestore(
+                          selectedFridge ?? '기본 냉장고');
+                    },
+                  ),
             ),
           );
           setState(() {
             _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
           });
         },
-        child: Icon(Icons.add),
-      ),
-      bottomNavigationBar: isDeleteMode
+      ): null,
+
+      bottomNavigationBar: isDeletedMode
           ? Container(
-              color: Colors.transparent,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
@@ -425,17 +430,17 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
           child: GestureDetector(
             onLongPress: () {
               setState(() {
-                if (isDeleteMode) {
-                  isDeleteMode = false;
+                if (isDeletedMode) {
+                  isDeletedMode = false;
                   selectedItems.clear();
                 } else {
-                  isDeleteMode = true;
+                  isDeletedMode = true;
                   selectedItems.add(currentItem);
                 }
               });
             },
             onTap: () {
-              if (isDeleteMode) {
+              if (isDeletedMode) {
                 setState(() {
                   if (selectedItems.contains(currentItem)) {
                     selectedItems.remove(currentItem);
@@ -492,7 +497,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: isDeleteMode && isSelected
+                color: isDeletedMode && isSelected
                     ? Colors.orange
                     : _getBackgroundColor(expirationDays),
                 borderRadius: BorderRadius.circular(8.0),
@@ -677,17 +682,17 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                 onLongPress: () {
                   setState(() {
                     // 삭제 모드 전환 및 해제
-                    if (isDeleteMode) {
-                      isDeleteMode = false; // 삭제 모드 해제
+                    if (isDeletedMode) {
+                      isDeletedMode = false; // 삭제 모드 해제
                       selectedItems.clear(); // 선택된 아이템 목록 초기화
                     } else {
-                      isDeleteMode = true; // 삭제 모드로 전환
+                      isDeletedMode = true; // 삭제 모드로 전환
                       selectedItems.add(currentItem);
                     }
                   });
                 },
                 onTap: () {
-                  if (isDeleteMode) {
+                  if (isDeletedMode) {
                     setState(() {
                       if (selectedItems.contains(currentItem)) {
                         selectedItems.remove(currentItem); // 선택 해제
@@ -745,7 +750,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDeleteMode && isSelected
+                    color: isDeletedMode && isSelected
                         ? Colors.orange // 삭제 모드에서 선택된 항목은 주황색
                         : _getBackgroundColor(expirationDays),
                     borderRadius: BorderRadius.circular(8.0),

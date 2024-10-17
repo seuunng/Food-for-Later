@@ -336,7 +336,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                               }).toList()
                                             : [
                                                 Container(),
-                                              ], //s가 null일 경우 빈 컨테이너를 표시
+                                        ], //s가 null일 경우 빈 컨테이너를 표시
                                       ),
                                     ],
                                   ),
@@ -360,17 +360,27 @@ class _RecordsListViewState extends State<RecordsListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(3.0),
-              child: _buildRecordsSection(),
+      body: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('record').snapshots(), // stream 추가
+          builder: (context, snapshot) {
+    if (snapshot.hasError) {
+    return Center(child: Text('데이터를 불러오는 중 오류가 발생했습니다.'));
+    }
+    if (snapshot.connectionState == ConnectionState.waiting) {
+    return Center(child: CircularProgressIndicator());
+    }
+    return SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(3.0),
+                  child: _buildRecordsSection(),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          );
+        }
+      )
     );
   }
-
 }
