@@ -28,8 +28,6 @@ class AddItem extends StatefulWidget {
   _AddItemState createState() => _AddItemState();
 }
 
-// Map<String, List<Map<String, dynamic>>> itemsByCategory = {};
-
 class _AddItemState extends State<AddItem> {
   DateTime currentDate = DateTime.now();
 
@@ -54,17 +52,19 @@ class _AddItemState extends State<AddItem> {
   Map<String, List<FoodsModel>> itemsByCategory = {};
   Map<String, List<PreferredFoodModel>> itemsByPreferredCategory = {};
   List<FoodsModel> items = [];
+  Set<String> deletedItemNames = {};
 
   // initState 또는 빌드 직전에 중복 제거
   @override
   void initState() {
     super.initState();
-    removeDuplicates(); // 중복 제거 함수 호출
+    // removeDuplicates(); // 중복 제거 함수 호출
     if (widget.sourcePage == 'preferred_foods_category') {
       _loadPreferredFoodsCategoriesFromFirestore();
     } else {
       _loadCategoriesFromFirestore();
     }
+    _loadDeletedItems();
   }
 
   void _navigateToAddItemPage() async {
@@ -95,6 +95,13 @@ class _AddItemState extends State<AddItem> {
         itemsByCategory = {};
 
         for (var category in categories) {
+          // 삭제된 아이템이면 건너뛰기
+          if (widget.sourcePage != 'update_foods_category') {
+            if (deletedItemNames.contains(category.foodsName)) {
+              continue;
+            }
+          }
+
           // 기존 카테고리 리스트가 있으면 추가, 없으면 새 리스트 생성
           if (itemsByCategory.containsKey(category.defaultCategory)) {
             itemsByCategory[category.defaultCategory]!
@@ -111,6 +118,25 @@ class _AddItemState extends State<AddItem> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
       );
+    }
+  }
+
+  void _loadDeletedItems() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('deleted_foods')
+          .where('isDeleted', isEqualTo: true)
+          .get();
+
+      setState(() {
+        deletedItemNames = snapshot.docs
+            .map((doc) => doc.data()['itemName'] as String)
+            .toSet();
+      });
+
+      print('Deleted items: $deletedItemNames');
+    } catch (e) {
+      print('Failed to load deleted items: $e');
     }
   }
 
@@ -140,7 +166,6 @@ class _AddItemState extends State<AddItem> {
           });
         }
       });
-      print(itemsByPreferredCategory);
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,7 +194,6 @@ class _AddItemState extends State<AddItem> {
               ),
             );
 
-        // fridgeCategoryId로 matchingFood의 defaultFridgeCategory 사용
         final fridgeCategoryId = matchingFood.defaultFridgeCategory;
 
         final existingItemSnapshot = await FirebaseFirestore.instance
@@ -293,78 +317,50 @@ class _AddItemState extends State<AddItem> {
   }
 
   // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
-  void _deleteSelectedItems() {
-    setState(() {
-      if (widget.sourcePage == 'preferred_foods_category') {
-        // PreferredFoodModel 삭제 로직
-        itemsByPreferredCategory.forEach((category, categoryModels) {
-          for (var categoryModel in categoryModels) {
-            categoryModel.category.forEach((categoryName, items) {
-              categoryModel.category[categoryName]!
-                  .removeWhere((item) => selectedItems.contains(item));
-            });
-          }
-        });
-      } else {
-        if (selectedCategory != null) {
-          deletedItems.addAll(selectedItems);
-
-          itemsByCategory[selectedCategory!]!
-              .removeWhere((item) => selectedItems.contains(item));
-        }
-        selectedItems.clear(); // 선택된 아이템 목록 초기화
-        isDeleteMode = false; // 삭제 모드 해제
-      }
-    });
-  }
+  // void _deleteSelectedItems() {
+  //   setState(() {
+  //     if (widget.sourcePage == 'preferred_foods_category') {
+  //       // PreferredFoodModel 삭제 로직
+  //       itemsByPreferredCategory.forEach((category, categoryModels) {
+  //         for (var categoryModel in categoryModels) {
+  //           categoryModel.category.forEach((categoryName, items) {
+  //             categoryModel.category[categoryName]!
+  //                 .removeWhere((item) => selectedItems.contains(item));
+  //           });
+  //         }
+  //       });
+  //     } else {
+  //       if (selectedCategory != null) {
+  //         deletedItems.addAll(selectedItems);
+  //
+  //         itemsByCategory[selectedCategory!]!
+  //             .removeWhere((item) => selectedItems.contains(item));
+  //       }
+  //       selectedItems.clear(); // 선택된 아이템 목록 초기화
+  //       isDeleteMode = false; // 삭제 모드 해제
+  //     }
+  //   });
+  // }
 
   // 삭제 모드 여부를 토글하는 함수
-  void _toggleDeleteMode() {
-    setState(() {
-      isDeleteMode = !isDeleteMode;
-      if (!isDeleteMode) {
-        selectedItems.clear(); // 삭제 모드 해제 시 선택 목록 초기화
-      }
-    });
-  }
+  // void _toggleDeleteMode() {
+  //   setState(() {
+  //     isDeleteMode = !isDeleteMode;
+  //     if (!isDeleteMode) {
+  //       selectedItems.clear(); // 삭제 모드 해제 시 선택 목록 초기화
+  //     }
+  //   });
+  // }
 
 // 삭제 모드에서 선택된 아이템들을 삭제하기 전에 확인 다이얼로그를 띄우는 함수
-  Future<void> _confirmDeleteItems() async {
-    bool confirmDelete = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('삭제 확인'),
-          content: Text('선택된 아이템들을 삭제하시겠습니까?'),
-          actions: [
-            TextButton(
-              child: Text('취소'),
-              onPressed: () {
-                Navigator.of(context).pop(false); // 취소 시 false 반환
-              },
-            ),
-            TextButton(
-              child: Text('삭제'),
-              onPressed: () {
-                Navigator.of(context).pop(true); // 삭제 시 true 반환
-              },
-            ),
-          ],
-        );
-      },
-    );
-    // 사용자가 삭제를 확인했을 때만 삭제 작업을 진행
-    if (confirmDelete) {
-      _deleteSelectedItems(); // 실제 삭제 로직 실행
-    }
-  }
-
-// 아이템 목록에서 중복된 값이 있는지 확인 후 제거
-  void removeDuplicates() {
-    itemsByCategory.forEach((category, items) {
-      itemsByCategory[category] = items.toSet().toList();
-    });
-  }
+//   Future<void> _confirmDeleteItems() async {}
+//
+// // 아이템 목록에서 중복된 값이 있는지 확인 후 제거
+//   void removeDuplicates() {
+//     itemsByCategory.forEach((category, items) {
+//       itemsByCategory[category] = items.toSet().toList();
+//     });
+//   }
 
   @override
   Widget build(BuildContext context) {
@@ -373,13 +369,13 @@ class _AddItemState extends State<AddItem> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.pageTitle),
-        actions: [
-          if (isDeleteMode)
-            IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: _confirmDeleteItems, // 선택된 아이템 삭제 전에 확인 다이얼로그
-            ),
-        ],
+        // actions: [
+        //   if (isDeleteMode)
+        //     IconButton(
+        //       icon: Icon(Icons.delete),
+        //       onPressed: _confirmDeleteItems, // 선택된 아이템 삭제 전에 확인 다이얼로그
+        //     ),
+        // ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -437,25 +433,19 @@ class _AddItemState extends State<AddItem> {
           ],
         ),
       ),
-      bottomNavigationBar: selectedItems.isNotEmpty &&
-              widget.sourcePage != 'update_foods_category'
+      bottomNavigationBar: selectedItems.isNotEmpty
           ? Container(
               color: Colors.transparent,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SizedBox(
                 width: double.infinity,
                 child: NavbarButton(
-                  buttonTitle: isDeleteMode ? '삭제 하기' : widget.addButton,
+                  buttonTitle: widget.addButton,
                   onPressed: () {
-                    if (isDeleteMode) {
-                      _confirmDeleteItems(); // 삭제 모드일 때
-                    } else {
-                      // sourcePage에 따라 다른 함수 실행
-                      if (widget.sourcePage == 'shoppingList') {
-                        _addItemsToShoppingList(); // 장바구니에 아이템 추가
-                      } else if (widget.sourcePage == 'fridge') {
-                        _addItemsToFridge(); // 냉장고에 아이템 추가
-                      }
+                    if (widget.sourcePage == 'shoppingList') {
+                      _addItemsToShoppingList(); // 장바구니에 아이템 추가
+                    } else if (widget.sourcePage == 'fridge') {
+                      _addItemsToFridge(); // 냉장고에 아이템 추가
                     }
                   },
                 ),
@@ -544,50 +534,49 @@ class _AddItemState extends State<AddItem> {
 
   Widget _buildCategoryGrid() {
     return GridView.builder(
-      shrinkWrap: true,
-      // GridView의 크기를 콘텐츠에 맞게 줄임
-      physics: NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.all(8.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5, // 한 줄에 3칸
-        crossAxisSpacing: 8.0,
-        mainAxisSpacing: 8.0,
-        childAspectRatio: 1,
-      ),
-      itemCount: itemsByCategory.keys.length,
-      itemBuilder: (context, index) {
-        String category = itemsByCategory.keys.elementAt(index);
-        // 카테고리 그리드 렌더링
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              if (selectedCategory == category) {
-                selectedCategory = null;
-              } else {
-                selectedCategory = category;
-                // filteredItems = widget.itemsByCategory[category] ?? []; // null 확인
-              }
-            });
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: selectedCategory == category
-                  ? Colors.orange
-                  : Colors.blueAccent,
-              borderRadius: BorderRadius.circular(8.0),
-            ), // 카테고리 버튼 크기 설정
-            height: 60,
-            // margin: EdgeInsets.symmetric(vertical: 8.0),
-            child: Center(
-              child: Text(
-                category,
-                style: TextStyle(color: Colors.white, fontSize: 16),
+        shrinkWrap: true,
+        // GridView의 크기를 콘텐츠에 맞게 줄임
+        physics: NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.all(8.0),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 5, // 한 줄에 3칸
+          crossAxisSpacing: 8.0,
+          mainAxisSpacing: 8.0,
+          childAspectRatio: 1,
+        ),
+        itemCount: itemsByCategory.keys.length,
+        itemBuilder: (context, index) {
+          String category = itemsByCategory.keys.elementAt(index);
+          // 아이템 그리드 마지막에 +아이콘 그리드 렌더링
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (selectedCategory == category) {
+                  selectedCategory = null;
+                } else {
+                  selectedCategory = category;
+                  // filteredItems = widget.itemsByCategory[category] ?? []; // null 확인
+                }
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: selectedCategory == category
+                    ? Colors.orange
+                    : Colors.blueAccent,
+                borderRadius: BorderRadius.circular(8.0),
+              ), // 카테고리 버튼 크기 설정
+              height: 60,
+              // margin: EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(
+                child: Text(
+                  category,
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        });
   }
 
   Widget _buildPreferredCategoryGrid() {
@@ -650,8 +639,8 @@ class _AddItemState extends State<AddItem> {
               .expand(
                   (categoryModel) => categoryModel.category[selectedCategory]!)
               .map((itemName) => FoodsModel(
-                    id: 'unknown', // 임시 ID 값 설정
-                    foodsName: itemName, // 카테고리에서 아이템 이름 설정
+                    id: 'unknown',
+                    foodsName: itemName,
                     defaultCategory: selectedCategory!,
                     defaultFridgeCategory: '기타',
                     shoppingListCategory: '기타',
@@ -661,14 +650,12 @@ class _AddItemState extends State<AddItem> {
               .toList();
         }
       } else if (itemsByCategory.containsKey(selectedCategory!)) {
-        // 일반 카테고리 데이터 로드
         items = itemsByCategory[selectedCategory!] ?? [];
       }
     }
 
     return GridView.builder(
       shrinkWrap: true,
-      // GridView의 크기를 콘텐츠에 맞게 줄임
       physics: NeverScrollableScrollPhysics(),
       padding: EdgeInsets.all(8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -678,7 +665,6 @@ class _AddItemState extends State<AddItem> {
         childAspectRatio: 1,
       ),
       itemCount: items.length + 1,
-
       itemBuilder: (context, index) {
         if (index == items.length) {
           //아이템 그리드 마지막에 +아이콘 그리드 렌더링
@@ -701,7 +687,7 @@ class _AddItemState extends State<AddItem> {
           FoodsModel currentItem = items[index];
           String itemName = currentItem.foodsName;
           bool isSelected = selectedItems.contains(itemName);
-          bool isDeleted = false;
+          bool isDeleted = deletedItemNames.contains(itemName);
           // 기존 아이템 그리드 렌더링
           return GestureDetector(
             onTap: () {
@@ -756,12 +742,44 @@ class _AddItemState extends State<AddItem> {
                 print('Error fetching food details: $e');
               }
             },
-            onLongPress: () {
-              setState(() {
-                _toggleDeleteMode();
-                selectedItems.add(itemName);
-              });
-            },
+            onLongPress: widget.sourcePage == 'update_foods_category'
+                ? () async {
+                    if (isDeleted) {
+                      // 이미 삭제된 아이템이면 Firestore에서 삭제
+                      await FirebaseFirestore.instance
+                          .collection('deleted_foods')
+                          .where('itemName', isEqualTo: currentItem.foodsName)
+                          .get()
+                          .then((snapshot) {
+                        for (var doc in snapshot.docs) {
+                          doc.reference.delete(); // 문서 삭제
+                        }
+                      });
+
+                      setState(() {
+                        isDeleted = false; // 삭제 상태 해제
+                        deletedItemNames
+                            .remove(currentItem.foodsName); // 삭제 목록에서 제거
+                      });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('${currentItem.foodsName} 아이템이 복원되었습니다.')),
+                      );
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('deleted_foods')
+                          .doc(currentItem.id)
+                          .set({'isDeleted': true, 'itemName': itemName});
+
+                      setState(() {
+                        isDeleted = true;
+                        deletedItemNames.add(itemName);
+                      });
+                    }
+                  }
+                : null,
             child: Container(
               decoration: BoxDecoration(
                 color: isDeleted

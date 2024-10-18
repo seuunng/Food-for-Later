@@ -422,6 +422,7 @@ class _CreateRecordState extends State<CreateRecord> {
         // SizedBox(height: 8.0),
         ListView.builder(
           shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
           itemCount: recordsWithImages.length,
           itemBuilder: (context, index) {
             final List<String> imagePaths =

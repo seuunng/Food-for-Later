@@ -167,7 +167,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text('레시피'),
       ),
@@ -227,13 +226,16 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                 RecipeGrid(
                   categories: itemsByCategory.keys.toList(),
                   itemsByCategory: itemsByCategory,
+                  // physics: NeverScrollableScrollPhysics(),
                 ),
                 RecipeGridTheme(
                   categories: themaCategories.map((thema) => thema.categories).toList(),
+                  // physics: NeverScrollableScrollPhysics(),
                 ),
                 RecipeGrid(
                     categories: [],
                     itemsByCategory: methodCategories,
+                  // physics: NeverScrollableScrollPhysics(),
                 ),
               ],
             ),
@@ -241,9 +243,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.3),
-        ),
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

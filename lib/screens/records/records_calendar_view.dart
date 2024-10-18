@@ -227,8 +227,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: LimitedBox(
-                                          maxHeight: 100.0, // 최대 높이 설정
-                                          child: Scrollbar(// 스크롤바 추가
+                                          maxHeight: 100.0,
+                                          child: Scrollbar(
                                             child: ListView.builder(
                                                 shrinkWrap: true,
                                                 physics: ClampingScrollPhysics(),
@@ -256,11 +256,14 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                                               EdgeInsets.only(left: 4.0),
                                                           child: Row(
                                                             children: [
-                                                              Text(rec.contents ??
-                                                                    '내용이 없습니다',
-                                                                style: TextStyle(fontSize: 8),
-                                                                overflow:
-                                                                    TextOverflow.ellipsis,
+                                                              Expanded(
+                                                                child: Text(rec.contents ??
+                                                                      '내용이 없습니다',
+                                                                  style: TextStyle(fontSize: 8),
+                                                                  overflow:
+                                                                      TextOverflow.ellipsis,
+                                                                  maxLines: 1,
+                                                                ),
                                                               ),
                                                             ],
                                                           ),

@@ -26,8 +26,6 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
     return null;
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,17 +33,11 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
         stream: FirebaseFirestore.instance.collection('record').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
-            );
+            return Center(child: Text('데이터를 가져오는 중 오류가 발생했습니다.'));
           }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
+            return Center(child: CircularProgressIndicator());
           }
-
           final recordsList = snapshot.data!.docs.map((doc) {
             return RecordModel.fromJson(
               doc.data() as Map<String, dynamic>,
@@ -58,6 +50,7 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
       ),
     );
   }
+
   Widget _buildImageGrid(List<RecordModel> recordsList) {
     List<String> allImages = [];
     for (var record in recordsList) {

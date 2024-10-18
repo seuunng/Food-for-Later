@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(
             builder: (context) => AddItem(
               pageTitle: '기본 식품 카테고리에 추가',
-              addButton: '카테고리에 추가',
+              addButton: '',
               sourcePage: 'update_foods_category',
               onItemAdded: () {
                 setState(() {});
@@ -113,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(
             builder: (context) => AddItem(
               pageTitle: '선호식품 카테고리에 추가',
-              addButton: '카테고리에 추가',
+              addButton: '',
               sourcePage: 'preferred_foods_category',
               onItemAdded: () {
                 setState(() {});

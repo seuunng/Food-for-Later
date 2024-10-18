@@ -27,6 +27,7 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
 
     return GridView.builder(
       shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       padding: EdgeInsets.all(8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1, // 한 줄에 3칸
