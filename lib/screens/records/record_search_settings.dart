@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
+import 'package:food_for_later/models/record_category_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:intl/intl.dart';
 
@@ -9,21 +11,45 @@ class RecordSearchSettings extends StatefulWidget {
 }
 
 class _RecordSearchSettingsState extends State<RecordSearchSettings> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
   String? selectedCategory;
   String? selectedPeriod;
   DateTime? startDate;
   DateTime? endDate;
 
-  Map<String, bool> categoryOptions = {
-    '모두': true,
-    '식단': true,
-    '운동': true,
-    '자기개발': true,
-    '기타': true,
-  };
+  Map<String, bool> categoryOptions = {};
 
-  List<String> periods = ['1달', '3달', '1년'];
+  List<String> periods = ['사용자 지정', '1주', '1달', '3달', '1년'];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadCategoryFromFirestore();
+  }
+  
+  void _loadCategoryFromFirestore() async {
+    try {
+      final snapshot = await _db.collection('record_categories').get();
+      final categories = snapshot.docs.map((doc) {
+        return RecordCategoryModel.fromFirestore(doc);
+      }).toList();
 
+      // itemsByCategory에 데이터를 추가
+      setState(() {
+        categoryOptions = {
+          '모두': false,
+          for (var category in categories)
+            category.zone: category.units.isNotEmpty,
+        };
+      });
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
   // 카테고리 모두 선택 또는 해제 함수
   void _toggleSelectAll(bool isSelected) {
     setState(() {
@@ -67,6 +93,30 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           endDate = picked;
         }
       });
+    }
+  }
+
+  void _searchRecordsByPeriod() async {
+    if (startDate != null && endDate != null) {
+      try {
+        final recordsSnapshot = await _db
+            .collection('record') // 레코드 컬렉션
+            .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
+            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!))
+            .get();
+
+        final records = recordsSnapshot.docs.map((doc) => doc.data()).toList();
+
+      } catch (e) {
+        print('레코드 검색에 실패했습니다: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('레코드 검색에 실패했습니다.')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('시작 날짜와 끝 날짜를 선택하세요.')),
+      );
     }
   }
 
@@ -135,6 +185,15 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                         // 선택된 기간에 따라 시작 날짜와 끝 날짜 설정
                         DateTime now = DateTime.now();
                         switch (value) {
+                          case '사용자 지정':
+                            startDate = now;
+                            endDate = now;
+                            break;
+                          case '1주':
+                            startDate =
+                                now.subtract(Duration(days: 7));
+                            endDate = now;
+                            break;
                           case '1달':
                             startDate =
                                 DateTime(now.year, now.month - 1, now.day);
@@ -223,9 +282,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           child: NavbarButton(
             buttonTitle: '저장',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('추가하기 버튼 클릭됨')),
-              );
+              _searchRecordsByPeriod();
             },
           ),
         ),
