@@ -4,6 +4,7 @@ import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/record_category_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RecordSearchSettings extends StatefulWidget {
   @override
@@ -12,8 +13,8 @@ class RecordSearchSettings extends StatefulWidget {
 
 class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  String? selectedCategory;
-  String? selectedPeriod;
+  List<String> selectedCategories = ['모두'];
+  String? selectedPeriod = '1년';
   DateTime? startDate;
   DateTime? endDate;
 
@@ -25,6 +26,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   void initState() {
     super.initState();
     _loadCategoryFromFirestore();
+    _loadSearchSettingsFromLocal();
   }
   
   void _loadCategoryFromFirestore() async {
@@ -34,10 +36,9 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
         return RecordCategoryModel.fromFirestore(doc);
       }).toList();
 
-      // itemsByCategory에 데이터를 추가
       setState(() {
         categoryOptions = {
-          '모두': false,
+          '모두': true,
           for (var category in categories)
             category.zone: category.units.isNotEmpty,
         };
@@ -50,6 +51,23 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
       );
     }
   }
+
+  Future<void> _loadSearchSettingsFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCategories = prefs.getStringList('selectedCategories') ??  ['모두'];
+      final startDateString = prefs.getString('startDate');
+      startDate = startDateString != null && startDateString.isNotEmpty
+          ? DateTime.parse(startDateString)
+          : DateTime(DateTime.now().year - 1, DateTime.now().month, DateTime.now().day);
+      final endDateString = prefs.getString('endDate');
+      endDate = endDateString != null && endDateString.isNotEmpty
+          ? DateTime.parse(endDateString)
+          : DateTime.now();
+      selectedPeriod = prefs.getString('selectedPeriod') ?? '1년';
+    });
+  }
+
   // 카테고리 모두 선택 또는 해제 함수
   void _toggleSelectAll(bool isSelected) {
     setState(() {
@@ -59,21 +77,34 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
   // 체크박스 상태 변경 시 처리 함수
   void _onCategoryChanged(String category, bool? isSelected) {
-    if (category == '모두') {
-      _toggleSelectAll(isSelected ?? false);
-    } else {
-      setState(() {
-        categoryOptions[category] = isSelected ?? false;
 
-        // '모두' 옵션을 체크하려면 모든 개별 항목이 선택된 상태여야 함
-        if (categoryOptions.values.every((selected) => selected)) {
-          categoryOptions['모두'] = true;
+    setState(() {
+      if (category == '모두') {
+        _toggleSelectAll(isSelected ?? false); // '모두' 카테고리 선택 시 모든 카테고리 선택/해제
+        if (isSelected == true) {
+          selectedCategories = ['모두'];  // '모두'가 선택되면 나머지 카테고리는 비활성화
         } else {
-          categoryOptions['모두'] = false;
+          selectedCategories.clear();  // '모두' 해제 시 선택된 카테고리 모두 초기화
         }
-      });
-    }
+      } else {
+        categoryOptions[category] = isSelected ?? false;  // 다른 카테고리 선택 시 해당 카테고리의 상태를 업데이트
+
+        if (isSelected == false) { // '모두'가 선택된 상태에서 다른 카테고리가 선택해제되면 '모두'를 해제
+          categoryOptions['모두'] = false;
+          selectedCategories.remove('모두');
+        }
+
+        if (isSelected == true) {
+          selectedCategories.add(category);  // 선택된 카테고리를 추가
+          print(selectedCategories);
+        } else {
+          selectedCategories.remove(category);  // 선택 해제 시 리스트에서 제거
+        }
+
+      }
+    });
   }
+
 
   // 날짜 선택 다이얼로그
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -96,28 +127,41 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
     }
   }
 
-  void _searchRecordsByPeriod() async {
-    if (startDate != null && endDate != null) {
-      try {
-        final recordsSnapshot = await _db
-            .collection('record') // 레코드 컬렉션
-            .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
-            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!))
-            .get();
+  // void _searchRecordsByPeriod() async {
+  //   if (startDate != null && endDate != null) {
+  //     try {
+  //       final recordsSnapshot = await _db
+  //           .collection('record') // 레코드 컬렉션
+  //           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
+  //           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!))
+  //           .get();
+  //
+  //       final records = recordsSnapshot.docs.map((doc) => doc.data()).toList();
+  //
+  //     } catch (e) {
+  //       print('레코드 검색에 실패했습니다: $e');
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('레코드 검색에 실패했습니다.')),
+  //       );
+  //     }
+  //   } else {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('시작 날짜와 끝 날짜를 선택하세요.')),
+  //     );
+  //   }
+  // }
 
-        final records = recordsSnapshot.docs.map((doc) => doc.data()).toList();
+  Future<void> _saveSearchSettingsToLocal() async {
 
-      } catch (e) {
-        print('레코드 검색에 실패했습니다: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('레코드 검색에 실패했습니다.')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('시작 날짜와 끝 날짜를 선택하세요.')),
-      );
-    }
+    // selectedCategories가 제대로 저장되는지 확인
+    print('Selected categories to save: $selectedCategories');
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('selectedCategories', selectedCategories ?? ['']);
+    await prefs.setString('startDate', startDate != null ? startDate!.toIso8601String() : '');
+    await prefs.setString('endDate', endDate != null ? endDate!.toIso8601String() : '');
+    await prefs.setString('selectedPeriod', selectedPeriod ?? '');
+
   }
 
   @override
@@ -281,8 +325,9 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           width: double.infinity,
           child: NavbarButton(
             buttonTitle: '저장',
-            onPressed: () {
-              _searchRecordsByPeriod();
+            onPressed: () async {
+              await _saveSearchSettingsToLocal(); // 설정을 로컬에 저장
+              Navigator.pop(context);
             },
           ),
         ),

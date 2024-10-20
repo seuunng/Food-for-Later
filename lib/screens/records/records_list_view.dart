@@ -6,6 +6,7 @@ import 'package:food_for_later/models/record_model.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RecordsListView extends StatefulWidget {
   @override
@@ -13,6 +14,33 @@ class RecordsListView extends StatefulWidget {
 }
 
 class _RecordsListViewState extends State<RecordsListView> {
+  DateTime? startDate;
+  DateTime? endDate;
+  String? selectedCategory = '모두';
+  bool isLoading = true; // 데이터를 불러오는 중 상태 표시
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSearchSettingsFromLocal(); // SharedPreferences에서 검색 조건 불러오기
+  }
+
+  Future<void> _loadSearchSettingsFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      final startDateString = prefs.getString('startDate');
+      startDate = startDateString != null && startDateString.isNotEmpty
+          ? DateTime.parse(startDateString)
+          : null;
+      final endDateString = prefs.getString('endDate');
+      endDate = endDateString != null && endDateString.isNotEmpty
+          ? DateTime.parse(endDateString)
+          : null;
+      selectedCategory = prefs.getString('selectedCategory') ?? '모두';
+      isLoading = false; // 로딩 완료
+    });
+  }
+
   Color _convertColor(String colorString) {
     try {
       if (colorString.startsWith('#') && colorString.length == 9) {
@@ -113,10 +141,27 @@ class _RecordsListViewState extends State<RecordsListView> {
   }
 
   Widget _buildRecordsSection() {
+    // Firestore 쿼리 필터링
+    Query query = FirebaseFirestore.instance.collection('record');
+print('startDate ${startDate}');
+    print('endDate ${endDate}');
+    print('selectedCategory ${selectedCategory}');
+    // 검색 기간에 맞게 필터링
+    if (startDate != null && endDate != null) {
+      query = query
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!));
+    }
+
+    // 카테고리 필터링 (모두가 아닌 경우에만 필터링 적용)
+    if (selectedCategory != null && selectedCategory != '모두') {
+      query = query.where('zone', isEqualTo: selectedCategory);
+    }
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('record').snapshots(),
+        stream: query.snapshots(),
         builder: (BuildContext context,
             AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
           if (snapshot.hasError) {
@@ -308,18 +353,16 @@ class _RecordsListViewState extends State<RecordsListView> {
                                   runSpacing: 4.0,
                                   children: rec.images != null
                                       ? rec.images.map((imageUrl) {
-                                          if (imageUrl
-                                                  .startsWith('https://') ||
-                                              imageUrl
-                                                  .startsWith('http://')) {
+                                          if (imageUrl.startsWith('https://') ||
+                                              imageUrl.startsWith('http://')) {
                                             // Firebase Storage URL이면 NetworkImage 사용
                                             return Image.network(
                                               imageUrl,
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error,
-                                                  stackTrace) {
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
                                                 return Text(
                                                     'Error loading image');
                                               },
@@ -331,8 +374,8 @@ class _RecordsListViewState extends State<RecordsListView> {
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error,
-                                                  stackTrace) {
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
                                                 return Text(
                                                     'Error loading image');
                                               },
