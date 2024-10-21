@@ -38,9 +38,9 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
       setState(() {
         categoryOptions = {
-          '모두': true,
+          '모두': selectedCategories.contains('모두'),
           for (var category in categories)
-            category.zone: category.units.isNotEmpty,
+            category.zone: selectedCategories.contains(category.zone),
         };
       });
 
@@ -56,6 +56,9 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       selectedCategories = prefs.getStringList('selectedCategories') ??  ['모두'];
+
+      print('Loaded selected categories: $selectedCategories');
+
       final startDateString = prefs.getString('startDate');
       startDate = startDateString != null && startDateString.isNotEmpty
           ? DateTime.parse(startDateString)
@@ -65,6 +68,20 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           ? DateTime.parse(endDateString)
           : DateTime.now();
       selectedPeriod = prefs.getString('selectedPeriod') ?? '1년';
+
+      categoryOptions.updateAll((key, value) {
+        return selectedCategories.contains(key);  // 선택된 카테고리를 반영
+      });
+
+      // '모두'가 아닌 카테고리가 저장된 경우 '모두' 선택 해제
+      if (!selectedCategories.contains('모두')) {
+        categoryOptions['모두'] = false;
+      } else {
+        categoryOptions.updateAll((key, value) => false);
+        categoryOptions['모두'] = true;
+      }
+
+      print('Updated categoryOptions: $categoryOptions');
     });
   }
 
@@ -72,6 +89,12 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   void _toggleSelectAll(bool isSelected) {
     setState(() {
       categoryOptions.updateAll((key, value) => isSelected);
+
+      if (isSelected) {
+        selectedCategories = ['모두'];  // 모두 선택 시 다른 카테고리는 선택되지 않음
+      } else {
+        selectedCategories.clear();  // 모두 해제 시 모든 선택 해제
+      }
     });
   }
 
@@ -81,26 +104,20 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
     setState(() {
       if (category == '모두') {
         _toggleSelectAll(isSelected ?? false); // '모두' 카테고리 선택 시 모든 카테고리 선택/해제
-        if (isSelected == true) {
-          selectedCategories = ['모두'];  // '모두'가 선택되면 나머지 카테고리는 비활성화
-        } else {
-          selectedCategories.clear();  // '모두' 해제 시 선택된 카테고리 모두 초기화
-        }
       } else {
         categoryOptions[category] = isSelected ?? false;  // 다른 카테고리 선택 시 해당 카테고리의 상태를 업데이트
 
-        if (isSelected == false) { // '모두'가 선택된 상태에서 다른 카테고리가 선택해제되면 '모두'를 해제
+        if (isSelected == true) {// '모두'가 선택된 상태에서 다른 카테고리가 선택해제되면 '모두'를 해제
           categoryOptions['모두'] = false;
           selectedCategories.remove('모두');
-        }
-
-        if (isSelected == true) {
           selectedCategories.add(category);  // 선택된 카테고리를 추가
-          print(selectedCategories);
         } else {
           selectedCategories.remove(category);  // 선택 해제 시 리스트에서 제거
         }
-
+        if (selectedCategories.isEmpty) {
+          selectedCategories.add('모두');
+          categoryOptions['모두'] = true;
+        }
       }
     });
   }
@@ -127,34 +144,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
     }
   }
 
-  // void _searchRecordsByPeriod() async {
-  //   if (startDate != null && endDate != null) {
-  //     try {
-  //       final recordsSnapshot = await _db
-  //           .collection('record') // 레코드 컬렉션
-  //           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
-  //           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!))
-  //           .get();
-  //
-  //       final records = recordsSnapshot.docs.map((doc) => doc.data()).toList();
-  //
-  //     } catch (e) {
-  //       print('레코드 검색에 실패했습니다: $e');
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('레코드 검색에 실패했습니다.')),
-  //       );
-  //     }
-  //   } else {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('시작 날짜와 끝 날짜를 선택하세요.')),
-  //     );
-  //   }
-  // }
-
   Future<void> _saveSearchSettingsToLocal() async {
-
-    // selectedCategories가 제대로 저장되는지 확인
-    print('Selected categories to save: $selectedCategories');
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('selectedCategories', selectedCategories ?? ['']);
@@ -166,6 +156,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
   @override
   Widget build(BuildContext context) {
+    print('categoryOptions ${categoryOptions}');
+    print('categoryOptions.entries ${categoryOptions.entries}');
     return Scaffold(
       appBar: AppBar(
         title: Text('기록 검색 상세설정'),
