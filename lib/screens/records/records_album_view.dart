@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/record_model.dart';
 
@@ -10,8 +11,34 @@ class RecordsAlbumView extends StatefulWidget {
   @override
   _RecordsAlbumViewState createState() => _RecordsAlbumViewState();
 }
-
 class _RecordsAlbumViewState extends State<RecordsAlbumView> {
+  DateTime? startDate;
+  DateTime? endDate;
+  List<String>? selectedCategories;
+  bool isLoading = true; // 데이터를 불러오는 중 상태 표시
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSearchSettingsFromLocal(); // SharedPreferences에서 검색 조건 불러오기
+  }
+
+  Future<void> _loadSearchSettingsFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      final startDateString = prefs.getString('startDate');
+      startDate = startDateString != null && startDateString.isNotEmpty
+          ? DateTime.parse(startDateString)
+          : null;
+      final endDateString = prefs.getString('endDate');
+      endDate = endDateString != null && endDateString.isNotEmpty
+          ? DateTime.parse(endDateString)
+          : null;
+       selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
+      isLoading = false; // 로딩 완료
+    });
+  }
+
   Map<String, dynamic>? _findRecordByImage(List<RecordModel> recordsList, String imagePath) {
     for (var record in recordsList) {
       for (var rec in record.records) {
@@ -28,9 +55,24 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
 
   @override
   Widget build(BuildContext context) {
+    // Firestore 쿼리 필터링
+    Query query = FirebaseFirestore.instance.collection('record');
+
+    // 검색 기간에 맞게 필터링
+    if (startDate != null && endDate != null) {
+      query = query
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!));
+    }
+
+    // 카테고리 필터링 (모두가 아닌 경우에만 필터링 적용)
+    if (selectedCategories != null && selectedCategories!.isNotEmpty && !selectedCategories!.contains('모두')) {
+      query = query.where('zone', whereIn: selectedCategories);
+    }
+
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('record').snapshots(),
+        stream: query.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('데이터를 가져오는 중 오류가 발생했습니다.'));

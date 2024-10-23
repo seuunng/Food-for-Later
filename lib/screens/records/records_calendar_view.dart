@@ -6,6 +6,7 @@ import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:intl/intl.dart';
 
 import 'package:food_for_later/models/record_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RecordsCalendarView extends StatefulWidget {
   @override
@@ -17,6 +18,32 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
   DateTime _focusedDate = DateTime.now();
 
   List<RecordModel> recordsList = [];
+  DateTime? startDate;
+  DateTime? endDate;
+  List<String>? selectedCategories;
+  bool isLoading = true; // 데이터를 불러오는 중 상태 표시
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSearchSettingsFromLocal(); // SharedPreferences에서 검색 조건 불러오기
+  }
+
+  Future<void> _loadSearchSettingsFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      final startDateString = prefs.getString('startDate');
+      startDate = startDateString != null && startDateString.isNotEmpty
+          ? DateTime.parse(startDateString)
+          : null;
+      final endDateString = prefs.getString('endDate');
+      endDate = endDateString != null && endDateString.isNotEmpty
+          ? DateTime.parse(endDateString)
+          : null;
+      selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
+      isLoading = false; // 로딩 완료
+    });
+  }
 
   List<RecordModel>? getRecordsForDate(DateTime date) {
     String formattedDate = DateFormat('yyyy-MM-dd').format(date);
@@ -59,9 +86,22 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
 
   @override
   Widget build(BuildContext context) {
+    Query query = FirebaseFirestore.instance.collection('record');
+
+    // 검색 기간에 맞게 필터링
+    if (startDate != null && endDate != null) {
+      query = query
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate!))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate!));
+    }
+
+    // 카테고리 필터링 (모두가 아닌 경우에만 필터링 적용)
+    if (selectedCategories != null && selectedCategories!.isNotEmpty && !selectedCategories!.contains('모두')) {
+      query = query.where('zone', whereIn: selectedCategories);
+    }
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('record').snapshots(),
+        stream: query.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(

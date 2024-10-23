@@ -16,7 +16,7 @@ class RecordsListView extends StatefulWidget {
 class _RecordsListViewState extends State<RecordsListView> {
   DateTime? startDate;
   DateTime? endDate;
-  String? selectedCategory = '모두';
+  List<String>? selectedCategories;
   bool isLoading = true; // 데이터를 불러오는 중 상태 표시
 
   @override
@@ -36,7 +36,7 @@ class _RecordsListViewState extends State<RecordsListView> {
       endDate = endDateString != null && endDateString.isNotEmpty
           ? DateTime.parse(endDateString)
           : null;
-      selectedCategory = prefs.getString('selectedCategory') ?? '모두';
+      selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
       isLoading = false; // 로딩 완료
     });
   }
@@ -143,9 +143,7 @@ class _RecordsListViewState extends State<RecordsListView> {
   Widget _buildRecordsSection() {
     // Firestore 쿼리 필터링
     Query query = FirebaseFirestore.instance.collection('record');
-print('startDate ${startDate}');
-    print('endDate ${endDate}');
-    print('selectedCategory ${selectedCategory}');
+
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {
       query = query
@@ -154,8 +152,8 @@ print('startDate ${startDate}');
     }
 
     // 카테고리 필터링 (모두가 아닌 경우에만 필터링 적용)
-    if (selectedCategory != null && selectedCategory != '모두') {
-      query = query.where('zone', isEqualTo: selectedCategory);
+    if (selectedCategories != null && selectedCategories!.isNotEmpty && !selectedCategories!.contains('모두')) {
+      query = query.where('zone', whereIn: selectedCategories);
     }
 
     return Padding(
@@ -170,8 +168,17 @@ print('startDate ${startDate}');
             );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Container();
+            return Center(
+              child: CircularProgressIndicator(), // 로딩 상태
+            );
           }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            // 데이터가 없는 경우
+            return Center(
+              child: Text('조건에 맞는 레코드가 없습니다.'),
+            );
+          }
+
           final recordsList = snapshot.data!.docs
               .map(
                 (QueryDocumentSnapshot e) => RecordModel.fromJson(

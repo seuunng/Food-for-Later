@@ -21,14 +21,14 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   Map<String, bool> categoryOptions = {};
 
   List<String> periods = ['사용자 지정', '1주', '1달', '3달', '1년'];
-  
+
   @override
   void initState() {
     super.initState();
     _loadCategoryFromFirestore();
     _loadSearchSettingsFromLocal();
   }
-  
+
   void _loadCategoryFromFirestore() async {
     try {
       final snapshot = await _db.collection('record_categories').get();
@@ -43,7 +43,6 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
             category.zone: selectedCategories.contains(category.zone),
         };
       });
-
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,14 +54,13 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   Future<void> _loadSearchSettingsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      selectedCategories = prefs.getStringList('selectedCategories') ??  ['모두'];
-
-      print('Loaded selected categories: $selectedCategories');
+      selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
 
       final startDateString = prefs.getString('startDate');
       startDate = startDateString != null && startDateString.isNotEmpty
           ? DateTime.parse(startDateString)
-          : DateTime(DateTime.now().year - 1, DateTime.now().month, DateTime.now().day);
+          : DateTime(DateTime.now().year - 1, DateTime.now().month,
+              DateTime.now().day);
       final endDateString = prefs.getString('endDate');
       endDate = endDateString != null && endDateString.isNotEmpty
           ? DateTime.parse(endDateString)
@@ -70,7 +68,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
       selectedPeriod = prefs.getString('selectedPeriod') ?? '1년';
 
       categoryOptions.updateAll((key, value) {
-        return selectedCategories.contains(key);  // 선택된 카테고리를 반영
+        return selectedCategories.contains(key); // 선택된 카테고리를 반영
       });
 
       // '모두'가 아닌 카테고리가 저장된 경우 '모두' 선택 해제
@@ -91,37 +89,58 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
       categoryOptions.updateAll((key, value) => isSelected);
 
       if (isSelected) {
-        selectedCategories = ['모두'];  // 모두 선택 시 다른 카테고리는 선택되지 않음
+        selectedCategories = ['모두']; // 모두 선택 시 다른 카테고리는 선택되지 않음
       } else {
-        selectedCategories.clear();  // 모두 해제 시 모든 선택 해제
+        selectedCategories.clear(); // 모두 해제 시 모든 선택 해제
       }
     });
   }
 
   // 체크박스 상태 변경 시 처리 함수
   void _onCategoryChanged(String category, bool? isSelected) {
-
     setState(() {
       if (category == '모두') {
         _toggleSelectAll(isSelected ?? false); // '모두' 카테고리 선택 시 모든 카테고리 선택/해제
       } else {
-        categoryOptions[category] = isSelected ?? false;  // 다른 카테고리 선택 시 해당 카테고리의 상태를 업데이트
+        categoryOptions[category] =
+            isSelected ?? false; // 다른 카테고리 선택 시 해당 카테고리의 상태를 업데이트
 
-        if (isSelected == true) {// '모두'가 선택된 상태에서 다른 카테고리가 선택해제되면 '모두'를 해제
+        if (isSelected == false ) {
+          // '모두'가 선택된 상태에서 다른 카테고리가 선택해제되면 '모두'를 해제
+          if (selectedCategories.length <= 1) {
+            // 선택된 카테고리가 1개 이하일 때 선택 해제를 막음
+            print('카테고리는 하나 이상 선택해야 합니다.');
+            categoryOptions[category] = true;  // 선택 해제를 방지
+            return;
+          }
           categoryOptions['모두'] = false;
-          selectedCategories.remove('모두');
-          selectedCategories.add(category);  // 선택된 카테고리를 추가
+          selectedCategories.remove(category); // 선택된 카테고리를 추가
+          print('1selectedCategories ${category} ${selectedCategories}');
         } else {
-          selectedCategories.remove(category);  // 선택 해제 시 리스트에서 제거
+          if (category != '모두') {
+            selectedCategories.add(category); // 선택 해제 시 리스트에서 제거
+          }
+          print('2selectedCategories ${category}  ${selectedCategories}');
         }
-        if (selectedCategories.isEmpty) {
-          selectedCategories.add('모두');
+
+        if (selectedCategories.length == categoryOptions.length - 1) {
+          // '모두'를 제외한 카테고리 갯수 비교
           categoryOptions['모두'] = true;
+        } else {
+          categoryOptions['모두'] = false;
         }
+
+        if (selectedCategories.isEmpty) {
+          categoryOptions['모두'] = false;
+        }
+
+        // if (selectedCategories == null || selectedCategories!.isEmpty) {
+        //   selectedCategories = ['모두'];
+        // }
       }
     });
+    print('3selectedCategories ${selectedCategories}');
   }
-
 
   // 날짜 선택 다이얼로그
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -145,13 +164,13 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   }
 
   Future<void> _saveSearchSettingsToLocal() async {
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('selectedCategories', selectedCategories ?? ['']);
-    await prefs.setString('startDate', startDate != null ? startDate!.toIso8601String() : '');
-    await prefs.setString('endDate', endDate != null ? endDate!.toIso8601String() : '');
+    await prefs.setString(
+        'startDate', startDate != null ? startDate!.toIso8601String() : '');
+    await prefs.setString(
+        'endDate', endDate != null ? endDate!.toIso8601String() : '');
     await prefs.setString('selectedPeriod', selectedPeriod ?? '');
-
   }
 
   @override
@@ -226,8 +245,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                             endDate = now;
                             break;
                           case '1주':
-                            startDate =
-                                now.subtract(Duration(days: 7));
+                            startDate = now.subtract(Duration(days: 7));
                             endDate = now;
                             break;
                           case '1달':
