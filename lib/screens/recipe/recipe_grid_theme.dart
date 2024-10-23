@@ -45,16 +45,16 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                builder: (context) =>
-              ViewResearchList(
-                  category: [category],
-
-              ))
-            );
+                    builder: (context) => ViewResearchList(
+                          category: [category],
+                          useFridgeIngredients: false,
+                        )));
           },
           child: Container(
             decoration: BoxDecoration(
-              color: selectedCategory == category ? Colors.orange : Colors.blueAccent,
+              color: selectedCategory == category
+                  ? Colors.orange
+                  : Colors.blueAccent,
               borderRadius: BorderRadius.circular(8.0),
             ), // 카테고리 버튼 크기 설정
             // height: 60,
@@ -80,7 +80,6 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
             padding: const EdgeInsets.all(3.0),
             child: _buildCategoryGrid(),
           ),
-
         ],
       ),
     );

@@ -82,7 +82,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
       recipeName = data['recipeName'] ?? 'Unnamed Recipe';
       mainImages = List<String>.from(data['mainImages'] ?? []); // mainImages 업데이트
     });
-    print(mainImages);
   }
 
   Future<void> loadScrapedData(String recipeId) async {
@@ -645,21 +644,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
               setState(() {
                 _currentPage = index; // 현재 페이지를 저장
               });
-
-              print("Current Page: $_currentPage"); // 페이지 변경 시 출력
-
-              // 순환 기능을 추가하기 위한 체크
-              // if (index == mainImages.length - 1) {
-              //   // 마지막 페이지에 도달하면 첫 번째로 돌아감
-              //   Future.delayed(Duration(milliseconds: 200), () {
-              //     _pageController.jumpToPage(0);
-              //   });
-              // } else if (index == 0) {
-              //   // 첫 페이지에서 뒤로 넘기면 마지막으로 돌아감
-              //   Future.delayed(Duration(milliseconds: 200), () {
-              //     _pageController.jumpToPage(mainImages.length - 1);
-              //   });
-              // }
             },
             itemBuilder: (context, index) {
               return Image.network(

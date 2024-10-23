@@ -167,37 +167,12 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         MaterialPageRoute(
           builder: (context) => ViewResearchList(
             category: [searchKeyword], // 필터링된 결과를 category로 넘김
+            useFridgeIngredients: true,
           ),
         ),
       );
     });
   }
-
-  // void _loadRecipesBasedOnFridgeItems() async {
-  //   try {
-  //     if (fridgeIngredients.isEmpty) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('냉장고에 재료가 없습니다.')),
-  //       );
-  //       return;
-  //     }
-  //     List<String> topIngredients = _getTopIngredientsByCategoryPriority(
-  //         itemsByCategory, fridgeIngredients);
-  //
-  //     Navigator.push(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (context) =>
-  //             ViewResearchList(category: topIngredients), // 상위 재료 리스트로 이동
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     print('레시피 데이터를 불러오는 데 실패했습니다: $e');
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('레시피 데이터를 불러오는 데 실패했습니다.')),
-  //     );
-  //   }
-  // }
 
   Future<void> _searchByTopIngredients(List<String> topIngredients) async {
     try {
@@ -271,6 +246,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                         MaterialPageRoute(
                           builder: (context) => ViewResearchList(
                             category: [searchKeyword], // 필터링된 결과 전달
+                            useFridgeIngredients: false,
                           ),
                         ),
                       );
@@ -342,6 +318,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                     MaterialPageRoute(
                       builder: (context) => ViewResearchList(
                         category: topIngredients, // 추출된 재료를 전달
+                        useFridgeIngredients: true,
                       ),
                     ),
                   );

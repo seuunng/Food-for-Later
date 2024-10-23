@@ -104,7 +104,7 @@ class _RecipeGridState extends State<RecipeGrid> {
                   builder: (context) =>
                   ViewResearchList(
                     category: [currentItem],
-
+                    useFridgeIngredients: false,
                   )));
             },
             child: Container(

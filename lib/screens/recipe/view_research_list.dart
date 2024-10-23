@@ -9,9 +9,11 @@ import '../../models/preferred_food_model.dart';
 
 class ViewResearchList extends StatefulWidget {
   final List<String> category;
+  final bool useFridgeIngredients;
 
   ViewResearchList({
     required this.category,
+    required this.useFridgeIngredients,
   });
 
   @override
@@ -78,6 +80,20 @@ class _ViewResearchListState extends State<ViewResearchList> {
         });
       }
     });
+    if (widget.category.isNotEmpty) {
+      setState(() {
+        for (var category in widget.category) {
+          if (!keywords.contains(category)) {
+            keywords.add(category);
+          }
+        }
+      });
+    }
+
+    if (widget.useFridgeIngredients) {
+      _loadFridgeItemsFromFirestore(); // 냉장고 재료 불러오기
+    }
+    debugPrint('Received category: ${widget.category}');
   }
 
   Future<void> loadRecipes() async {
@@ -93,9 +109,20 @@ class _ViewResearchListState extends State<ViewResearchList> {
       }
 
       QuerySnapshot querySnapshot = await query.get();
-
-      // 선호 식품을 포함한 레시피만 필터링
       List<DocumentSnapshot> filteredDocs = querySnapshot.docs;
+      // if (keywords.isNotEmpty) {
+      //   for (String keyword in keywords) {
+      //     query = query.where('foods', arrayContainsAny: keywords);
+      //     // query = query.where('foods', arrayContains: keyword);
+      //   }
+      // }
+      if (keywords.isNotEmpty) {
+        filteredDocs = filteredDocs.where((doc) {
+          List<String> foods = List<String>.from(doc['foods']);
+          return keywords.any((keyword) =>
+              foods.map((food) => food.trim().toLowerCase()).contains(keyword.trim().toLowerCase()));
+        }).toList();
+      }
 
       if (selectedPreferredFoods != null &&
           selectedPreferredFoods!.isNotEmpty) {
@@ -281,7 +308,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
       if (searchKeyword.isNotEmpty && !keywords.contains(searchKeyword)) {
         keywords.add(searchKeyword); // 중복 방지를 위해 검색어를 추가
       }
-
       _searchController.clear();
     });
 
@@ -290,16 +316,14 @@ class _ViewResearchListState extends State<ViewResearchList> {
       List<RecipeModel> filteredRecipes =
           await fetchRecipesByKeywords(searchKeyword);
       setState(() {
-        matchingRecipes = filteredRecipes; // 필터링된 레시피를 적용
+        matchingRecipes = filteredRecipes;
       });
     } else {
-      // 검색어가 없을 때 전체 레시피 목록 불러오기
       loadRecipes();
     }
   }
 
   Future<void> _searchByCategoryKeywords() async {
-    // category에 대한 검색 수행
     if (keywords.isNotEmpty) {
       List<RecipeModel> filteredRecipes =
           await fetchRecipesByKeywords(keywords.join(' '));
@@ -342,7 +366,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isFridgeRecommendation = widget.category.isNotEmpty;
+    debugPrint('Keywords: $keywords');
     return Scaffold(
       appBar: AppBar(
         title: Text('레시피 검색'),
@@ -374,7 +398,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
                     SizedBox(width: 10),
                   ]),
             ),
-            if (isFridgeRecommendation) _buildFridgeIngredientsChip(),
+            if (widget.useFridgeIngredients)
+              _buildFridgeIngredientsChip(),
             Padding(
               padding: const EdgeInsets.all(1.0),
               child: _buildKeywords(), // 키워드 목록 위젯
@@ -390,42 +415,46 @@ class _ViewResearchListState extends State<ViewResearchList> {
   }
 
   Widget _buildKeywords() {
-    return Wrap(
-      spacing: 6.0,
-      runSpacing: 1.0,
-      children: keywords
-          .where((keyword) => !fridgeIngredients.contains(keyword))
-          .map((keyword) {
-        return Material(
-          child: Chip(
-            label: Text(
-              keyword,
-              style: TextStyle(
-                fontSize: 12.0,
+    if (keywords.isNotEmpty) {
+      return Wrap(
+        spacing: 6.0,
+        runSpacing: 1.0,
+        children: keywords
+            .where((keyword) => !fridgeIngredients.contains(keyword))
+            .map((keyword) {
+          return Material(
+            child: Chip(
+              label: Text(
+                keyword,
+                style: TextStyle(
+                  fontSize: 12.0,
+                ),
+              ),
+              deleteIcon: Icon(Icons.close, size: 16.0),
+              onDeleted: () {
+                setState(() {
+                  keywords.remove(keyword); // 키워드 삭제
+                  loadRecipes();
+                });
+              },
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+                side: BorderSide(
+                  color: Colors.grey, // 테두리 색상
+                  width: 0.5, // 테두리 두께 조정
+                ),
               ),
             ),
-            deleteIcon: Icon(Icons.close, size: 16.0),
-            onDeleted: () {
-              setState(() {
-                keywords.remove(keyword); // 키워드 삭제
-                loadRecipes();
-              });
-            },
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              side: BorderSide(
-                color: Colors.grey, // 테두리 색상
-                width: 0.5, // 테두리 두께 조정
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
+          );
+        }).toList(),
+      );
+    } else {
+      return Text("키워드가 없습니다."); // 키워드가 없을 때 메시지 표시
+    }
   }
 
   Widget _buildFridgeIngredientsChip() {
-    if (fridgeIngredients.isNotEmpty) {
+    if (widget.useFridgeIngredients) {
       return Chip(
         label: Text(
           "냉장고 재료",
