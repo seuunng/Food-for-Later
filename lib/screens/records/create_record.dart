@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:food_for_later/models/record_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:uuid/uuid.dart';
 
@@ -205,6 +207,7 @@ class _CreateRecordState extends State<CreateRecord> {
 
     for (var imagePath in _imageFiles!) {
       File file = File(imagePath);
+      File compressedFile = await _compressImage(file);
       try {
         final uniqueFileName =
             'record_image_${DateTime.now().millisecondsSinceEpoch}';
@@ -215,7 +218,7 @@ class _CreateRecordState extends State<CreateRecord> {
           contentType: 'image/jpeg', // 이미지 형식에 맞게 설정
         );
 
-        await ref.putFile(file, metadata);
+        await ref.putFile(compressedFile, metadata);
         final downloadUrl = await ref.getDownloadURL();
         downloadUrls.add(downloadUrl);
       } catch (e) {
@@ -280,7 +283,21 @@ class _CreateRecordState extends State<CreateRecord> {
     }
   }
 
+  Future<File> _compressImage(File file) async {
+    final compressedImage = await FlutterImageCompress.compressWithFile(
+      file.absolute.path,
+      minWidth: 800, // 원하는 너비 (예: 800px)
+      minHeight: 800, // 원하는 높이 (예: 800px)
+      quality: 85, // 압축 품질 (1-100, 100은 품질 유지)
+    );
 
+    // 압축된 이미지 파일을 저장할 경로 지정
+    final tempDir = await getTemporaryDirectory();
+    final compressedFile = File('${tempDir.path}/compressed_${file.path.split('/').last}');
+    compressedFile.writeAsBytesSync(compressedImage!);
+
+    return compressedFile;
+  }
 
   @override
   Widget build(BuildContext context) {

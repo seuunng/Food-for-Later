@@ -12,6 +12,7 @@ import 'package:food_for_later/screens/recipe/recipe_grid.dart';
 import 'package:food_for_later/screens/recipe/recipe_grid_theme.dart';
 import 'package:food_for_later/screens/recipe/view_research_list.dart';
 import 'package:food_for_later/screens/recipe/view_scrap_recipe_list.dart';
+import '../../models/recipe_model.dart';
 
 class RecipeMainPage extends StatefulWidget {
   final List<String> category;
@@ -42,21 +43,28 @@ class _RecipeMainPageState extends State<RecipeMainPage>
 
   late TabController _tabController;
 
+  Map<String, int> categoryPriority = {
+    "육류": 10,
+    "수산물": 9,
+    "채소": 8,
+    "과일": 7,
+    "유제품": 6
+  };
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: myTabs.length, vsync: this);
     _loadCategoriesFromFirestore(); // Firestore로부터 카테고리 데이터 로드
-    _loadThemaFromFirestore();  // Firestore로부터 카테고리 데이터 로드
+    _loadThemaFromFirestore(); // Firestore로부터 카테고리 데이터 로드
     _loadMethodFromFirestore();
     _loadItemsInFridgeFromFirestore();
   }
 
   void _loadCategoriesFromFirestore() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('foods')
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance.collection('foods').get();
 
       final Map<String, List<String>> categoryMap = {};
 
@@ -65,7 +73,10 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         final String? category = data['defaultCategory'] as String?;
         final String? foodName = data['foodsName'] as String?;
 
-        if (category != null && foodName != null && category.isNotEmpty && foodName.isNotEmpty) {
+        if (category != null &&
+            foodName != null &&
+            category.isNotEmpty &&
+            foodName.isNotEmpty) {
           if (categoryMap.containsKey(category)) {
             categoryMap[category]!.add(foodName);
           } else {
@@ -80,7 +91,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
         this.categories = categories;
         this.itemsByCategory = categoryMap; // 카테고리별 식품명 리스트
       });
-
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -116,11 +126,9 @@ class _RecipeMainPageState extends State<RecipeMainPage>
 
       setState(() {
         methodCategories = {
-          for (var category in categories)
-            category.categories: category.method,
+          for (var category in categories) category.categories: category.method,
         };
       });
-
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -138,9 +146,10 @@ class _RecipeMainPageState extends State<RecipeMainPage>
 
       setState(() {
         this.fridgeIngredients = itemsInFridge.expand((item) {
-          return item.items.map((itemMap) => itemMap['itemName'] ?? 'Unknown Item');
-        }).toList();});
-
+          return item.items
+              .map((itemMap) => itemMap['itemName'] ?? 'Unknown Item');
+        }).toList();
+      });
     } catch (e) {
       print('냉장고 재료를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,15 +162,80 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     List<String> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ViewResearchList(
-              category: [searchKeyword],  // 필터링된 결과를 category로 넘김
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ViewResearchList(
+            category: [searchKeyword], // 필터링된 결과를 category로 넘김
           ),
-        );
+        ),
+      );
     });
+  }
+
+  // void _loadRecipesBasedOnFridgeItems() async {
+  //   try {
+  //     if (fridgeIngredients.isEmpty) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('냉장고에 재료가 없습니다.')),
+  //       );
+  //       return;
+  //     }
+  //     List<String> topIngredients = _getTopIngredientsByCategoryPriority(
+  //         itemsByCategory, fridgeIngredients);
+  //
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (context) =>
+  //             ViewResearchList(category: topIngredients), // 상위 재료 리스트로 이동
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     print('레시피 데이터를 불러오는 데 실패했습니다: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('레시피 데이터를 불러오는 데 실패했습니다.')),
+  //     );
+  //   }
+  // }
+
+  Future<void> _searchByTopIngredients(List<String> topIngredients) async {
+    try {
+      final querySnapshot = await _db
+          .collection('recipe')
+          .where('foods', arrayContainsAny: topIngredients)
+          .get();
+
+      // 필요한 추가 로직 (예: 레시피 리스트 저장)
+    } catch (e) {
+      print('Error searching by top ingredients: $e');
+    }
+  }
+
+  List<String> _getTopIngredientsByCategoryPriority(
+      Map<String, List<String>> itemsByCategory,
+      List<String> fridgeIngredients) {
+    // fridgeIngredients를 우선순위에 따라 정렬
+    List<MapEntry<String, String>> prioritizedIngredients = [];
+
+    fridgeIngredients.forEach((ingredient) {
+      itemsByCategory.forEach((category, foods) {
+        if (foods.contains(ingredient)) {
+          int priority = categoryPriority[category] ?? 0; // 카테고리 우선순위를 적용
+          prioritizedIngredients.add(MapEntry(ingredient, category));
+        }
+      });
+    });
+
+    // 우선순위에 따라 정렬
+    prioritizedIngredients.sort((a, b) {
+      int priorityA = categoryPriority[a.value] ?? 0;
+      int priorityB = categoryPriority[b.value] ?? 0;
+      return priorityB.compareTo(priorityA);
+    });
+
+    // 상위 10개의 재료를 추려냄
+    return prioritizedIngredients.map((entry) => entry.key).take(10).toList();
   }
 
   @override
@@ -184,22 +258,22 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                     decoration: InputDecoration(
                       hintText: '검색어 입력',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 10.0),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
                     ),
                     onChanged: (value) {
                       _searchItems(value); // 검색어 입력 시 아이템 필터링
                     },
                     onSubmitted: (value) {
                       // 엔터 키를 눌렀을 때 ViewResearchList로 이동
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ViewResearchList(
-                              category: [searchKeyword], // 필터링된 결과 전달
-                            ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ViewResearchList(
+                            category: [searchKeyword], // 필터링된 결과 전달
                           ),
-                        );
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -211,7 +285,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                       MaterialPageRoute(
                         builder: (context) => ViewScrapRecipeList(),
                       ),
-                    );// 스크랩 아이콘 클릭 시 실행할 동작
+                    ); // 스크랩 아이콘 클릭 시 실행할 동작
                   },
                 ),
               ],
@@ -231,12 +305,13 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                   // physics: NeverScrollableScrollPhysics(),
                 ),
                 RecipeGridTheme(
-                  categories: themaCategories.map((thema) => thema.categories).toList(),
+                  categories:
+                      themaCategories.map((thema) => thema.categories).toList(),
                   // physics: NeverScrollableScrollPhysics(),
                 ),
                 RecipeGrid(
-                    categories: [],
-                    itemsByCategory: methodCategories,
+                  categories: [],
+                  itemsByCategory: methodCategories,
                   // physics: NeverScrollableScrollPhysics(),
                 ),
               ],
@@ -252,11 +327,22 @@ class _RecipeMainPageState extends State<RecipeMainPage>
             Expanded(
               child: NavbarButton(
                 buttonTitle: '냉장고 재료 레시피 추천',
-                onPressed: () { // 람다식으로 함수 전달
+                onPressed: () async {
+                  // 1. 우선순위에 따른 상위 재료 추출
+                  List<String> topIngredients =
+                      _getTopIngredientsByCategoryPriority(
+                          itemsByCategory, fridgeIngredients);
+
+                  // 2. 상위 재료를 기반으로 레시피 검색 수행
+                  await _searchByTopIngredients(topIngredients);
+
+                  // 3. 검색된 결과를 ViewResearchList로 전달하면서 페이지 이동
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ViewResearchList(category: fridgeIngredients),
+                      builder: (context) => ViewResearchList(
+                        category: topIngredients, // 추출된 재료를 전달
+                      ),
                     ),
                   );
                 },
