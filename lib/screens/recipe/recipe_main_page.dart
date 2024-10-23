@@ -173,7 +173,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
                 SizedBox(width: 10),
@@ -184,6 +184,8 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                     decoration: InputDecoration(
                       hintText: '검색어 입력',
                       border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 10.0),
                     ),
                     onChanged: (value) {
                       _searchItems(value); // 검색어 입력 시 아이템 필터링

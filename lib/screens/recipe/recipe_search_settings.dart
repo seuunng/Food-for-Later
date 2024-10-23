@@ -4,6 +4,7 @@ import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/preferred_food_model.dart';
 import 'package:food_for_later/models/recipe_method_model.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RecipeSearchSettings extends StatefulWidget {
   @override
@@ -14,16 +15,16 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  List<String> selectedSources = [];
-  List<String> selectedCookingMethods = [];
-  List<String> selectedPreferredFoods = [];
+  // List<String> selectedSources = [];
+  List<String>? selectedCookingMethods = [];
+  List<String>? selectedPreferredFoodCategories = [];
 
   TextEditingController excludeKeywordController = TextEditingController();
 
-  List<String> sources = ['인터넷', '책', '"이따 뭐 먹지" 레시피', '기타'];
+  // List<String> sources = ['인터넷', '책', '"이따 뭐 먹지" 레시피', '기타'];
   Map<String, List<String>> cookingMethods = {};
 
-  List<String> excludeKeywords = [];
+  List<String>? excludeKeywords = [];
   Map<String, List<PreferredFoodModel>> itemsByPreferredCategory = {};
 
   @override
@@ -31,6 +32,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
     super.initState();
     _loadMethodFromFirestore();
     _loadPreferredFoodsCategoriesFromFirestore();
+    _loadSearchSettingsFromLocal();
   }
 
   void _loadMethodFromFirestore() async {
@@ -91,6 +93,22 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
     }
   }
 
+  Future<void> _loadSearchSettingsFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCookingMethods = prefs.getStringList('selectedCookingMethods');
+      selectedPreferredFoodCategories = prefs.getStringList('selectedPreferredFoodCategories');
+      excludeKeywords = prefs.getStringList('excludeKeywords');
+      });
+  }
+
+  Future<void> _saveSearchSettingsToLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('selectedCookingMethods', selectedCookingMethods ?? ['']);
+    await prefs.setStringList('selectedPreferredFoodCategories',selectedPreferredFoodCategories ?? ['']);
+    await prefs.setStringList('excludeKeywords', excludeKeywords ?? ['']);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -136,7 +154,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             SizedBox(height: 8),
             Wrap(
               spacing: 8.0,
-              children: excludeKeywords.map((keyword) {
+              children: excludeKeywords?.map((keyword) {
                 return Chip(
                   label: Text(
                     keyword,
@@ -153,11 +171,11 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
                   ),
                   onDeleted: () {
                     setState(() {
-                      excludeKeywords.remove(keyword);
+                      excludeKeywords?.remove(keyword);
                     });
                   },
                 );
-              }).toList(),
+              }).toList() ?? [],
             ),
             SizedBox(height: 16),
           ],
@@ -169,8 +187,10 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           width: double.infinity,
           height: 50, // 버튼 높이 설정
           child: NavbarButton(
-            buttonTitle: '설정 저장',
-            onPressed: () {
+            buttonTitle: '저장',
+            onPressed: () async {
+              await _saveSearchSettingsToLocal(); // 설정을 로컬에 저장
+              Navigator.pop(context);
             },
           ),
         ),
@@ -180,9 +200,9 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
 // 제외 검색어 추가 함수
   void _addExcludeKeyword() {
     final keyword = excludeKeywordController.text.trim();
-    if (keyword.isNotEmpty && !excludeKeywords.contains(keyword)) {
+    if (keyword.isNotEmpty && !(excludeKeywords?.contains(keyword) ?? true)) {
       setState(() {
-        excludeKeywords.add(keyword);
+        excludeKeywords?.add(keyword);
       });
       excludeKeywordController.clear();
     }
@@ -196,16 +216,16 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           spacing: 8.0,
           runSpacing: 4.0,
           children: methods.map((method) {
-            final isSelected = selectedCookingMethods.contains(method);
+            final isSelected = selectedCookingMethods?.contains(method) ?? false;
             return ChoiceChip(
               label: Text(method),
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
-                    selectedCookingMethods.add(method);
+                    selectedCookingMethods?.add(method);
                   } else {
-                    selectedCookingMethods.remove(method);
+                    selectedCookingMethods?.remove(method);
                   }
                 });
               },
@@ -227,16 +247,16 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           spacing: 8.0,
           runSpacing: 4.0,
           children: models.map((model) {
-            final isSelected = selectedPreferredFoods.contains(category);
+            final isSelected = selectedPreferredFoodCategories?.contains(category) ?? false;
             return ChoiceChip(
               label: Text(category), // category를 라벨로 설정
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
-                    selectedPreferredFoods.add(category);
+                    selectedPreferredFoodCategories?.add(category);
                   } else {
-                    selectedPreferredFoods.remove(category);
+                    selectedPreferredFoodCategories?.remove(category);
                   }
                 });
               },
