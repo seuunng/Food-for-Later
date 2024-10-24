@@ -25,23 +25,24 @@ class RecipeMainPage extends StatefulWidget {
 
 class _RecipeMainPageState extends State<RecipeMainPage>
     with SingleTickerProviderStateMixin {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  TextEditingController _searchController = TextEditingController();
+  late TabController _tabController;
+
   String searchKeyword = '';
   Map<String, List<String>> itemsByCategory = {};
   List<RecipeThemaModel> themaCategories = [];
   List<String> categories = []; // 카테고리를 저장할 필드 추가
   Map<String, List<String>> methodCategories = {};
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  List<String> filteredItems = [];
+  List<String> fridgeIngredients = [];
+
   final List<Tab> myTabs = <Tab>[
     Tab(text: '재료별'),
     Tab(text: '테마별'),
     Tab(text: '조리방법별'),
   ];
-
-  // 검색된 아이템 상태를 관리할 리스트
-  List<String> filteredItems = [];
-  List<String> fridgeIngredients = [];
-
-  late TabController _tabController;
 
   Map<String, int> categoryPriority = {
     "육류": 10,
@@ -158,21 +159,51 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     }
   }
 
-  void _searchItems(String keyword) {
-    List<String> tempFilteredItems = [];
-    setState(() {
-      searchKeyword = keyword.trim().toLowerCase();
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ViewResearchList(
-            category: [searchKeyword], // 필터링된 결과를 category로 넘김
-            useFridgeIngredients: true,
-          ),
-        ),
+  void _loadPreferredFoodsCategories() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .get();
+
+      final Map<String, List<String>> preferredFoodItems = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final String? category = data['category'] as String?;
+        final List<dynamic>? items = data['items'] as List<dynamic>?;
+
+        if (category != null && items != null) {
+          preferredFoodItems[category] = items.map((item) => item.toString()).toList();
+        }
+      }
+
+      setState(() {
+        this.itemsByCategory = preferredFoodItems; // 카테고리별로 아이템 저장
+      });
+
+    } catch (e) {
+      print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
       );
-    });
+    }
   }
+
+  // void _searchItems(String keyword) {
+  //   List<String> tempFilteredItems = [];
+  //   setState(() {
+  //     searchKeyword = keyword.trim().toLowerCase();
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (context) => ViewResearchList(
+  //           category: [searchKeyword], // 필터링된 결과를 category로 넘김
+  //           useFridgeIngredients: false,
+  //         ),
+  //       ),
+  //     );
+  //   });
+  // }
 
   Future<void> _searchByTopIngredients(List<String> topIngredients) async {
     try {
@@ -224,10 +255,12 @@ class _RecipeMainPageState extends State<RecipeMainPage>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
+                    controller: _searchController,
                     keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
@@ -236,10 +269,15 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                       contentPadding:
                           EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
                     ),
-                    onChanged: (value) {
-                      _searchItems(value); // 검색어 입력 시 아이템 필터링
-                    },
+                    // onChanged: (value) {
+                    //   _searchItems(value); // 검색어 입력 시 아이템 필터링
+                    // },
                     onSubmitted: (value) {
+                      // 사용자가 입력한 값을 searchKeyword로 업데이트
+                      setState(() {
+                        searchKeyword = value.trim();
+                      });
+                      _searchController.clear();
                       // 엔터 키를 눌렀을 때 ViewResearchList로 이동
                       Navigator.push(
                         context,

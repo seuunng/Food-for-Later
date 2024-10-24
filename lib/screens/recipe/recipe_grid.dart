@@ -29,6 +29,30 @@ class _RecipeGridState extends State<RecipeGrid> {
     }
   }
 
+
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(3.0),
+            child: _buildCategoryGrid(),
+          ),
+          if (!widget.categories.isEmpty && selectedCategory != null) ...[
+            Divider(thickness: 2),
+          ],
+          if (selectedCategory != null) ...[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildCategoryItemsGrid(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
   Widget _buildCategoryGrid() {
     if (widget.categories.isEmpty) {
       // 기본 카테고리가 비어있을 때 처리
@@ -57,7 +81,9 @@ class _RecipeGridState extends State<RecipeGrid> {
           },
           child: Container(
             decoration: BoxDecoration(
-              color: selectedCategory == category ? Colors.orange : Colors.blueAccent,
+              color: selectedCategory == category
+                  ? Colors.orange
+                  : Colors.blueAccent,
               borderRadius: BorderRadius.circular(8.0),
             ), // 카테고리 버튼 크기 설정
             // height: 60,
@@ -95,58 +121,32 @@ class _RecipeGridState extends State<RecipeGrid> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         String currentItem = items[index];
-          // 기존 아이템 그리드 렌더링
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                  builder: (context) =>
-                  ViewResearchList(
-                    category: [currentItem],
-                    useFridgeIngredients: false,
-                  )));
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              height: 60,
-              child: Center(
-                child: Text(
-                  currentItem,
-                  style: TextStyle(color: Colors.white),
-                ),
+        // 기존 아이템 그리드 렌더링
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => ViewResearchList(
+                      category: [currentItem],
+                      useFridgeIngredients: false,
+                    )));
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            height: 60,
+            child: Center(
+              child: Text(
+                currentItem,
+                style: TextStyle(color: Colors.white),
               ),
             ),
-
-          );
-      },
-    );
-
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(3.0),
-            child: _buildCategoryGrid(),
           ),
-          if (!widget.categories.isEmpty && selectedCategory != null) ...[
-            Divider(thickness: 2),
-          ],
-          if (selectedCategory != null) ...[
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: _buildCategoryItemsGrid(),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

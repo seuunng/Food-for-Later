@@ -237,9 +237,10 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
         RecipeModel recipe = recipeList[index];
         String recipeName = recipe.recipeName;
         // bool hasImage = recipe.mainImages.isNotEmpty;
-        List<String> ingredients = recipe.foods;
-        List<String> methods = recipe.methods; // 조리 방법
-        List<String> themes = recipe.themes;
+        // List<String> ingredients = recipe.foods;
+        // List<String> methods = recipe.methods; // 조리 방법
+        // List<String> themes = recipe.themes;
+        double recipeRating = recipe.rating;
         bool hasMainImage = recipe.mainImages.isNotEmpty;
         // 카테고리 그리드 렌더링
         return FutureBuilder<bool>(
@@ -311,7 +312,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                                   ),
                                 ),
                                 Spacer(),
-                                Text(ratings),
+                                _buildRatingStars(recipeRating),
                                 IconButton(
                                   icon: Icon(
                                       isScraped
@@ -323,11 +324,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                               ],
                             ), // 간격 추가
                             // 재료
-                            _buildTagSection("재료", ingredients),
-                            // 조리방법
-                            _buildTagSection("조리 방법", methods),
-                            // 테마
-                            _buildTagSection("테마", themes),
+                            _buildChips(recipe),
                           ],
                         ),
                       ),
@@ -337,6 +334,18 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
               );
             });
       },
+    );
+  }
+
+  Widget _buildChips(RecipeModel recipe) {
+    return Wrap(
+      spacing: 6.0,
+      runSpacing: 1.0,
+      children: [
+        _buildTagSection("재료", recipe.foods),
+        _buildTagSection("조리 방법", recipe.methods),
+        _buildTagSection("테마", recipe.themes),
+      ],
     );
   }
 
@@ -370,6 +379,34 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
           }).toList(),
         ),
       ],
+    );
+  }
+  Widget _buildRatingStars(double rating) {
+    int fullStars = rating.floor(); // 정수 부분의 별
+    bool hasHalfStar = (rating - fullStars) >= 0.5; // 반 별이 필요한지 확인
+
+    return Row(
+      children: List.generate(5, (index) {
+        if (index < fullStars) {
+          return Icon(
+            Icons.star,
+            color: Colors.amber,
+            size: 14,
+          );
+        } else if (index == fullStars && hasHalfStar) {
+          return Icon(
+            Icons.star_half,
+            color: Colors.amber,
+            size: 14,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            color: Colors.amber,
+            size: 14,
+          );
+        }
+      }),
     );
   }
 }

@@ -19,6 +19,19 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
   // 선택된 아이템 상태를 관리할 리스트
   List<String> selectedItems = [];
 
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(3.0),
+            child: _buildCategoryGrid(),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _buildCategoryGrid() {
     if (widget.categories.isEmpty) {
       // 기본 카테고리가 비어있을 때 처리
@@ -46,9 +59,9 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => ViewResearchList(
-                          category: [category],
-                          useFridgeIngredients: false,
-                        )));
+                      category: [category],
+                      useFridgeIngredients: false,
+                    )));
           },
           child: Container(
             decoration: BoxDecoration(
@@ -68,20 +81,6 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
           ),
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(3.0),
-            child: _buildCategoryGrid(),
-          ),
-        ],
-      ),
     );
   }
 }

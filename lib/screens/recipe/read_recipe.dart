@@ -22,6 +22,7 @@ class ReadRecipe extends StatefulWidget {
 class _ReadRecipeState extends State<ReadRecipe> {
   List<String> ingredients = []; // 재료 목록
   String recipeName = '';
+  int views=0;
   // int serving = 0;
   // int time = 0;
   // String difficuty = '';
@@ -50,6 +51,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
     _fetchInitialRecipeName();
     loadScrapedData(widget.recipeId);
     loadLikedData(widget.recipeId);
+    _increaseViewCount(widget.recipeId);
     _pageController = PageController(initialPage: 0);
   }
 
@@ -156,10 +158,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
         setState(() {
           isLiked = !currentIsScraped; // 스크랩 상태 변경
         });
-
-        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        //   content: Text(isLiked ? '스크랩이 추가되었습니다.' : '스크랩이 해제되었습니다.'),
-        // ));
       }
     } catch (e) {
       print('Error scraping recipe: $e');
@@ -173,7 +171,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
     final userId = '현재 유저아이디'; // 실제 사용자의 ID로 대체해야 함
 
     try {
-      // 스크랩 상태 확인을 위한 쿼리
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
           await FirebaseFirestore.instance
               .collection('scraped_recipes')
@@ -401,6 +398,28 @@ class _ReadRecipeState extends State<ReadRecipe> {
         );
       },
     );
+  }
+
+  Future<void> _increaseViewCount(String recipeId) async {
+    try {
+      DocumentReference recipeDoc =
+      FirebaseFirestore.instance.collection('recipe').doc(recipeId);
+
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot snapshot = await transaction.get(recipeDoc);
+
+        if (!snapshot.exists) {
+          throw Exception("레시피 문서가 존재하지 않습니다.");
+        }
+
+        int currentViewCount = snapshot['views'] ?? 0;
+
+        // 조회수 증가
+        transaction.update(recipeDoc, {'views': currentViewCount + 1});
+      });
+    } catch (e) {
+      print("조회수 증가 중 오류 발생: $e");
+    }
   }
 
   void _refreshRecipeData() async {
@@ -685,6 +704,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
     int servings = data['serving'] ?? 0;
     int cookTime = data['time'] ?? 0;
     String difficulty = data['difficulty'] ?? '중';
+    int viewCount = data['views'] ?? 0;
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -706,6 +726,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
             children: [
               Icon(Icons.emoji_events, size: 25),
               Text(difficulty),
+            ],
+          ),
+          Column(
+            children: [
+              Icon(Icons.remove_red_eye_sharp, size: 25),
+              Text('$viewCount명 읽음'),  // 조회수 표시
             ],
           ),
         ],

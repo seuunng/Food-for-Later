@@ -49,9 +49,13 @@ class _ViewResearchListState extends State<ViewResearchList> {
   };
 
   TextEditingController _searchController = TextEditingController();
+  bool useFridgeIngredientsState = false;
+  Map<String, List<String>> itemsByCategory = {};
+  // String? category = widget.category.isNotEmpty ? widget.category[0] : null;
   @override
   void initState() {
     super.initState();
+    useFridgeIngredientsState = widget.useFridgeIngredients;
     keywords.addAll(widget.category);
     _loadFridgeItemsFromFirestore();
     _loadSearchSettingsFromLocal().then((_) {
@@ -60,22 +64,25 @@ class _ViewResearchListState extends State<ViewResearchList> {
           selectedPreferredFoodCategories!.isNotEmpty) {
         // 모든 카테고리에 대해 선호 식품 불러오기
         for (String category in selectedPreferredFoodCategories!) {
-          _loadPreferredFoodsByCategory(category).then((_) {
-            _applyCategoryPriority(fridgeIngredients).then((_) {
-              loadRecipes().then((_) {
-                setState(() {
-                  // 레시피 데이터가 로드되면 상태 업데이트
-                  _searchByCategoryKeywords();
-                  loadRecipes();
+          _loadPreferredFoodsByCategory(widget.category.isNotEmpty ? widget.category[0] : '').then((_) {
+            if (itemsByCategory.isNotEmpty) {
+              loadRecipesByPreferredFoodsCategory(); // 재료들로 레시피 검색
+            } else {
+              _applyCategoryPriority(fridgeIngredients).then((_) {
+                loadRecipes().then((_) {
+                  setState(() {
+                    // 레시피 데이터가 로드되면 상태 업데이트
+                    _searchByCategoryKeywords();
+                    loadRecipes();
+                  });
                 });
               });
-            });
+            }
           });
         }
       } else {
         // 카테고리가 없을 경우 바로 레시피 불러오기
         loadRecipes().then((_) {
-          // 카테고리 키워드로 검색 수행
           _searchByCategoryKeywords();
         });
       }
@@ -93,7 +100,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
     if (widget.useFridgeIngredients) {
       _loadFridgeItemsFromFirestore(); // 냉장고 재료 불러오기
     }
-    debugPrint('Received category: ${widget.category}');
   }
 
   Future<void> loadRecipes() async {
@@ -116,11 +122,29 @@ class _ViewResearchListState extends State<ViewResearchList> {
       //     // query = query.where('foods', arrayContains: keyword);
       //   }
       // }
+
       if (keywords.isNotEmpty) {
         filteredDocs = filteredDocs.where((doc) {
-          List<String> foods = List<String>.from(doc['foods']);
-          return keywords.any((keyword) =>
-              foods.map((food) => food.trim().toLowerCase()).contains(keyword.trim().toLowerCase()));
+          List<String> foods = List<String>.from(doc['foods'] ?? []);
+          List<String> methods = List<String>.from(doc['methods'] ?? []);
+          List<String> themes = List<String>.from(doc['themes'] ?? []);
+
+          return keywords.any((keyword) {
+            String lowerCaseKeyword = keyword.trim().toLowerCase();
+
+            // 재료(foods), 조리 방법(methods), 테마(themes)에서 일치하는 키워드 검색
+            bool matchesFoods = foods
+                .map((food) => food.trim().toLowerCase())
+                .contains(lowerCaseKeyword);
+            bool matchesMethods = methods
+                .map((method) => method.trim().toLowerCase())
+                .contains(lowerCaseKeyword);
+            bool matchesThemes = themes
+                .map((theme) => theme.trim().toLowerCase())
+                .contains(lowerCaseKeyword);
+
+            return matchesFoods || matchesMethods || matchesThemes;
+          });
         }).toList();
       }
 
@@ -162,16 +186,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
         matchingRecipes = filteredDocs.map((doc) {
           return RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>);
         }).toList();
+        keywords = widget.category;
       });
-      // } else {
-      //   // 선호 식품 필터링이 없을 경우 첫 번째 필터링 결과만 적용
-      //   setState(() {
-      //     matchingRecipes = querySnapshot.docs.map((doc) {
-      //       return RecipeModel.fromFirestore(
-      //           doc.data() as Map<String, dynamic>);
-      //     }).toList();
-      //   });
-      // }
     } catch (e) {
       print('Error loading recipes: $e');
     }
@@ -249,32 +265,63 @@ class _ViewResearchListState extends State<ViewResearchList> {
     });
   }
 
-  Future<void> _loadPreferredFoodsByCategory(String category) async {
+  Future<void> _loadPreferredFoodsByCategory(String categoryKey) async {
     try {
       // Firestore에서 데이터를 불러옴
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
           .get(); // 특정 category 필드 안에 있는 데이터를 가져오기 위해 전체 문서를 가져옵니다
 
-      List<String> allFoods = [];
+      final Map<String, List<String>> allFoods = {};
 
-      if (snapshot.docs.isNotEmpty) {
-        snapshot.docs.forEach((doc) {
-          // 각 문서에서 'category' 필드 안의 카테고리 이름에 맞는 배열을 불러옴
-          Map<String, dynamic> categoryMap = doc['category'];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final Map<String, dynamic>? categoryMap = data['category'] as Map<String, dynamic>?;
+        final List<dynamic>? items = categoryMap?[categoryKey] as List<dynamic>?;  // 비건 키로 배열 접근
 
-          if (categoryMap.containsKey(category)) {
-            List<dynamic> foodsList = categoryMap[category]; // 해당 카테고리의 배열을 가져옴
-            allFoods.addAll(foodsList.cast<String>()); // 배열을 String으로 캐스팅하여 추가
-          }
-        });
+        if (categoryKey != null && items != null) {
+          allFoods[categoryKey] = items.map((item) => item.toString()).toList();
+        }
       }
 
       setState(() {
-        selectedPreferredFoods = allFoods; // 불러온 식품 목록 저장
+        this.itemsByCategory = allFoods; // 불러온 식품 목록 저장
       });
+
     } catch (e) {
       print('Error loading preferred foods by category: $e');
+    }
+  }
+
+  Future<void> loadRecipesByPreferredFoodsCategory() async {
+
+    if (itemsByCategory.isEmpty) {
+      return; // 카테고리 재료가 없으면 검색하지 않음
+    }
+
+    try {
+      List<String> allIngredients = [];
+      // 모든 카테고리 재료들을 하나의 리스트로 결합
+      itemsByCategory.forEach((category, ingredients) {
+        allIngredients.addAll(ingredients);
+      });
+
+      Query query = _db.collection('recipe');
+
+      // 레시피의 foods 필드가 카테고리 재료들 중 하나라도 포함하는지 확인
+      query = query.where('foods', arrayContainsAny: allIngredients);
+
+      QuerySnapshot querySnapshot = await query.get();
+      List<DocumentSnapshot> filteredDocs = querySnapshot.docs;
+
+      setState(() {
+        matchingRecipes = filteredDocs
+            .map((doc) =>
+            RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>))
+            .toList();
+      });
+    } catch (e) {
+      print('Error loading recipes by ingredients: $e');
     }
   }
 
@@ -303,6 +350,40 @@ class _ViewResearchListState extends State<ViewResearchList> {
   }
 
   void _searchItems(String keyword) async {
+    keyword = keyword.trim().toLowerCase();
+    List<String> searchResults = [];
+
+    await _loadPreferredFoodsByCategory(keyword).then((_) {
+      if (itemsByCategory.isNotEmpty) {
+        loadRecipesByPreferredFoodsCategory(); // 재료들로 레시피 검색
+      }
+    });
+
+    // 1. 카테고리 이름과 일치하는지 먼저 확인
+    bool categoryMatched = false;
+
+    if (itemsByCategory.isNotEmpty) {
+      itemsByCategory.forEach((category, items) {
+        if (category.toLowerCase() == keyword) {
+          // 카테고리 이름이 키워드와 일치하는 경우
+          searchResults.addAll(items); // 해당 카테고리의 모든 아이템 추가
+          categoryMatched = true; // 카테고리 일치 확인
+        }
+      });
+    }
+
+    // 2. 카테고리가 일치하지 않으면 일반 아이템 검색 수행
+    if (!categoryMatched) {
+      itemsByCategory.forEach((category, items) {
+        // 각 아이템이 키워드와 일치하는지 확인
+        items.forEach((item) {
+          if (item.toLowerCase().contains(keyword)) {
+            searchResults.add(item);
+          }
+        });
+      });
+    }
+
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
       if (searchKeyword.isNotEmpty && !keywords.contains(searchKeyword)) {
@@ -366,7 +447,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('Keywords: $keywords');
     return Scaffold(
       appBar: AppBar(
         title: Text('레시피 검색'),
@@ -388,8 +468,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
                           decoration: InputDecoration(
                             hintText: '검색어 입력',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                                vertical: 8.0, horizontal: 10.0),
+                            contentPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
                           ),
                           onSubmitted: (value) {
                             _searchItems(value);
@@ -398,11 +477,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
                     SizedBox(width: 10),
                   ]),
             ),
-            if (widget.useFridgeIngredients)
-              _buildFridgeIngredientsChip(),
+            // if (widget.useFridgeIngredients) _buildFridgeIngredientsChip(),
             Padding(
               padding: const EdgeInsets.all(1.0),
-              child: _buildKeywords(), // 키워드 목록 위젯
+              child: _buildChips(), // 키워드 목록 위젯
             ),
             Padding(
               padding: const EdgeInsets.all(3.0),
@@ -413,14 +491,14 @@ class _ViewResearchListState extends State<ViewResearchList> {
       ),
     );
   }
-
-  Widget _buildKeywords() {
-    if (keywords.isNotEmpty) {
-      return Wrap(
-        spacing: 6.0,
-        runSpacing: 1.0,
-        children: keywords
-            .where((keyword) => !fridgeIngredients.contains(keyword))
+  Widget _buildChips() {
+    return Wrap(
+      spacing: 6.0,
+      runSpacing: 1.0,
+      children: [
+        _buildFridgeIngredientsChip(), // 냉장고 재료 Chip 먼저 렌더링
+        ...keywords
+            .where((keyword) => !(useFridgeIngredientsState && fridgeIngredients.contains(keyword)))
             .map((keyword) {
           return Material(
             child: Chip(
@@ -447,14 +525,51 @@ class _ViewResearchListState extends State<ViewResearchList> {
             ),
           );
         }).toList(),
-      );
-    } else {
-      return Text("키워드가 없습니다."); // 키워드가 없을 때 메시지 표시
-    }
+      ],
+    );
   }
 
+  // Widget _buildKeywords() {
+  //   if (keywords.isNotEmpty) {
+  //     return Wrap(
+  //       spacing: 6.0,
+  //       runSpacing: 1.0,
+  //       children: keywords
+  //           .where((keyword) => !fridgeIngredients.contains(keyword))
+  //           .map((keyword) {
+  //         return Material(
+  //           child: Chip(
+  //             label: Text(
+  //               keyword,
+  //               style: TextStyle(
+  //                 fontSize: 12.0,
+  //               ),
+  //             ),
+  //             deleteIcon: Icon(Icons.close, size: 16.0),
+  //             onDeleted: () {
+  //               setState(() {
+  //                 keywords.remove(keyword); // 키워드 삭제
+  //                 loadRecipes();
+  //               });
+  //             },
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(8.0),
+  //               side: BorderSide(
+  //                 color: Colors.grey, // 테두리 색상
+  //                 width: 0.5, // 테두리 두께 조정
+  //               ),
+  //             ),
+  //           ),
+  //         );
+  //       }).toList(),
+  //     );
+  //   } else {
+  //     return Text("키워드가 없습니다."); // 키워드가 없을 때 메시지 표시
+  //   }
+  // }
+
   Widget _buildFridgeIngredientsChip() {
-    if (widget.useFridgeIngredients) {
+    if (useFridgeIngredientsState) {
       return Chip(
         label: Text(
           "냉장고 재료",
@@ -465,6 +580,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
         deleteIcon: Icon(Icons.close, size: 16.0),
         onDeleted: () {
           setState(() {
+            useFridgeIngredientsState = false;
             fridgeIngredients.clear(); // 냉장고 재료 삭제
             loadRecipes(); // 레시피 다시 불러오기
           });
@@ -493,6 +609,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
         ),
       );
     }
+
     return GridView.builder(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
@@ -506,6 +623,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
         itemCount: matchingRecipes.length,
         itemBuilder: (context, index) {
           RecipeModel recipe = matchingRecipes[index];
+
           String recipeName = recipe.recipeName;
           double recipeRating = recipe.rating;
           bool hasMainImage = recipe.mainImages.isNotEmpty; // 이미지가 있는지 확인
@@ -519,6 +637,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
             future: loadScrapedData(recipe.id), // 각 레시피별로 스크랩 상태를 확인
             builder: (context, snapshot) {
               bool isScraped = snapshot.data ?? false;
+
               // 카테고리 그리드 렌더링
               return GestureDetector(
                 onTap: () {
@@ -614,11 +733,12 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                             .contains(ingredient);
                                         bool isKeyword =
                                             keywords.contains(ingredient);
+                                        bool isFromPreferredFoods = itemsByCategory.values.any((list) => list.contains(ingredient));
                                         return Container(
                                           padding: EdgeInsets.symmetric(
                                               vertical: 2.0, horizontal: 4.0),
                                           decoration: BoxDecoration(
-                                            color: isKeyword
+                                            color: isKeyword || isFromPreferredFoods
                                                 ? Colors.lightGreen
                                                 : inFridge
                                                     ? Colors.grey
@@ -634,9 +754,11 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                             ingredient,
                                             style: TextStyle(
                                               fontSize: 12.0,
-                                              color: inFridge
+                                              color: isKeyword || isFromPreferredFoods
                                                   ? Colors.white
-                                                  : Colors.black,
+                                                  : inFridge
+                                                      ? Colors.white
+                                                      : Colors.black,
                                             ),
                                           ),
                                         );
