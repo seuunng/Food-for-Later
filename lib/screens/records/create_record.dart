@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/record_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -45,10 +46,12 @@ class _CreateRecordState extends State<CreateRecord> {
     if (categoryFieldMap.isNotEmpty) {
       selectedCategory = categoryFieldMap.keys.first;
       selectedField = categoryFieldMap[selectedCategory]?['fields'] != null &&
-          (categoryFieldMap[selectedCategory]!['fields'] as List<String>).isNotEmpty
+              (categoryFieldMap[selectedCategory]!['fields'] as List<String>)
+                  .isNotEmpty
           ? categoryFieldMap[selectedCategory]!['fields'].first
           : '';
-      selectedColor = categoryFieldMap[selectedCategory]?['color'] ?? Colors.grey;
+      selectedColor =
+          categoryFieldMap[selectedCategory]?['color'] ?? Colors.grey;
     } else {
       selectedCategory = '식단'; // 기본 카테고리
       selectedField = ''; // 기본 필드
@@ -79,42 +82,48 @@ class _CreateRecordState extends State<CreateRecord> {
   // Firestore에서 카테고리 데이터를 불러오는 함수
   void _loadCategories() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('record_categories').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('record_categories')
+          .get();
 
       if (snapshot.docs.isNotEmpty) {
-      final categories = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'id': doc.id,
-          'category': data['zone'] ?? '기록 없음',
-          'fields': data['units'] != null ? List<String>.from(data['units']) : [],
-          'color': data['color'] != null ? Color(int.parse(data['color'].replaceFirst('#', '0xff'))) : Colors.grey,
-        };
-      }).toList();
+        final categories = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'category': data['zone'] ?? '기록 없음',
+            'fields':
+                data['units'] != null ? List<String>.from(data['units']) : [],
+            'color': data['color'] != null
+                ? Color(int.parse(data['color'].replaceFirst('#', '0xff')))
+                : Colors.grey,
+          };
+        }).toList();
 
-      setState(() {
-        // 카테고리와 구분 데이터를 categoryFieldMap에 저장
-        categoryFieldMap = {
-          for (var category in categories)
-            category['category']: {
-              'fields': category['fields'],
-              'color': category['color'],
-            }
-        };
-        // 기본값 설정
-        print(categoryFieldMap);
+        setState(() {
+          // 카테고리와 구분 데이터를 categoryFieldMap에 저장
+          categoryFieldMap = {
+            for (var category in categories)
+              category['category']: {
+                'fields': category['fields'],
+                'color': category['color'],
+              }
+          };
+          // 기본값 설정
+          print(categoryFieldMap);
 
-        if (categoryFieldMap.isNotEmpty) {
-          selectedCategory = categoryFieldMap.keys.firstWhere(
-                (key) => key.isNotEmpty,
-            orElse: () => '식단', // 기본값 설정
-          );
-          selectedField = categoryFieldMap[selectedCategory]!['fields'].isNotEmpty
-              ? categoryFieldMap[selectedCategory]!['fields'].first
-              : '';
-          selectedColor = categoryFieldMap[selectedCategory]!['color'];
-        }
-      });
+          if (categoryFieldMap.isNotEmpty) {
+            selectedCategory = categoryFieldMap.keys.firstWhere(
+              (key) => key.isNotEmpty,
+              orElse: () => '식단', // 기본값 설정
+            );
+            selectedField =
+                categoryFieldMap[selectedCategory]!['fields'].isNotEmpty
+                    ? categoryFieldMap[selectedCategory]!['fields'].first
+                    : '';
+            selectedColor = categoryFieldMap[selectedCategory]!['color'];
+          }
+        });
       } else {
         print('카테고리 데이터가 없습니다.');
       }
@@ -158,8 +167,7 @@ class _CreateRecordState extends State<CreateRecord> {
   // 이미지를 선택하는 메서드
   Future<void> _pickImages() async {
     final ImagePicker picker = ImagePicker();
-    final List<XFile>? pickedFiles =
-        await picker.pickMultiImage();
+    final List<XFile>? pickedFiles = await picker.pickMultiImage();
 
     if (pickedFiles == null || pickedFiles.isEmpty) {
       // 이미지 선택이 취소된 경우
@@ -211,8 +219,9 @@ class _CreateRecordState extends State<CreateRecord> {
       try {
         final uniqueFileName =
             'record_image_${DateTime.now().millisecondsSinceEpoch}';
-        final ref =
-            FirebaseStorage.instance.ref().child('images/records/$uniqueFileName');
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('images/records/$uniqueFileName');
 
         final SettableMetadata metadata = SettableMetadata(
           contentType: 'image/jpeg', // 이미지 형식에 맞게 설정
@@ -267,7 +276,8 @@ class _CreateRecordState extends State<CreateRecord> {
       await FirebaseFirestore.instance
           .collection('record') // 'records' 컬렉션에 저장
           .doc(record.id) // 고유 ID를 사용하여 문서 생성
-          .set(record.toMap(), SetOptions(merge: true)); // Record 객체를 Map으로 변환하여 저장
+          .set(record.toMap(),
+              SetOptions(merge: true)); // Record 객체를 Map으로 변환하여 저장
 
       // 성공 메시지 표시 및 이전 화면으로 이동
       ScaffoldMessenger.of(context).showSnackBar(
@@ -293,7 +303,8 @@ class _CreateRecordState extends State<CreateRecord> {
 
     // 압축된 이미지 파일을 저장할 경로 지정
     final tempDir = await getTemporaryDirectory();
-    final compressedFile = File('${tempDir.path}/compressed_${file.path.split('/').last}');
+    final compressedFile =
+        File('${tempDir.path}/compressed_${file.path.split('/').last}');
     compressedFile.writeAsBytesSync(compressedImage!);
 
     return compressedFile;
@@ -313,20 +324,6 @@ class _CreateRecordState extends State<CreateRecord> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditing ? '기록 수정' : '기록하기'),
-        actions: [
-          TextButton(
-            child: Text(
-              '저장',
-              style: TextStyle(
-                fontSize: 20, // 글씨 크기를 20으로 설정
-              ),
-            ),
-            onPressed: _saveRecord,
-          ),
-          SizedBox(
-            width: 20,
-          )
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -347,7 +344,8 @@ class _CreateRecordState extends State<CreateRecord> {
                     if (pickedDate != null) {
                       setState(() {
                         selectedDate = pickedDate; // selectedDate를 업데이트
-                        dateController.text = DateFormat('yyyy-MM-dd').format(selectedDate); // dateController 업데이트
+                        dateController.text = DateFormat('yyyy-MM-dd')
+                            .format(selectedDate); // dateController 업데이트
                       });
                     }
                   }),
@@ -361,18 +359,29 @@ class _CreateRecordState extends State<CreateRecord> {
                     setState(() {
                       selectedCategory = value;
                       // 분류 변경 시 구분을 첫 번째 값으로 초기화
-                      selectedField = categoryFieldMap[selectedCategory]!['fields'].first;
-                      selectedColor = categoryFieldMap[selectedCategory]!['color'];
+                      selectedField =
+                          categoryFieldMap[selectedCategory]!['fields'].first;
+                      selectedColor =
+                          categoryFieldMap[selectedCategory]!['color'];
                       // fieldController.text = selectedField;
                     });
                   },
                 ),
-                SizedBox(width: 30),
               ],
             ),
             SizedBox(height: 10),
             _buildRecordsSection(),
           ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: SizedBox(
+          width: double.infinity,
+          child: NavbarButton(
+            buttonTitle: '저장하기',
+            onPressed: _saveRecord,
+          ),
         ),
       ),
     );
@@ -443,7 +452,7 @@ class _CreateRecordState extends State<CreateRecord> {
           itemCount: recordsWithImages.length,
           itemBuilder: (context, index) {
             final List<String> imagePaths =
-            List<String>.from(recordsWithImages[index]['images'] ?? []);
+                List<String>.from(recordsWithImages[index]['images'] ?? []);
 
             return ListTile(
               title: Column(
@@ -470,7 +479,8 @@ class _CreateRecordState extends State<CreateRecord> {
                 runSpacing: 8.0,
                 children: imagePaths.map<Widget>((imagePath) {
                   // URL과 로컬 파일 구분
-                  if (imagePath.startsWith('http') || imagePath.startsWith('https')) {
+                  if (imagePath.startsWith('http') ||
+                      imagePath.startsWith('https')) {
                     return Image.network(
                       imagePath,
                       width: 50,
@@ -509,9 +519,8 @@ class _CreateRecordState extends State<CreateRecord> {
         SizedBox(height: 16.0),
         Row(
           children: [
-            _buildDropdown(
-                '', categoryFieldMap[selectedCategory]!['fields'], selectedField,
-                (value) {
+            _buildDropdown('', categoryFieldMap[selectedCategory]!['fields'],
+                selectedField, (value) {
               setState(() {
                 selectedField = value;
               });
@@ -582,7 +591,10 @@ class _CreateRecordState extends State<CreateRecord> {
                 }
                 if (contentsController.text.isNotEmpty) {
                   setState(() {
-                    List<String> imagePaths = _imageFiles?.map((image) => image.toString()).toList() ?? [];
+                    List<String> imagePaths = _imageFiles
+                            ?.map((image) => image.toString())
+                            .toList() ??
+                        [];
                     // 명시적으로 dynamic 타입으로 선언
                     recordsWithImages.add({
                       'field': selectedField,

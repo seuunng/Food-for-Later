@@ -67,6 +67,9 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         date.subtract(Duration(days: currentWeekday % 7)); // 일요일 계산
     List<DateTime> weekDates = List.generate(
         7, (index) => sunday.add(Duration(days: index))); // 일주일 생성
+
+    print('$currentWeekday $sunday $weekDates');
+
     return weekDates;
   }
 
@@ -82,6 +85,11 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
   int _daysInMonth(DateTime date) {
     final nextMonth = DateTime(date.year, date.month + 1, 1);
     return nextMonth.subtract(Duration(days: 1)).day;
+  }
+
+  int _firstDayOffset(DateTime date) {
+    DateTime firstDayOfMonth = DateTime(date.year, date.month, 1);
+    return firstDayOfMonth.weekday % 7; // 일요일을 0으로 맞추기 위해 % 7 적용
   }
 
   @override
@@ -183,7 +191,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                   ),
                   // 날짜 그리드
                   GridView.builder(
-                    itemCount: _daysInMonth(_focusedDate),
+                    itemCount: _daysInMonth(_focusedDate) + _firstDayOffset(_focusedDate),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 7, // 7열로 설정
                         mainAxisSpacing: 8.0,
@@ -192,14 +200,17 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                     shrinkWrap: true, // GridView를 스크롤이 아닌 적절한 크기로 축소
                     physics: NeverScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
-                      final day = index + 1;
-                      final date =
-                          DateTime(_focusedDate.year, _focusedDate.month, day);
-                      bool isSelected = date == _selectedDate;
-                      bool isToday = date.year == DateTime.now().year &&
-                          date.month == DateTime.now().month &&
-                          date.day == DateTime.now().day;
-
+                      if (index < _firstDayOffset(_focusedDate)) {
+                        // 1일 이전에 해당하는 빈 칸들
+                        return Container(); // 빈 컨테이너로 처리
+                      } else {
+                        // 실제 날짜를 렌더링
+                        final day = index + 1 - _firstDayOffset(_focusedDate); // 1일이 시작하는 요일만큼 오프셋 적용
+                        final date = DateTime(_focusedDate.year, _focusedDate.month, day);
+                        bool isSelected = date == _selectedDate;
+                        bool isToday = date.year == DateTime.now().year &&
+                            date.month == DateTime.now().month &&
+                            date.day == DateTime.now().day;
                       // 해당 날짜에 기록이 있는지 확인
                       List<RecordModel>? recordsForDate =
                           getRecordsForDate(date);
@@ -322,7 +333,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           ),
                         ),
                       );
-                    },
+                    }},
                   ),
                   _buildWeekContainer(),
                 ],

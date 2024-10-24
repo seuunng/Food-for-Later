@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:intl/intl.dart';
@@ -41,30 +42,6 @@ class _ReadRecordState extends State<ReadRecord> {
       appBar: AppBar(
         title: Text('기록 보기'),
         actions: [
-          TextButton(
-            child: Text(
-              '수정',
-              style: TextStyle(
-                fontSize: 20, // 글씨 크기를 20으로 설정
-              ),
-            ),
-            onPressed: () async {
-              final updatedRecord = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateRecord(
-                    recordId: widget.recordId, // 초기 데이터 전달
-                    isEditing: true, // 수정 모드로 설정
-                  ),
-                ),
-              );
-
-              if (updatedRecord != null) {
-                // 수정된 데이터가 돌아오면 처리
-                // 현재 화면을 업데이트하거나 데이터를 반영하는 작업
-              }
-            },
-          ),
           IconButton(
             icon: Icon(Icons.delete, ),
             onPressed: () {
@@ -226,6 +203,32 @@ class _ReadRecordState extends State<ReadRecord> {
                   },
                 ),
               ),
+              Container(
+                color: Colors.transparent,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: NavbarButton(
+                    buttonTitle: '수정하기',
+                    onPressed: () async {
+                      final updatedRecord = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreateRecord(
+                            recordId: widget.recordId, // 초기 데이터 전달
+                            isEditing: true, // 수정 모드로 설정
+                          ),
+                        ),
+                      );
+
+                      if (updatedRecord != null) {
+                        // 수정된 데이터가 돌아오면 처리
+                        // 현재 화면을 업데이트하거나 데이터를 반영하는 작업
+                      }
+                    },
+                  ),
+                ),
+              )
             ],
           );
         },
