@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_login.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
-import 'package:food_for_later/screens/fridge/add_item.dart';
+import 'package:food_for_later/screens/foods/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/recipe/recipe_main_page.dart';
 import 'package:food_for_later/screens/recipe/recipe_search_settings.dart';
@@ -23,20 +23,31 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final GlobalKey<FridgeMainPageState> _fridgeMainPageKey = GlobalKey<FridgeMainPageState>();
+  final GlobalKey<ShoppingListMainPageState> _shoppingListMainPageKey =
+  GlobalKey<ShoppingListMainPageState>();
+  late List<Widget> _pages;
+
   String? selectedCategory;
+
   // 각 페이지를 저장하는 리스트
-  List<Widget> _pages = <Widget>[
-    FridgeMainPage(), // 냉장고 페이지
-    ShoppingListMainPage(), // 예시로 장보기 페이지
-    RecipeMainPage(
-      category: [],
-    ), // 예시로 레시피 페이지
-    ViewRecordMain(), // 예시로 기록 페이지
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // initState에서 _pages 리스트 초기화
+    _pages = [
+      FridgeMainPage(key: _fridgeMainPageKey), // 냉장고 페이지
+      ShoppingListMainPage(key: _shoppingListMainPageKey),
+      RecipeMainPage(category: []),
+      ViewRecordMain(),
+    ];
+  }
 
   void _onItemTapped(int index) {
     if (index < _pages.length) {
       setState(() {
+        _fridgeMainPageKey.currentState?.stopDeleteMode();
+        _shoppingListMainPageKey.currentState?.stopShoppingListDeleteMode();
         _selectedIndex = index;
       });
     }

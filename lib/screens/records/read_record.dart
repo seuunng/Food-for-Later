@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
-import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:intl/intl.dart';
 
@@ -19,7 +18,33 @@ class ReadRecord extends StatefulWidget {
 }
 
 class _ReadRecordState extends State<ReadRecord> {
+  Map<String, List<String>> categoryMap = {};
 
+// Firestore에서 record_categories 데이터를 불러오는 함수
+  Future<void> _fetchRecordCategories() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('record_categories')
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        setState(() {
+          categoryMap = {
+            for (var doc in snapshot.docs)
+              doc.data()['zone']: List<String>.from(doc.data()['units']),
+          };
+        });
+      }
+    } catch (e) {
+      print('Error loading record categories: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecordCategories(); // 초기화 시 record_categories 불러오기
+  }
   // Firestore에서 해당 기록을 삭제하는 함수
   Future<void> _deleteRecord(String recordId) async {
     try {

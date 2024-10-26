@@ -4,11 +4,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/firebase_options.dart';
+import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/home_screen.dart';
 import 'package:food_for_later/testStorageUpload.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 //Flutter 앱의 진입점
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +34,12 @@ class MyApp extends StatelessWidget {
         //themeData: 앱의 전반적인 테마를 정의
         primarySwatch: Colors.lightGreen,
       ),
+      // navigatorObservers: [DeleteModeObserver(onPageChange: () {
+        // 페이지가 변경될 때 _stopDeleteMode 호출
+        // 예시: FridgeMainPage의 상태를 가져와서 _stopDeleteMode를 호출
+      // })],
       home: HomeScreen(),  // HomeScreen을 메인 화면으로 설정
+      navigatorObservers: [routeObserver],
     );
   }
 }

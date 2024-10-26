@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/view_research_list.dart';
 
@@ -89,9 +90,14 @@ class _RecipeGridState extends State<RecipeGrid> {
             // height: 60,
             // margin: EdgeInsets.symmetric(vertical: 8.0),
             child: Center(
-              child: Text(
+              child: AutoSizeText(
                 category,
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                minFontSize: 6, // 최소 글자 크기 설정
+                maxFontSize: 16, // 최대 글자 크기 설정
               ),
             ),
           ),
@@ -139,9 +145,14 @@ class _RecipeGridState extends State<RecipeGrid> {
             ),
             height: 60,
             child: Center(
-              child: Text(
+              child: AutoSizeText(
                 currentItem,
                 style: TextStyle(color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                minFontSize: 6, // 최소 글자 크기 설정
+                maxFontSize: 16, // 최대 글자 크기 설정
               ),
             ),
           ),

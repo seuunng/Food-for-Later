@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
@@ -316,51 +317,6 @@ class _AddItemState extends State<AddItem> {
     });
   }
 
-  // 삭제 모드에서 선택된 아이템들을 삭제하는 함수
-  // void _deleteSelectedItems() {
-  //   setState(() {
-  //     if (widget.sourcePage == 'preferred_foods_category') {
-  //       // PreferredFoodModel 삭제 로직
-  //       itemsByPreferredCategory.forEach((category, categoryModels) {
-  //         for (var categoryModel in categoryModels) {
-  //           categoryModel.category.forEach((categoryName, items) {
-  //             categoryModel.category[categoryName]!
-  //                 .removeWhere((item) => selectedItems.contains(item));
-  //           });
-  //         }
-  //       });
-  //     } else {
-  //       if (selectedCategory != null) {
-  //         deletedItems.addAll(selectedItems);
-  //
-  //         itemsByCategory[selectedCategory!]!
-  //             .removeWhere((item) => selectedItems.contains(item));
-  //       }
-  //       selectedItems.clear(); // 선택된 아이템 목록 초기화
-  //       isDeleteMode = false; // 삭제 모드 해제
-  //     }
-  //   });
-  // }
-
-  // 삭제 모드 여부를 토글하는 함수
-  // void _toggleDeleteMode() {
-  //   setState(() {
-  //     isDeleteMode = !isDeleteMode;
-  //     if (!isDeleteMode) {
-  //       selectedItems.clear(); // 삭제 모드 해제 시 선택 목록 초기화
-  //     }
-  //   });
-  // }
-
-// 삭제 모드에서 선택된 아이템들을 삭제하기 전에 확인 다이얼로그를 띄우는 함수
-//   Future<void> _confirmDeleteItems() async {}
-//
-// // 아이템 목록에서 중복된 값이 있는지 확인 후 제거
-//   void removeDuplicates() {
-//     itemsByCategory.forEach((category, items) {
-//       itemsByCategory[category] = items.toSet().toList();
-//     });
-//   }
 
   @override
   Widget build(BuildContext context) {
@@ -369,13 +325,6 @@ class _AddItemState extends State<AddItem> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.pageTitle),
-        // actions: [
-        //   if (isDeleteMode)
-        //     IconButton(
-        //       icon: Icon(Icons.delete),
-        //       onPressed: _confirmDeleteItems, // 선택된 아이템 삭제 전에 확인 다이얼로그
-        //     ),
-        // ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -520,9 +469,14 @@ class _AddItemState extends State<AddItem> {
               ),
               height: 60,
               child: Center(
-                child: Text(
+                child: AutoSizeText(
                   itemName,
                   style: TextStyle(color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  minFontSize: 6, // 최소 글자 크기 설정
+                  maxFontSize: 16, // 최대 글자 크기 설정
                 ),
               ),
             ),
@@ -569,9 +523,14 @@ class _AddItemState extends State<AddItem> {
               height: 60,
               // margin: EdgeInsets.symmetric(vertical: 8.0),
               child: Center(
-                child: Text(
+          child: AutoSizeText(
                   category,
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  minFontSize: 6, // 최소 글자 크기 설정
+                  maxFontSize: 16, // 최대 글자 크기 설정
                 ),
               ),
             ),
@@ -616,9 +575,14 @@ class _AddItemState extends State<AddItem> {
             height: 60,
             // margin: EdgeInsets.symmetric(vertical: 8.0),
             child: Center(
-              child: Text(
+              child: AutoSizeText(
                 category,
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                minFontSize: 6, // 최소 글자 크기 설정
+                maxFontSize: 16, // 최대 글자 크기 설정
               ),
             ),
           ),
@@ -789,9 +753,14 @@ class _AddItemState extends State<AddItem> {
               ),
               height: 60,
               child: Center(
-                child: Text(
+                child: AutoSizeText(
                   itemName,
                   style: TextStyle(color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  minFontSize: 6, // 최소 글자 크기 설정
+                  maxFontSize: 16, // 최대 글자 크기 설정
                 ),
               ),
             ),

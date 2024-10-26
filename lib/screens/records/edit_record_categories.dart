@@ -14,49 +14,6 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   // Firestore에서 가져온 카테고리 데이터를 저장하는 리스트
   List<Map<String, dynamic>> userData = [];
 
-  // 각 열에 대한 정렬 상태를 관리하는 리스트
-  // List<Map<String, dynamic>> columns = [
-  //   {'name': '선택', 'state': SortState.none},
-  //   {'name': '연번', 'state': SortState.none},
-  //   {'name': '기록 카테고리', 'state': SortState.none},
-  //   {'name': '분류', 'state': SortState.none},
-  //   {'name': '변동', 'state': SortState.none}
-  // ];
-
-  // 사용자 데이터
-  // List<Map<String, dynamic>> userData = [
-  //   {
-  //     '연번': 1,
-  //     '기록 카테고리': '식단',
-  //     '분류': [
-  //       '아침',
-  //       '점심',
-  //       '저녁',
-  //     ],
-  //     '색상': Colors.blue[100] //
-  //   },
-  //   {
-  //     '연번': 2,
-  //     '기록 카테고리': '운동',
-  //     '분류': [
-  //       '아침',
-  //       '점심',
-  //       '저녁',
-  //     ],
-  //     '색상': Colors.green[100]
-  //   },
-  //   {
-  //     '연번': 3,
-  //     '기록 카테고리': '자기개발',
-  //     '분류': [
-  //       '아침',
-  //       '점심',
-  //       '저녁',
-  //     ],
-  //     '색상': Colors.orange[100]
-  //   },
-  // ];
-
   final TextEditingController _recordCategoryController =
       TextEditingController();
   final TextEditingController _unitController = TextEditingController();
@@ -102,6 +59,8 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       _recordCategoryController.text = userData[index]['기록 카테고리'];
       units = List<String>.from(userData[index]['분류']);
       _selectedColor = userData[index]['색상'] ?? Colors.grey[300];
+
+
     } else {
       // 추가 모드 초기화
       _recordCategoryController.clear();
@@ -290,83 +249,83 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   }
 
 // 색상 선택 다이얼로그
-  Future<Color?> _showColorPicker(BuildContext context) async {
-    Color selectedColor = _selectedColor;
-    return showDialog<Color>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('색상 선택'),
-          content: SingleChildScrollView(
-            //컬러 팔레드
-            child: Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = Colors.red;
-                    });
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedColor == Colors.red
-                            ? Colors.black
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = Colors.blue;
-                    });
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedColor == Colors.blue
-                            ? Colors.black
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                // 다른 색상들도 동일한 방식으로 추가 가능
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('취소'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('확인'),
-              onPressed: () {
-                Navigator.of(context).pop(selectedColor);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+//   Future<Color?> _showColorPicker(BuildContext context) async {
+//     Color selectedColor = _selectedColor;
+//     return showDialog<Color>(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           title: Text('색상 선택'),
+//           content: SingleChildScrollView(
+//             //컬러 팔레드
+//             child: Wrap(
+//               spacing: 8.0,
+//               runSpacing: 8.0,
+//               children: [
+//                 GestureDetector(
+//                   onTap: () {
+//                     setState(() {
+//                       _selectedColor = Colors.red;
+//                     });
+//                   },
+//                   child: Container(
+//                     width: 40,
+//                     height: 40,
+//                     decoration: BoxDecoration(
+//                       color: Colors.red,
+//                       shape: BoxShape.circle,
+//                       border: Border.all(
+//                         color: _selectedColor == Colors.red
+//                             ? Colors.black
+//                             : Colors.transparent,
+//                         width: 2,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//                 GestureDetector(
+//                   onTap: () {
+//                     setState(() {
+//                       _selectedColor = Colors.blue;
+//                     });
+//                   },
+//                   child: Container(
+//                     width: 40,
+//                     height: 40,
+//                     decoration: BoxDecoration(
+//                       color: Colors.blue,
+//                       shape: BoxShape.circle,
+//                       border: Border.all(
+//                         color: _selectedColor == Colors.blue
+//                             ? Colors.black
+//                             : Colors.transparent,
+//                         width: 2,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//                 // 다른 색상들도 동일한 방식으로 추가 가능
+//               ],
+//             ),
+//           ),
+//           actions: <Widget>[
+//             TextButton(
+//               child: Text('취소'),
+//               onPressed: () {
+//                 Navigator.of(context).pop();
+//               },
+//             ),
+//             TextButton(
+//               child: Text('확인'),
+//               onPressed: () {
+//                 Navigator.of(context).pop(selectedColor);
+//               },
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
 
   // Firestore에 카테고리를 저장하거나 수정하는 함수
   Future<void> _saveCategory({int? index}) async {
@@ -383,17 +342,27 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       'color': '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
     };
 
+    String? previousZone;
+    List<String>? previousUnits;
+
     try {
       if (index == null) {
         // 새로운 카테고리를 Firestore에 추가
         await FirebaseFirestore.instance.collection('record_categories').add(category);
       } else {
         // 기존 카테고리를 Firestore에서 수정
+        previousZone = userData[index]['기록 카테고리'];
+        previousUnits = List<String>.from(userData[index]['분류']);
+
+        // 기존 카테고리를 Firestore에서 수정
         await FirebaseFirestore.instance
             .collection('record_categories')
             .doc(userData[index]['id'])
             .update(category);
+
+        await _updateRecordsWithNewCategory(previousZone, previousUnits);
       }
+
       _loadCategories(); // 업데이트된 카테고리 목록을 다시 로드
       Navigator.of(context).pop(); // 다이얼로그 닫기
     } catch (e) {
@@ -404,13 +373,81 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     }
   }
 
+  Future<void> _updateRecordsWithNewCategory(String? previousZone, List<String>? previousUnits) async {
+    if (previousZone == null || previousUnits == null) return;
+
+    try {
+      QuerySnapshot recordsSnapshot = await FirebaseFirestore.instance
+          .collection('record')
+          .where('zone', isEqualTo: previousZone)
+          .get();
+
+      for (var recordDoc in recordsSnapshot.docs) {
+        Map<String, dynamic> recordData = recordDoc.data() as Map<String, dynamic>;
+
+        // 기록의 records 배열에서 이전 unit을 사용하고 있는지 확인
+        List<dynamic> updatedRecords = (recordData['records'] as List<dynamic>).map((record) {
+          if (previousUnits.contains(record['unit'])) {
+            // unit을 새로운 값으로 변경할 수 있는 로직 필요
+            // 예시로 이전 unit을 새로운 값으로 변경
+            record['unit'] = record['unit'];  // 여기에 수정된 unit 로직을 추가할 수 있음
+          }
+          return record;
+        }).toList();
+
+        // Firestore에 업데이트된 데이터 반영
+        await FirebaseFirestore.instance
+            .collection('record')
+            .doc(recordDoc.id)
+            .update({
+          'zone': _recordCategoryController.text, // 수정된 카테고리로 변경
+          'records': updatedRecords,
+        });
+      }
+    } catch (e) {
+      print('Error updating records: $e');
+    }
+  }
+
   // Firestore에서 카테고리를 삭제하는 함수
   void _deleteCategory(int index) async {
+    String deletedZone = userData[index]['기록 카테고리'];
+    List<String> deletedUnits = List<String>.from(userData[index]['분류']);
     try {
       await FirebaseFirestore.instance
           .collection('record_categories')
           .doc(userData[index]['id'])
           .delete();
+
+      // 2. record 컬렉션에서 해당 zone과 unit을 사용하는 항목 업데이트
+      QuerySnapshot recordsSnapshot = await FirebaseFirestore.instance
+          .collection('record')
+          .where('zone', isEqualTo: deletedZone)
+          .get();
+
+      // 3. 검색된 기록들을 업데이트
+      for (var recordDoc in recordsSnapshot.docs) {
+        Map<String, dynamic> recordData = recordDoc.data() as Map<String, dynamic>;
+
+        // 기록의 records 배열에서 삭제된 unit을 사용하고 있는지 확인
+        List<dynamic> updatedRecords = (recordData['records'] as List<dynamic>).map((record) {
+          if (deletedUnits.contains(record['unit'])) {
+            // unit이 삭제된 분류에 해당하면 '삭제된 분류'로 변경
+            record['unit'] = '삭제된 분류';
+          }
+          return record;
+        }).toList();
+
+        // Firestore에 업데이트된 데이터 반영
+        await FirebaseFirestore.instance
+            .collection('record')
+            .doc(recordDoc.id)
+            .update({
+          'zone': '삭제된 카테고리', // 삭제된 카테고리로 변경
+          'records': updatedRecords,
+        });
+      }
+
       setState(() {
         userData.removeAt(index);
       });

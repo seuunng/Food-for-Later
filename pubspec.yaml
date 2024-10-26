@@ -60,6 +60,7 @@ dependencies:
   font_awesome_flutter: ^10.5.0  # 아이콘
   google_fonts: ^4.0.4  # 다양한 폰트 적용
   shared_preferences: ^2.1.1  # 로컬 저장소 (테마, 설정 등)
+  auto_size_text: ^3.0.0
 
   # 네비게이션 및 기타 유틸리티
   get: ^4.6.6  # 네비게이션 및 상태 관리

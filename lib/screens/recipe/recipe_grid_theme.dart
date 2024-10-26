@@ -32,6 +32,7 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
       ),
     );
   }
+
   Widget _buildCategoryGrid() {
     if (widget.categories.isEmpty) {
       // 기본 카테고리가 비어있을 때 처리

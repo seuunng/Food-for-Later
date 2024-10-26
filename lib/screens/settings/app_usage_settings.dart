@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
-import 'package:food_for_later/screens/fridge/add_item.dart';
+import 'package:food_for_later/screens/foods/add_item.dart';
 import 'package:food_for_later/components/custom_dropdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

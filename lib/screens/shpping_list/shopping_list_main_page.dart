@@ -2,19 +2,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
+import 'package:food_for_later/main.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/shopping_category_model.dart';
-import 'package:food_for_later/screens/fridge/add_item.dart';
+import 'package:food_for_later/screens/foods/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ShoppingListMainPage extends StatefulWidget {
+  ShoppingListMainPage({Key? key}) : super(key: key);
+
   @override
-  _ShoppingListMainPageState createState() => _ShoppingListMainPageState();
+  ShoppingListMainPageState createState() => ShoppingListMainPageState();
 }
 
-class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
+class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAware {
 
   List<String> fridgeName = [];
   String? selectedFridge = '';
@@ -35,6 +38,31 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
     _loadCategoriesFromFirestore();
     _loadFridgeCategoriesFromFirestore('현재 유저아이디');
     _loadSelectedFridge();
+
+    setState(() {
+      showCheckBoxes = false;
+    });
+  }
+
+  @override
+  void didPopNext() { // 다른 페이지로 이동했다가 다시 이 페이지로 돌아올 때 호출
+    super.didPopNext();
+    stopShoppingListDeleteMode();
+  }
+
+  @override
+  void dispose() { // 페이지가 완전히 사라지거나 소멸될 때 호출
+    routeObserver.unsubscribe(this); // routeObserver 구독 해제
+    if (showCheckBoxes) {
+      stopShoppingListDeleteMode();
+    }
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() { // 이 페이지에서 사용되는 종속성이 변경될 때 호출됩니다
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
   }
 
   void _loadItemsFromFirestore(String userId) async {
@@ -84,7 +112,6 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
 
       setState(() {
         itemLists = _groupItemsByCategory(allItems); // 카테고리별로 아이템을 그룹화
-        // isChecked가 true인 항목을 처리
         allItems.forEach((item) {
           final category = item['category'];
           final itemName = item['itemName'];
@@ -385,10 +412,27 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
       );
     }
   }
+  void _startDeleteMode() {
+    setState(() {
+      showCheckBoxes= true;
+    });
+  }
 
+// 삭제 모드를 해제하고 애니메이션을 중지
+  void stopShoppingListDeleteMode() {
+    setState(() {
+      showCheckBoxes = false;
+    });
+  }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GestureDetector(
+        onTap: () {
+      if (showCheckBoxes) {
+        stopShoppingListDeleteMode(); // 빈 곳을 클릭할 때 삭제 모드 해제
+      }
+    },
+    child: Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
@@ -478,7 +522,7 @@ class _ShoppingListMainPageState extends State<ShoppingListMainPage> {
               ),
             )
           : null,
-    );
+    ));
   }
 
   Widget _buildSections() {

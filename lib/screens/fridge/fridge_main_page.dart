@@ -1,23 +1,31 @@
 import 'dart:io';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
+import 'package:food_for_later/main.dart';
 import 'package:food_for_later/models/fridge_category_model.dart';
 import 'package:food_for_later/screens/fridge/fridge_category_search.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
-import 'package:food_for_later/screens/fridge/add_item.dart';
+import 'package:food_for_later/screens/foods/add_item.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FridgeMainPage extends StatefulWidget {
+  FridgeMainPage({Key? key}) : super(key: key);
+  // static void stopDeleteMode() {
+    // stopDeleteMode();
+  // }
   @override
-  _FridgeMainPageState createState() => _FridgeMainPageState();
+  FridgeMainPageState createState() => FridgeMainPageState();
 }
 
-class _FridgeMainPageState extends State<FridgeMainPage> {
+class FridgeMainPageState extends State<FridgeMainPage>
+    with RouteAware, SingleTickerProviderStateMixin {
   DateTime currentDate = DateTime.now();
+  // late final DeleteModeObserver _deleteModeObserver;
 
   List<String> fridgeName = [];
   String? selectedFridge = '';
@@ -30,23 +38,71 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
   List<String> selectedItems = [];
   bool isDeletedMode = false;
 
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
   @override
   void initState() {
     super.initState();
+
     _loadSelectedFridge();
     _loadCategoriesFromFirestore();
     _loadFridgeNameFromFirestore();
     _loadCategoriesAndFridgeData();
+
+    // 애니메이션 초기화
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    ); // 애니메이션을 반복하도록 설정
+
+    _animation = Tween(begin: -0.2, end: 0.1).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticInOut,
+    ));
+
     setState(() {
       isDeletedMode = false;
     });
+    // WidgetsBinding.instance.addObserver(this);
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
+  void didPopNext() { // 다른 페이지로 이동했다가 다시 이 페이지로 돌아올 때 호출
+    super.didPopNext();
+    print('didPopNext() 실행');
+    stopDeleteMode();
   }
+
+  @override
+  void dispose() { // 페이지가 완전히 사라지거나 소멸될 때 호출
+    routeObserver.unsubscribe(this);
+    if (isDeletedMode) {
+      stopDeleteMode();
+    }
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() { // 이 페이지에서 사용되는 종속성이 변경될 때 호출됩니다
+    super.didChangeDependencies();
+    // routeObserver 구독을 설정하여 내비게이션 변경 감지
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   // print("Dependencies changed - attempting to stop delete mode");
+  //   // final route = ModalRoute.of(context);
+  //   // if (route is PageRoute) {
+  //   //   routeObserver.subscribe(this, route); // PageRoute인 경우에만 구독
+  //   // }
+  //   stopDeleteMode();  // 페이지로 돌아올 때 삭제 모드 초기화
+  //   _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
+  //   // Navigator.of(context).widget.observers.remove(_deleteModeObserver);
+  // }
 
   void _loadCategoriesAndFridgeData() async {
     await _loadCategoriesFromFirestore();
@@ -260,9 +316,32 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
     }
   }
 
+  // 삭제 모드에서 애니메이션을 시작
+  void _startDeleteMode() {
+    setState(() {
+      isDeletedMode = true;
+      _controller.repeat(reverse: true); // 애니메이션 시작
+    });
+  }
+
+// 삭제 모드를 해제하고 애니메이션을 중지
+  void stopDeleteMode() {
+    setState(() {
+      isDeletedMode = false;
+      selectedItems.clear();
+      _controller.stop(); // 애니메이션 중지
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GestureDetector(
+        onTap: () {
+      if (isDeletedMode) {
+        stopDeleteMode(); // 빈 곳을 클릭할 때 삭제 모드 해제
+      }
+    },
+    child: Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
@@ -297,30 +376,31 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
       ),
 
       // 물건 추가 버튼
-      floatingActionButton: !isDeletedMode?
-      FloatingAddButton(
-        heroTag: 'fridge_add_button',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  AddItem(
-                    pageTitle: '냉장고에 추가',
-                    addButton: '냉장고에 추가',
-                    sourcePage: 'fridge',
-                    onItemAdded: () {
-                      _loadFridgeCategoriesFromFirestore(
-                          selectedFridge ?? '기본 냉장고');
-                    },
+      floatingActionButton: !isDeletedMode
+          ? FloatingAddButton(
+              heroTag: 'fridge_add_button',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddItem(
+                      pageTitle: '냉장고에 추가',
+                      addButton: '냉장고에 추가',
+                      sourcePage: 'fridge',
+                      onItemAdded: () {
+                        _loadFridgeCategoriesFromFirestore(
+                            selectedFridge ?? '기본 냉장고');
+                      },
+                    ),
                   ),
-            ),
-          );
-          setState(() {
-            _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
-          });
-        },
-      ): null,
+                );
+                setState(() {
+                  _loadFridgeCategoriesFromFirestore(
+                      selectedFridge ?? '기본 냉장고');
+                });
+              },
+            )
+          : null,
 
       bottomNavigationBar: isDeletedMode
           ? Container(
@@ -334,7 +414,7 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
               ),
             )
           : null,
-    );
+    ));
   }
 
   Widget _buildSections() {
@@ -389,123 +469,149 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
         int expirationDays = items[index].values.first;
         bool isSelected = selectedItems.contains(currentItem);
 
-        return Draggable<String>(
-          data: currentItem, // 드래그할 데이터 (현재 아이템 이름)
-          feedback: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: 80,
-              height: 80,
-              padding: EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                color: Colors.blueGrey[200],
-                borderRadius: BorderRadius.circular(8.0),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10,
-                    color: Colors.black26,
+        return AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: isDeletedMode && isSelected
+                  ? Offset(0, _animation.value * 10) // Vertical shake
+                  : Offset(0, 0), // 흔들림 효과
+              child: child,
+            );
+          },
+          child: Draggable<String>(
+            data: currentItem, // 드래그할 데이터 (현재 아이템 이름)
+            feedback: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: 80,
+                height: 80,
+                padding: EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey[200],
+                  borderRadius: BorderRadius.circular(8.0),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 10,
+                      color: Colors.black26,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: AutoSizeText(
+                    currentItem,
+                    style: TextStyle(color: Colors.white),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    minFontSize: 6, // 최소 글자 크기 설정
+                    maxFontSize: 16, // 최대 글자 크기 설정
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  currentItem,
-                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ),
-          ),
-          childWhenDragging: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey,
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Center(
-              child: Text(
-                currentItem,
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-          child: GestureDetector(
-            onLongPress: () {
-              setState(() {
-                if (isDeletedMode) {
-                  isDeletedMode = false;
-                  selectedItems.clear();
-                } else {
-                  isDeletedMode = true;
-                  selectedItems.add(currentItem);
-                }
-              });
-            },
-            onTap: () {
-              if (isDeletedMode) {
-                setState(() {
-                  if (selectedItems.contains(currentItem)) {
-                    selectedItems.remove(currentItem);
-                  } else {
-                    selectedItems.add(currentItem);
-                  }
-                });
-              }
-            },
-            onDoubleTap: () async {
-              try {
-                // Firestore에서 현재 선택된 아이템의 정보를 불러옵니다.
-                final foodsSnapshot = await FirebaseFirestore.instance
-                    .collection('foods')
-                    .where('foodsName',
-                        isEqualTo: currentItem) // 현재 아이템과 일치하는지 확인
-                    .get();
-
-                if (foodsSnapshot.docs.isNotEmpty) {
-                  final foodsData = foodsSnapshot.docs.first.data();
-
-                  // Firestore에서 불러온 데이터를 동적으로 할당
-                  String defaultCategory = foodsData['defaultCategory'] ?? '기타';
-                  String defaultFridgeCategory =
-                      foodsData['defaultFridgeCategory'] ?? '기타';
-                  String shoppingListCategory =
-                      foodsData['shoppingListCategory'] ?? '기타';
-                  int expirationDays = foodsData['expirationDate'] ?? 0;
-                  int shelfLife = foodsData['shelfLife'] ?? 0;
-
-                  // FridgeItemDetails로 동적으로 데이터를 전달
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FridgeItemDetails(
-                        foodsName: currentItem, // 아이템 이름
-                        foodsCategory: defaultCategory, // 동적 카테고리
-                        fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
-                        shoppingListCategory:
-                            shoppingListCategory, // 쇼핑 리스트 카테고리
-                        expirationDays: expirationDays, // 유통기한
-                        consumptionDays: shelfLife, // 소비기한
-                        registrationDate:
-                            DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                      ),
-                    ),
-                  );
-                } else {
-                  print("Item not found in foods collection: $currentItem");
-                }
-              } catch (e) {
-                print('Error fetching food details: $e');
-              }
-            },
-            child: Container(
+            childWhenDragging: Container(
               decoration: BoxDecoration(
-                color: isDeletedMode && isSelected
-                    ? Colors.orange
-                    : _getBackgroundColor(expirationDays),
+                color: Colors.grey,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: Center(
-                child: Text(
+                child: AutoSizeText(
                   currentItem,
                   style: TextStyle(color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  minFontSize: 6,
+                  maxFontSize: 16,
+                ),
+              ),
+            ),
+            child: GestureDetector(
+              onLongPress: () {
+                setState(() {
+                  if (isDeletedMode) {
+                    stopDeleteMode();
+                  } else {
+                    _startDeleteMode(); // 삭제 모드를 시작합니다.
+                    selectedItems.add(currentItem); // 현재 아이템을 선택 상태로 설정
+                  }
+                });
+              },
+              onTap: () {
+                if (isDeletedMode) {
+                  setState(() {
+                    if (selectedItems.contains(currentItem)) {
+                      selectedItems.remove(currentItem);
+                    } else {
+                      selectedItems.add(currentItem);
+                    }
+                  });
+                }
+              },
+              onDoubleTap: () async {
+                try {
+                  // Firestore에서 현재 선택된 아이템의 정보를 불러옵니다.
+                  final foodsSnapshot = await FirebaseFirestore.instance
+                      .collection('foods')
+                      .where('foodsName',
+                          isEqualTo: currentItem) // 현재 아이템과 일치하는지 확인
+                      .get();
+
+                  if (foodsSnapshot.docs.isNotEmpty) {
+                    final foodsData = foodsSnapshot.docs.first.data();
+
+                    // Firestore에서 불러온 데이터를 동적으로 할당
+                    String defaultCategory =
+                        foodsData['defaultCategory'] ?? '기타';
+                    String defaultFridgeCategory =
+                        foodsData['defaultFridgeCategory'] ?? '기타';
+                    String shoppingListCategory =
+                        foodsData['shoppingListCategory'] ?? '기타';
+                    int expirationDays = foodsData['expirationDate'] ?? 0;
+                    int shelfLife = foodsData['shelfLife'] ?? 0;
+
+                    // FridgeItemDetails로 동적으로 데이터를 전달
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FridgeItemDetails(
+                          foodsName: currentItem, // 아이템 이름
+                          foodsCategory: defaultCategory, // 동적 카테고리
+                          fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
+                          shoppingListCategory:
+                              shoppingListCategory, // 쇼핑 리스트 카테고리
+                          expirationDays: expirationDays, // 유통기한
+                          consumptionDays: shelfLife, // 소비기한
+                          registrationDate:
+                              DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                        ),
+                      ),
+                    );
+                  } else {
+                    print("Item not found in foods collection: $currentItem");
+                  }
+                } catch (e) {
+                  print('Error fetching food details: $e');
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDeletedMode && isSelected
+                      ? Colors.orange
+                      : _getBackgroundColor(expirationDays),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Center(
+                  child: AutoSizeText(
+                    currentItem,
+                    style: TextStyle(color: Colors.white),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    minFontSize: 6,
+                    maxFontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -768,5 +874,23 @@ class _FridgeMainPageState extends State<FridgeMainPage> {
         );
       },
     );
+  }
+}
+
+class DeleteModeObserver extends NavigatorObserver {
+  final VoidCallback onPageChange;
+
+  DeleteModeObserver({required this.onPageChange});
+
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    super.didPush(route, previousRoute);
+    onPageChange();
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    super.didPop(route, previousRoute);
+    onPageChange();
   }
 }
