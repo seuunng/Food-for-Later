@@ -31,58 +31,43 @@ dependencies:
   flutter:
     sdk: flutter
 
-  permission_handler: ^10.2.0
-  table_calendar: ^3.0.6
-  device_info_plus: ^9.0.2
-  flutter_colorpicker: ^1.0.3
-  uuid: ^3.0.6
-  path_provider: ^2.0.11
   # Firebase 관련 패키지
-  firebase_core: ^2.15.1
-  firebase_storage: ^11.0.0
-  flutter_image_compress: ^1.1.0
+  firebase_core: ^2.15.1 # Firebase 초기화 (모든 Firebase 기능의 기본 패키지)
+  firebase_storage: ^11.0.0 # Firebase Storage, 이미지 및 파일 업로드/다운로드
+  flutter_image_compress: ^1.1.0 # 이미지 압축 (Firebase Storage에 업로드 전 압축 필요 시)
   cloud_firestore: ^4.8.0   # Firestore DB 사용
   firebase_auth: ^4.6.2  # 사용자 인증 (이메일, 소셜 로그인)
-  firebase_messaging: ^14.5.0   # 푸시 알림
-  firebase_analytics: ^10.8.0  # 사용자 분석
+  firebase_app_check: ^0.2.1
+  #  firebase_messaging: ^14.5.0  # 푸시 알림
+#  firebase_analytics: ^10.8.0  # 사용자 분석
 
-  # 상태 관리
-  provider: ^6.0.5  # 상태 관리
-  flutter_bloc: ^8.1.0  # BLoC 패턴 적용 (선택)
-  riverpod: ^2.0.3  # 상태 관리 대안 (선택)
-
-  # 보안 및 인증 관련 패키지
-  flutter_secure_storage: ^6.0.0   # 사용자 로그인 정보 로컬에 안전하게 저장
+  # 권한 관리 관련 패키지
+  intl: ^0.18.0  # 다국어 지원 및 날짜 포맷
+  uuid: ^3.0.6 # 고유한 식별자(UUID) 생성 (데이터 관리 등에서 유용)
+  path_provider: ^2.0.11  # 파일을 로컬 디바이스에 저장하기 위한 경로 제공
+  shared_preferences: ^2.1.1  # 로컬 저장소 (테마, 설정 등)
+  #  permission_handler: ^10.2.0  # 위치, 카메라 등의 접근 권한 관리
 
   # UI 관련 패키지
-  flutter_svg: ^1.1.6  # SVG 이미지 지원
-  intl: ^0.18.0  # 다국어 지원 및 날짜 포맷
-  font_awesome_flutter: ^10.5.0  # 아이콘
-  google_fonts: ^4.0.4  # 다양한 폰트 적용
-  shared_preferences: ^2.1.1  # 로컬 저장소 (테마, 설정 등)
-  auto_size_text: ^3.0.0
+  auto_size_text: ^3.0.0 # 텍스트 자동 크기 조정 위젯
+  table_calendar: ^3.0.6 # 달력 위젯 제공 (스케줄 관리 등)
+  fl_chart: ^0.69.0
+  #  font_awesome_flutter: ^10.5.0  # 아이콘
+  #  google_fonts: ^4.0.4  # 다양한 폰트 적용
+  #  cupertino_icons: ^1.0.8
 
   # 네비게이션 및 기타 유틸리티
-  get: ^4.6.6  # 네비게이션 및 상태 관리
   url_launcher: ^6.1.10  # 외부 URL 열기
   image_picker: ^1.0.0  # 사진 선택
-  photo_manager: ^3.0.0
-
-  # 테스트 관련 패키지
-  flutter_test:
-    sdk: flutter
-
-  # 애니메이션 및 효과
-  animations: ^2.0.5 # 애니메이션 효과 추가
-
+  photo_manager: ^3.0.0 # 장치 내 미디어 파일 관리 및 접근
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  fl_chart: ^0.69.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  dependency_validator: ^3.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

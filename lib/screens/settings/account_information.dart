@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
+import 'package:food_for_later/screens/auth/login_main_page.dart';
 
 class AccountInformation extends StatefulWidget {
   @override
@@ -165,15 +167,15 @@ class _AccountInformationState extends State<AccountInformation> {
   }
 
   Future<void> _showNicknameChangeDialog() async {
-    TextEditingController _passwordController = TextEditingController();
+    TextEditingController _nickNameController = TextEditingController();
     await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('닉네임 변경'),
           content: TextField(
-            controller: _passwordController,
-            obscureText: true,
+            controller: _nickNameController,
+            // obscureText: true,
             decoration: InputDecoration(hintText: '새 닉네임을 입력하세요'),
           ),
           actions: [
@@ -212,9 +214,13 @@ class _AccountInformationState extends State<AccountInformation> {
             ),
             TextButton(
               child: Text('로그아웃'),
-              onPressed: () {
-                // 로그아웃 로직 처리
+              onPressed: () async {
                 Navigator.pop(context);
+                await FirebaseAuth.instance.signOut(); // 로그아웃 처리
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()), // 로그인 페이지로 이동
+                );
               },
             ),
           ],

@@ -1,3 +1,15 @@
+buildscript {
+    ext.kotlin_version = "1.9.0" // Kotlin 버전을 명시적으로 추가합니다.
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.3.15' // Google Services
+    }
+}
+
 plugins {
     id "com.android.application"
     // START: FlutterFire Configuration
@@ -43,7 +55,11 @@ android {
         }
     }
 }
-
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:32.1.0')
+    implementation 'com.google.firebase:firebase-analytics'
+}
 flutter {
     source = "../.."
 }
+
