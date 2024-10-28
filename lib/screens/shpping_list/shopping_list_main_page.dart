@@ -420,10 +420,23 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
 
 // 삭제 모드를 해제하고 애니메이션을 중지
   void stopShoppingListDeleteMode() {
+    if (!mounted) return;
     setState(() {
       showCheckBoxes = false;
     });
   }
+
+  void _initializeCheckAndStrikeThrough(String category) {
+    if (!checkedItems.containsKey(category) ||
+        checkedItems[category]!.length != itemLists[category]!.length) {
+      checkedItems[category] = List<bool>.filled(itemLists[category]!.length, false);
+    }
+    if (!strikeThroughItems.containsKey(category) ||
+        strikeThroughItems[category]!.length != itemLists[category]!.length) {
+      strikeThroughItems[category] = List<bool>.filled(itemLists[category]!.length, false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -562,6 +575,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
 
   // 물건을 추가할 수 있는 그리드
   Widget _buildGrid(List<String> items, String category) {
+    _initializeCheckAndStrikeThrough(category);
     if (items.isEmpty) {
       return Container();
     }

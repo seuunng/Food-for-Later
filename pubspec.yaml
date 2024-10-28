@@ -32,18 +32,18 @@ dependencies:
     sdk: flutter
 
   # Firebase 관련 패키지
-  firebase_core: ^2.15.1 # Firebase 초기화 (모든 Firebase 기능의 기본 패키지)
-  firebase_storage: ^11.0.0 # Firebase Storage, 이미지 및 파일 업로드/다운로드
-  flutter_image_compress: ^1.1.0 # 이미지 압축 (Firebase Storage에 업로드 전 압축 필요 시)
-  cloud_firestore: ^4.8.0   # Firestore DB 사용
-  firebase_auth: ^4.6.2  # 사용자 인증 (이메일, 소셜 로그인)
-  firebase_app_check: ^0.2.1
+  firebase_core: ^3.2.0 # Firebase 초기화 (모든 Firebase 기능의 기본 패키지)
+  firebase_storage: ^12.1.1 # Firebase Storage, 이미지 및 파일 업로드/다운로드
+  flutter_image_compress: ^2.3.0 # 이미지 압축 (Firebase Storage에 업로드 전 압축 필요 시)
+  cloud_firestore: ^5.1.0   # Firestore DB 사용
+  firebase_auth: ^5.1.2  # 사용자 인증 (이메일, 소셜 로그인)
+  google_sign_in: ^6.2.1
   #  firebase_messaging: ^14.5.0  # 푸시 알림
 #  firebase_analytics: ^10.8.0  # 사용자 분석
 
   # 권한 관리 관련 패키지
-  intl: ^0.18.0  # 다국어 지원 및 날짜 포맷
-  uuid: ^3.0.6 # 고유한 식별자(UUID) 생성 (데이터 관리 등에서 유용)
+  intl: ^0.19.0  # 다국어 지원 및 날짜 포맷
+  uuid: ^4.5.1 # 고유한 식별자(UUID) 생성 (데이터 관리 등에서 유용)
   path_provider: ^2.0.11  # 파일을 로컬 디바이스에 저장하기 위한 경로 제공
   shared_preferences: ^2.1.1  # 로컬 저장소 (테마, 설정 등)
   #  permission_handler: ^10.2.0  # 위치, 카메라 등의 접근 권한 관리
@@ -67,14 +67,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  dependency_validator: ^3.0.0
+  dependency_validator: ^4.1.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

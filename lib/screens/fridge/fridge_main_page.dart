@@ -123,6 +123,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
           .where('FridgeId', isEqualTo: fridgeId)
           .get(); // 해당 유저 ID에 맞는 냉장고 데이터
 
+      if (!mounted) return;
       List<Map<String, dynamic>> items =
           snapshot.docs.map((doc) => doc.data()).toList();
 
@@ -136,6 +137,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
       });
 
       for (var itemData in items) {
+        if (!mounted) return;
         String fridgeCategoryId = itemData['fridgeCategoryId'] ?? '기타';
         String itemName = itemData['items'] ?? 'Unknown Item';
 
@@ -145,6 +147,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
               .where('foodsName', isEqualTo: itemName)
               .get();
 
+          if (!mounted) return;
           if (foodsSnapshot.docs.isNotEmpty) {
             final foodsData = foodsSnapshot.docs.first.data();
             int expirationDate = foodsData['expirationDate'] ?? 0;
@@ -326,6 +329,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
 // 삭제 모드를 해제하고 애니메이션을 중지
   void stopDeleteMode() {
+    if (!mounted) return;
     setState(() {
       isDeletedMode = false;
       selectedItems.clear();

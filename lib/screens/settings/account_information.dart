@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/auth/login_main_page.dart';
+import 'package:http/http.dart' as http;
 
 class AccountInformation extends StatefulWidget {
   @override
@@ -10,8 +15,29 @@ class AccountInformation extends StatefulWidget {
 }
 
 class _AccountInformationState extends State<AccountInformation> {
-  String _nickname = '사용자 닉네임'; // 닉네임 기본값
+  String _nickname = '사용자의 닉네임'; // 닉네임 기본값
   String _email = 'user@example.com'; // 이메일 기본값
+  final TextEditingController _passwordController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+  void _loadUserInfo() {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _email = user.email ?? '이메일 없음';
+
+        // 이메일 주소에서 @ 앞부분을 추출하여 닉네임으로 설정
+        if (_email.contains('@')) {
+          _nickname = _email.split('@')[0];
+        } else {
+          _nickname = '닉네임 없음'; // 기본 닉네임
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,37 +163,132 @@ class _AccountInformationState extends State<AccountInformation> {
       );
   }
 
+  // 새 비밀번호 이메일 전송 함수 예시 (실제 API나 SMTP 설정이 필요)
+  Future<void> _sendEmailWithNewPassword(String email, String newPassword) async {
+    final serviceId = 'service_ywv72ps';
+    final templateId = 'template_sqijmdh';
+    final userId = 'your_user_id';
+    final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
+
+    // EmailJS API로 요청할 데이터 정의
+    final response = await http.post(
+      url,
+      headers: {
+        'origin': 'http://localhost',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'service_id': serviceId,
+        'template_id': templateId,
+        // 'user_id': userId,
+        'template_params': {
+          'to_email': email,
+          'message': '임시 비밀번호: ${newPassword}',
+        },
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print('이메일 전송 성공');
+    } else {
+      print('이메일 전송 실패: ${response.body}');
+    }
+  }
+
   // 비밀번호 변경 다이얼로그
   Future<void> _showPasswordSendDialog() async {
-    TextEditingController _passwordController = TextEditingController();
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('비밀번호 보내기'),
-          content: Text('임의의 비밀번호를 등록된 이메일로 보냅니다.'),
-          actions: [
-            TextButton(
-              child: Text('취소'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+    // 랜덤 6자리 비밀번호 생성 함수
+    String _generateRandomPassword(int length) {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      Random random = Random();
+      return String.fromCharCodes(Iterable.generate(
+          length, (_) => characters.codeUnitAt(random.nextInt(characters.length))));
+    }
+
+    String newPassword = _generateRandomPassword(6); // 6자리 비밀번호 생성
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null && user.email != null) {
+      await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('비밀번호 보내기'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${user.email}로 새로운 비밀번호를 전송합니다.'),
+                TextField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(hintText: '현재 비밀번호를 입력하세요'),
+                  obscureText: true,
+                ),
+              ],
             ),
-            TextButton(
-              child: Text('보내기'),
-              onPressed: () {
-                // 비밀번호 변경 로직 처리
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
+            actions: [
+              TextButton(
+                child: Text('취소'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+              TextButton(
+                child: Text('보내기'),
+                onPressed: () async {
+                  try {
+                    AuthCredential credential = EmailAuthProvider.credential(
+                      email: user.email!,
+                      password: _passwordController.text.trim(), // 사용자가 입력한 현재 비밀번호로 설정
+                    );
+                    print('비밀번호 $_passwordController.text');
+                    // 비밀번호 입력 확인
+                    if (_passwordController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('현재 비밀번호를 입력해주세요.')),
+                      );
+                      return;
+                    }
+                    await user.reauthenticateWithCredential(credential);
+                    await user.updatePassword(newPassword);
+                    await _sendEmailWithNewPassword(user.email!, newPassword);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('비밀번호가 이메일로 전송되었습니다.')),
+                    );
+                  } on FirebaseAuthException catch (e) {
+                    if (e.code == 'requires-recent-login') {
+                      // 사용자에게 재로그인 요구
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('비밀번호 업데이트 실패: ${e.message}')),
+                      );
+                    }
+                  } catch (e) {
+                    print('비밀번호 업데이트 오류: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('비밀번호 업데이트 실패: $e')),
+                    );
+                  }
+                  Navigator.pop(context); // 다이얼로그 닫기
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('로그인 상태를 확인할 수 없습니다.')),
+      );
+    }
   }
 
   Future<void> _showNicknameChangeDialog() async {
     TextEditingController _nickNameController = TextEditingController();
+    User? user = FirebaseAuth.instance.currentUser;
+
     await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
@@ -187,9 +308,27 @@ class _AccountInformationState extends State<AccountInformation> {
             ),
             TextButton(
               child: Text('변경'),
-              onPressed: () {
-                // 비밀번호 변경 로직 처리
-                Navigator.pop(context);
+              onPressed: () async {
+                String newNickname = _nickNameController.text.trim();
+                if (newNickname.isNotEmpty && user != null) {
+                  // Firestore의 users 컬렉션에 닉네임 업데이트
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid) // 사용자 ID를 기준으로 문서 선택
+                      .set({'nickname': newNickname}, SetOptions(merge: true));
+
+                  // 로컬 상태 업데이트
+                  setState(() {
+                    _nickname = newNickname;
+                  });
+
+                  Navigator.pop(context); // 다이얼로그 닫기
+                } else {
+                  // 닉네임이 비어있으면 안내 메시지 추가 가능
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('닉네임을 입력해주세요')),
+                  );
+                }
               },
             ),
           ],
