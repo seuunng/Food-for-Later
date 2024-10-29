@@ -38,6 +38,8 @@ dependencies:
   cloud_firestore: ^5.1.0   # Firestore DB 사용
   firebase_auth: ^5.1.2  # 사용자 인증 (이메일, 소셜 로그인)
   google_sign_in: ^6.2.1
+  flutter_dotenv: ^5.0.2
+  kakao_flutter_sdk: ^1.2.2
   #  firebase_messaging: ^14.5.0  # 푸시 알림
 #  firebase_analytics: ^10.8.0  # 사용자 분석
 
@@ -87,7 +89,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/
+    - assets/images/google_logo.png
+    - assets/images/kakao_talk_logo.png
+    - assets/images/naver_logo.png
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

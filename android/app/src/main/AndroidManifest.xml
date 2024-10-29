@@ -41,6 +41,24 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <meta-data
+            android:name="com.kakao.sdk.AppKey"
+            android:value="5034857b2410ff1a269a926a016387dd" />
+
+        <!-- Custom Scheme 설정을 위한 intent-filter 추가 -->
+        <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="kakao5034857b2410ff1a269a926a016387dd"
+                    android:host="oauth" />
+            </intent-filter>
+        </activity>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -49,8 +67,12 @@
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <action android:name="android.intent.action.KAKAO_TALK"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <intent>
+            <action android:name="com.kakao.talk.intent.action.KAKAO_TALK" />
+        </intent>
     </queries>
+
 </manifest>

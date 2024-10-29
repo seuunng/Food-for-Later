@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/auth/login_main_page.dart';
@@ -23,6 +24,7 @@ class _AccountInformationState extends State<AccountInformation> {
     super.initState();
     _loadUserInfo();
   }
+
   void _loadUserInfo() {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -36,6 +38,44 @@ class _AccountInformationState extends State<AccountInformation> {
           _nickname = '닉네임 없음'; // 기본 닉네임
         }
       });
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // 최근 인증이 필요할 경우 재인증 수행
+        await user.reauthenticateWithCredential(EmailAuthProvider.credential(
+          email: user.email!,
+          password: 'your_password_here', // 사용자가 입력한 비밀번호
+        ));
+
+        // 계정 삭제
+        await user.delete();
+
+        // 성공 메시지 및 로그아웃 후 로그인 페이지로 이동
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('계정이 성공적으로 삭제되었습니다.')),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        // 재인증이 필요한 경우의 오류 처리
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('최근 로그인한 기록이 없어 다시 로그인해주세요.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('계정 삭제 중 오류가 발생했습니다: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('계정 삭제 중 오류가 발생했습니다: $e')),
+      );
     }
   }
 
@@ -66,7 +106,7 @@ class _AccountInformationState extends State<AccountInformation> {
                 Spacer(),
                 BasicElevatedButton(
                   onPressed: () {
-                    _showNicknameChangeDialog();// 검색 버튼 클릭 시 검색어 필터링
+                    _showNicknameChangeDialog(); // 검색 버튼 클릭 시 검색어 필터링
                   },
                   iconTitle: Icons.edit,
                   buttonTitle: '수정',
@@ -103,7 +143,7 @@ class _AccountInformationState extends State<AccountInformation> {
                 // 비밀번호 변경 버튼
                 BasicElevatedButton(
                   onPressed: () {
-                    _showPasswordSendDialog();// 검색 버튼 클릭 시 검색어 필터링
+                    _showPasswordSendDialog(); // 검색 버튼 클릭 시 검색어 필터링
                   },
                   iconTitle: Icons.edit,
                   buttonTitle: '수정',
@@ -139,20 +179,21 @@ class _AccountInformationState extends State<AccountInformation> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, // 버튼 사이 간격을 균등하게 설정
           children: [
+            // Expanded(
+            //   child: NavbarButton(
+            //     buttonTitle: '회원탈퇴',
+            //     onPressed: () {
+            //       // 람다식으로 함수 전달
+            //       _withdrawAlertDialog();
+            //     },
+            //   ),
+            // ),
+            // SizedBox(width: 20), // 두 버튼 사이 간격
             Expanded(
               child: NavbarButton(
-                buttonTitle: '회원탈퇴',
-                onPressed: () { // 람다식으로 함수 전달
-                  _withdrawAlertDialog();
-                },
-              ),
-            ),
-            SizedBox(width: 20), // 두 버튼 사이 간격
-            Expanded(
-              child:
-              NavbarButton(
                 buttonTitle: '로그아웃',
-                onPressed: () { // 람다식으로 함수 전달
+                onPressed: () {
+                  // 람다식으로 함수 전달
                   _logoutAlertDialog();
                 },
               ),
@@ -160,14 +201,19 @@ class _AccountInformationState extends State<AccountInformation> {
           ],
         ),
       ),
-      );
+    );
   }
 
   // 새 비밀번호 이메일 전송 함수 예시 (실제 API나 SMTP 설정이 필요)
-  Future<void> _sendEmailWithNewPassword(String email, String newPassword) async {
+  Future<void> _sendEmailWithNewPassword(
+      String email, String newPassword) async {
+    // if (email.isEmpty) {
+    //   print('Error: email is empty.');
+    //   return; // 이메일이 비어 있다면 함수 종료
+    // }
     final serviceId = 'service_ywv72ps';
     final templateId = 'template_sqijmdh';
-    final userId = 'your_user_id';
+    final userId = 'DS6fXKVLzGOG-3fAQ';
     final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
 
     // EmailJS API로 요청할 데이터 정의
@@ -180,7 +226,7 @@ class _AccountInformationState extends State<AccountInformation> {
       body: json.encode({
         'service_id': serviceId,
         'template_id': templateId,
-        // 'user_id': userId,
+        'user_id': userId,
         'template_params': {
           'to_email': email,
           'message': '임시 비밀번호: ${newPassword}',
@@ -190,6 +236,10 @@ class _AccountInformationState extends State<AccountInformation> {
 
     if (response.statusCode == 200) {
       print('이메일 전송 성공');
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      print('email $email');
     } else {
       print('이메일 전송 실패: ${response.body}');
     }
@@ -199,10 +249,11 @@ class _AccountInformationState extends State<AccountInformation> {
   Future<void> _showPasswordSendDialog() async {
     // 랜덤 6자리 비밀번호 생성 함수
     String _generateRandomPassword(int length) {
-      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const characters =
+          'abcdefghijklmnopqrstuvwxyz0123456789';
       Random random = Random();
-      return String.fromCharCodes(Iterable.generate(
-          length, (_) => characters.codeUnitAt(random.nextInt(characters.length))));
+      return String.fromCharCodes(Iterable.generate(length,
+          (_) => characters.codeUnitAt(random.nextInt(characters.length))));
     }
 
     String newPassword = _generateRandomPassword(6); // 6자리 비밀번호 생성
@@ -213,11 +264,11 @@ class _AccountInformationState extends State<AccountInformation> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('비밀번호 보내기'),
+            title: Text('임시 비밀번호 보내기'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${user.email}로 새로운 비밀번호를 전송합니다.'),
+                Text('${user.email}로 전송합니다.'),
                 TextField(
                   controller: _passwordController,
                   decoration: InputDecoration(hintText: '현재 비밀번호를 입력하세요'),
@@ -238,9 +289,9 @@ class _AccountInformationState extends State<AccountInformation> {
                   try {
                     AuthCredential credential = EmailAuthProvider.credential(
                       email: user.email!,
-                      password: _passwordController.text.trim(), // 사용자가 입력한 현재 비밀번호로 설정
+                      password: _passwordController.text
+                          .trim(), // 사용자가 입력한 현재 비밀번호로 설정
                     );
-                    print('비밀번호 $_passwordController.text');
                     // 비밀번호 입력 확인
                     if (_passwordController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -252,14 +303,19 @@ class _AccountInformationState extends State<AccountInformation> {
                     await user.updatePassword(newPassword);
                     await _sendEmailWithNewPassword(user.email!, newPassword);
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('비밀번호가 이메일로 전송되었습니다.')),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('비밀번호가 이메일로 전송되었습니다.')),
+                      );
+                      print('newPassword $newPassword');
+                      Navigator.pop(context); // 다이얼로그 닫기
+                    }
                   } on FirebaseAuthException catch (e) {
                     if (e.code == 'requires-recent-login') {
                       // 사용자에게 재로그인 요구
                       await FirebaseAuth.instance.signOut();
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => LoginPage()));
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('비밀번호 업데이트 실패: ${e.message}')),
@@ -271,7 +327,6 @@ class _AccountInformationState extends State<AccountInformation> {
                       SnackBar(content: Text('비밀번호 업데이트 실패: $e')),
                     );
                   }
-                  Navigator.pop(context); // 다이얼로그 닫기
                 },
               ),
             ],
@@ -316,12 +371,10 @@ class _AccountInformationState extends State<AccountInformation> {
                       .collection('users')
                       .doc(user.uid) // 사용자 ID를 기준으로 문서 선택
                       .set({'nickname': newNickname}, SetOptions(merge: true));
-
                   // 로컬 상태 업데이트
                   setState(() {
                     _nickname = newNickname;
                   });
-
                   Navigator.pop(context); // 다이얼로그 닫기
                 } else {
                   // 닉네임이 비어있으면 안내 메시지 추가 가능
@@ -358,7 +411,8 @@ class _AccountInformationState extends State<AccountInformation> {
                 await FirebaseAuth.instance.signOut(); // 로그아웃 처리
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()), // 로그인 페이지로 이동
+                  MaterialPageRoute(
+                      builder: (context) => LoginPage()), // 로그인 페이지로 이동
                 );
               },
             ),
@@ -383,9 +437,9 @@ class _AccountInformationState extends State<AccountInformation> {
             ),
             TextButton(
               child: Text('탈퇴'),
-              onPressed: () {
-                // 회원탈퇴 로직 처리
+              onPressed: () async {
                 Navigator.pop(context);
+                await _deleteAccount();
               },
             ),
           ],

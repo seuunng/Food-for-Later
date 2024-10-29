@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/basic_elevated_button.dart';
+import 'package:food_for_later/components/login_elevated_button.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -80,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
       }
       setState(() {});
       print('회원가입 실패: ${e.code} - ${e.message}');
-      }catch (e) {
+    } catch (e) {
       setState(() {
         errorMessage = '회원가입 실패: ${e.toString()}';
       });
@@ -96,7 +100,8 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -105,13 +110,49 @@ class _LoginPageState extends State<LoginPage> {
       // Firebase에 사용자 인증
       await _auth.signInWithCredential(credential);
       Navigator.pushReplacementNamed(context, '/home'); // 홈으로 이동
-
     } catch (e) {
       setState(() {
         errorMessage = 'Google 로그인 실패: ${e.toString()}';
       });
       print('Google 로그인 실패: $e');
     }
+  }
+
+  Future<void> signInWithKakao() async {
+    try {
+      // Kakao 로그인
+      bool isInstalled = await isKakaoTalkInstalled();
+      OAuthToken token;
+print(isInstalled);
+      if (isInstalled) {
+        token = await UserApi.instance.loginWithKakaoTalk();
+      } else {
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
+
+      // Kakao Access Token으로 Firebase Custom Token 생성 및 로그인
+      final kakaoAccessToken = token.accessToken;
+      // Firebase 서버에서 Kakao Token을 통해 Custom Token을 생성하는 로직 필요
+      final firebaseCustomToken = await createFirebaseToken(kakaoAccessToken);
+
+      print(kakaoAccessToken);
+      // Firebase 로그인
+      await _auth.signInWithCustomToken(firebaseCustomToken);
+      Navigator.pushReplacementNamed(context, '/home'); // 홈으로 이동
+
+    } catch (e) {
+      print('카카오 로그인 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카카오 로그인에 실패했습니다.')),
+      );
+    }
+  }
+
+  Future<String> createFirebaseToken(String kakaoAccessToken) async {
+    // TODO: 백엔드 서버에 kakaoAccessToken을 전송하고, Firebase Custom Token을 생성해 받아옵니다.
+    // 예제이므로, 실제 백엔드 서버와의 통신 로직을 추가해야 합니다.
+    // Firebase Admin SDK를 사용하여 Custom Token을 생성할 수 있습니다.
+    throw UnimplementedError("Firebase Custom Token 생성을 위한 백엔드 서버 필요");
   }
 
   @override
@@ -126,29 +167,50 @@ class _LoginPageState extends State<LoginPage> {
             //   controller: _nickNameController,
             //   decoration: InputDecoration(labelText: '닉네임'),
             // ),
+            // Row(
+            //   children: [
+            // SizedBox(width: 10,),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(labelText: '이메일'),
             ),
+            // SizedBox(width: 10,),
+            //   ],
+            // ),
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(labelText: '비밀번호'),
               obscureText: true,
             ),
             SizedBox(height: 12),
-            Text(errorMessage, style: TextStyle(color: Colors.red)),
-            ElevatedButton(
+            // Text(errorMessage, style: TextStyle(color: Colors.red)),
+            BasicElevatedButton(
               onPressed: signInWithEmailAndPassword,
-              child: Text('로그인'),
+              iconTitle: Icons.login,
+              buttonTitle: '로그인',
             ),
             TextButton(
               onPressed: registerWithEmailAndPassword,
               child: Text('회원가입'),
             ),
             Divider(),
-            ElevatedButton(
+            SizedBox(height: 20),
+            LoginElevatedButton(
+              buttonTitle: 'Google로 로그인',
+              image: 'assets/images/google_logo.png',
               onPressed: signInWithGoogle,
-              child: Text('Google로 로그인'),
+            ),
+            SizedBox(height: 12),
+            LoginElevatedButton(
+              buttonTitle: 'Kakao Talk으로 로그인',
+              image: 'assets/images/kakao_talk_logo.png',
+              onPressed: signInWithKakao,
+            ),
+            SizedBox(height: 12),
+            LoginElevatedButton(
+              buttonTitle: 'Naver로 로그인',
+              image: 'assets/images/naver_logo.png',
+              onPressed: signInWithGoogle,
             ),
           ],
         ),
