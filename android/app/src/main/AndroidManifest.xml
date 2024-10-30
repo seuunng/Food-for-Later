@@ -47,7 +47,8 @@
             android:value="5034857b2410ff1a269a926a016387dd" />
 
         <!-- Custom Scheme 설정을 위한 intent-filter 추가 -->
-        <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity" >
+        <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

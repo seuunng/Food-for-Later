@@ -21,7 +21,7 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
-  KakaoSdk.init(nativeAppKey: '5034857b2410ff1a269a926a016387dd');
+  KakaoSdk.init(nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e');
   runApp(MyApp());
 }
 

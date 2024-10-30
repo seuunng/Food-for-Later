@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
@@ -123,19 +126,25 @@ class _LoginPageState extends State<LoginPage> {
       // Kakao 로그인
       bool isInstalled = await isKakaoTalkInstalled();
       OAuthToken token;
-print(isInstalled);
+
+      print('isInstalled $isInstalled');
+
       if (isInstalled) {
         token = await UserApi.instance.loginWithKakaoTalk();
+
+        print('token $token');
+
       } else {
         token = await UserApi.instance.loginWithKakaoAccount();
       }
 
       // Kakao Access Token으로 Firebase Custom Token 생성 및 로그인
       final kakaoAccessToken = token.accessToken;
+      print('kakaoAccessToken $kakaoAccessToken');
+
       // Firebase 서버에서 Kakao Token을 통해 Custom Token을 생성하는 로직 필요
       final firebaseCustomToken = await createFirebaseToken(kakaoAccessToken);
-
-      print(kakaoAccessToken);
+      print('firebaseCustomToken $firebaseCustomToken');
       // Firebase 로그인
       await _auth.signInWithCustomToken(firebaseCustomToken);
       Navigator.pushReplacementNamed(context, '/home'); // 홈으로 이동
@@ -149,10 +158,20 @@ print(isInstalled);
   }
 
   Future<String> createFirebaseToken(String kakaoAccessToken) async {
-    // TODO: 백엔드 서버에 kakaoAccessToken을 전송하고, Firebase Custom Token을 생성해 받아옵니다.
-    // 예제이므로, 실제 백엔드 서버와의 통신 로직을 추가해야 합니다.
-    // Firebase Admin SDK를 사용하여 Custom Token을 생성할 수 있습니다.
-    throw UnimplementedError("Firebase Custom Token 생성을 위한 백엔드 서버 필요");
+    final uri = Uri.parse('https://us-central1-food-for-later.cloudfunctions.net/createFirebaseToken'); // 백엔드 서버의 엔드포인트
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'kakaoAccessToken': kakaoAccessToken}),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('firebaseCustomToken $data');
+      return data['firebaseCustomToken'];
+    } else {
+      print('Firebase Function Error: ${response.body}');
+      throw Exception('Failed to generate Firebase Custom Token');
+    }
   }
 
   @override
