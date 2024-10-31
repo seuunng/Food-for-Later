@@ -17,12 +17,17 @@ import 'package:food_for_later/screens/shpping_list/shopping_list_main_page.dart
 
 //StatefulWidget: 상태가 있는 위젯
 class HomeScreen extends StatefulWidget {
+  final String selectedCategory;
+
+  HomeScreen({Key? key, required this.selectedCategory}) : super(key: key);
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  late String _selectedCategory;
+  String _selectedCategory_records = '앨범형';
   final GlobalKey<FridgeMainPageState> _fridgeMainPageKey = GlobalKey<FridgeMainPageState>();
   final GlobalKey<ShoppingListMainPageState> _shoppingListMainPageKey =
   GlobalKey<ShoppingListMainPageState>();
@@ -39,8 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
       FridgeMainPage(key: _fridgeMainPageKey), // 냉장고 페이지
       ShoppingListMainPage(key: _shoppingListMainPageKey),
       RecipeMainPage(category: []),
-      ViewRecordMain(),
+      ViewRecordMain(selectedCategory: _selectedCategory_records),
     ];
+    _selectedCategory = widget.selectedCategory;
   }
 
   void _onItemTapped(int index) {

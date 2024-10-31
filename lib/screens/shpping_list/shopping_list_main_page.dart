@@ -21,6 +21,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
 
   List<String> fridgeName = [];
   String? selectedFridge = '';
+  String? selectedFridgeId = '';
 
   List<ShoppingCategory> _categories = [];
   Map<String, List<String>> itemLists = {};
@@ -48,14 +49,16 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
   void didPopNext() { // 다른 페이지로 이동했다가 다시 이 페이지로 돌아올 때 호출
     super.didPopNext();
     stopShoppingListDeleteMode();
+    _loadSelectedFridge();
   }
 
   @override
   void dispose() { // 페이지가 완전히 사라지거나 소멸될 때 호출
     routeObserver.unsubscribe(this); // routeObserver 구독 해제
-    if (showCheckBoxes) {
-      stopShoppingListDeleteMode();
-    }
+    // if (showCheckBoxes) {
+    //   stopShoppingListDeleteMode();
+    // }
+    _loadSelectedFridge();
     super.dispose();
   }
 
@@ -189,9 +192,11 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
 
   void _loadSelectedFridge() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
-      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고'; // 기본 값 설정
+      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
     });
+    // _loadFridgeCategoriesFromFirestore(selectedFridge); // 냉장고 데이터 로드
   }
 
   // 취소선이 있는 아이템들은 자동으로 체크박스가 true
@@ -250,6 +255,16 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
     final fridgeId = selectedFridge != null && selectedFridge!.isNotEmpty
         ? selectedFridge
         : '기본 냉장고';
+
+    print('_addItemsToFridge() 실행 - 선택된 Fridge ID: $fridgeId');
+
+    if (fridgeId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('선택된 냉장고를 찾을 수 없습니다.')),
+      );
+      return;
+    }
+
     try {
       for (var category in checkedItems.keys) {
         List<String> categoryItems = List<String>.from(itemLists[category]!);
@@ -263,12 +278,15 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
         for (int index = 0; index < checkedItems[category]!.length; index++) {
             if (checkedItems[category]![index]) {
               String itemName = categoryItems[index];
+              print('추가 중인 아이템: $itemName');
 
               // FoodsModel에서 해당 itemName에 맞는 데이터를 찾기
             final matchingFood = await FirebaseFirestore.instance
                 .collection('foods')
                 .where('foodsName', isEqualTo: itemName)
                 .get();
+
+              print('matchingFood: ${matchingFood.docs.map((doc) => doc['foodsName']).join(', ')}');
 
             if (matchingFood.docs.isEmpty) {
               print("일치하는 음식이 없습니다: $itemName");
@@ -291,6 +309,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
                 );
                 // 중복되어도 장보기 목록에서만 삭제
               } else {
+                print('냉장고에 추가 중: $itemName');
                 // 냉장고에 아이템 추가 (중복되지 않은 경우)
                 await FirebaseFirestore.instance.collection('fridge_items').add({
                   'items': itemName,
@@ -412,11 +431,11 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
       );
     }
   }
-  void _startDeleteMode() {
-    setState(() {
-      showCheckBoxes= true;
-    });
-  }
+  // void _startDeleteMode() {
+  //   setState(() {
+  //     showCheckBoxes= true;
+  //   });
+  // }
 
 // 삭제 모드를 해제하고 애니메이션을 중지
   void stopShoppingListDeleteMode() {

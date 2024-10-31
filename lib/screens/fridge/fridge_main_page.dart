@@ -70,8 +70,8 @@ class FridgeMainPageState extends State<FridgeMainPage>
   @override
   void didPopNext() { // 다른 페이지로 이동했다가 다시 이 페이지로 돌아올 때 호출
     super.didPopNext();
-    print('didPopNext() 실행');
     stopDeleteMode();
+    _loadSelectedFridge();
   }
 
   @override
@@ -80,6 +80,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
     if (isDeletedMode) {
       stopDeleteMode();
     }
+    _loadSelectedFridge();
     _controller.dispose();
     super.dispose();
   }
@@ -183,9 +184,11 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
   void _loadSelectedFridge() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
-      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고'; // 기본 값 설정
+      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
     });
+    _loadFridgeCategoriesFromFirestore(selectedFridge); // 냉장고 데이터 로드
   }
 
   //냉장고 내부 구분

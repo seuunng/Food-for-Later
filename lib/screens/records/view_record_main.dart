@@ -6,6 +6,9 @@ import 'package:food_for_later/screens/records/records_calendar_view.dart';
 import 'package:food_for_later/screens/records/records_list_view.dart';
 
 class ViewRecordMain extends StatefulWidget {
+  final String selectedCategory;
+
+  ViewRecordMain({Key? key, required this.selectedCategory}) : super(key: key);
 
   @override
   _ViewRecordMainState createState() => _ViewRecordMainState();
@@ -51,17 +54,30 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
     }
   }
 
+  List<Widget> _getPageOrder() {
+    switch (widget.selectedCategory) {
+      case '앨범형':
+        return [RecordsAlbumView(), RecordsCalendarView(), RecordsListView()];
+      case '달력형':
+        return [RecordsCalendarView(), RecordsAlbumView(), RecordsListView()];
+      case '리스트형':
+        return [RecordsListView(), RecordsAlbumView(), RecordsCalendarView()];
+      default:
+        return [RecordsAlbumView(), RecordsCalendarView(), RecordsListView()];
+    }
+  }
+
   String _getPageTitle() {
     // 페이지 번호에 따라 제목을 반환
-    switch (_currentPage) {
-      case 0:
-        return '앨범형';
-      case 1:
-        return '달력형';
-      case 2:
-        return '리스트형';
+    switch (widget.selectedCategory) {
+      case '앨범형':
+        return ['앨범형', '달력형', '리스트형'][_currentPage];
+      case '달력형':
+        return ['달력형', '앨범형', '리스트형'][_currentPage];
+      case '리스트형':
+        return ['리스트형', '앨범형', '달력형'][_currentPage];
       default:
-        return '트렌드';
+        return ['앨범형', '달력형', '리스트형'][_currentPage];
     }
   }
 
@@ -114,11 +130,7 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
                     _currentPage = page;
                   });
                 },
-                children: [
-                  RecordsAlbumView(), // 첫 번째 페이지: 인기 키워드
-                  RecordsCalendarView(),
-                  RecordsListView(),
-                ],
+                children: _getPageOrder(),
               ),
             ),
           ),
