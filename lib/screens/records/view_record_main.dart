@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/floating_add_button.dart';
+import 'package:food_for_later/main.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/records_album_view.dart';
 import 'package:food_for_later/screens/records/records_calendar_view.dart';
 import 'package:food_for_later/screens/records/records_list_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ViewRecordMain extends StatefulWidget {
   final String selectedCategory;
@@ -14,11 +16,59 @@ class ViewRecordMain extends StatefulWidget {
   _ViewRecordMainState createState() => _ViewRecordMainState();
 }
 
-class _ViewRecordMainState extends State<ViewRecordMain> {
+class _ViewRecordMainState extends State<ViewRecordMain> with RouteAware {
   PageController _pageController = PageController();
+  String selectedRecordListType = '앨범형';
   int _currentPage = 0; // 현재 페이지 상태
   final int _totalPages = 3; // 총 페이지 수
   bool isTruth = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedRecordListType(); // 초기화 시 Firestore에서 데이터를 불러옴
+  }
+  @override
+  void didChangeDependencies() { // 이 페이지에서 사용되는 종속성이 변경될 때 호출됩니다
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+  @override
+  void didPopNext() { // 다른 페이지로 이동했다가 다시 이 페이지로 돌아올 때 호출
+    // super.didPopNext();
+    _loadSelectedRecordListType();
+  }
+  @override
+  void dispose() { // 페이지가 완전히 사라지거나 소멸될 때 호출
+    routeObserver.unsubscribe(this); // routeObserver 구독 해제
+    _loadSelectedRecordListType();
+    super.dispose();
+  }
+
+  void _loadSelectedRecordListType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
+    setState(() {
+      selectedRecordListType = prefs.getString('selectedRecordListType') ?? '앨범형';
+      int initialPage = _getInitialPage(selectedRecordListType);
+      _pageController = PageController(initialPage: initialPage);
+      _currentPage = initialPage;
+      _getPageTitle();
+    });
+    print('selectedRecordListType $selectedRecordListType');
+  }
+  int _getInitialPage(String recordListType) {
+    switch (recordListType) {
+      case '앨범형':
+        return 0;
+      case '달력형':
+        return 1;
+      case '리스트형':
+        return 2;
+      default:
+        return 0;
+    }
+  }
 
   void _goToNextTable() {
     if (_currentPage == _totalPages - 1) {
@@ -55,12 +105,12 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
   }
 
   List<Widget> _getPageOrder() {
-    switch (widget.selectedCategory) {
+    switch (selectedRecordListType) {
       case '앨범형':
         return [RecordsAlbumView(), RecordsCalendarView(), RecordsListView()];
       case '달력형':
         return [RecordsCalendarView(), RecordsAlbumView(), RecordsListView()];
-      case '리스트형':
+      case '목록형':
         return [RecordsListView(), RecordsAlbumView(), RecordsCalendarView()];
       default:
         return [RecordsAlbumView(), RecordsCalendarView(), RecordsListView()];
@@ -69,15 +119,15 @@ class _ViewRecordMainState extends State<ViewRecordMain> {
 
   String _getPageTitle() {
     // 페이지 번호에 따라 제목을 반환
-    switch (widget.selectedCategory) {
+    switch (selectedRecordListType) {
       case '앨범형':
-        return ['앨범형', '달력형', '리스트형'][_currentPage];
+        return ['앨범형', '달력형', '목록형'][_currentPage];
       case '달력형':
-        return ['달력형', '앨범형', '리스트형'][_currentPage];
-      case '리스트형':
-        return ['리스트형', '앨범형', '달력형'][_currentPage];
+        return ['달력형', '앨범형', '목록형'][_currentPage];
+      case '목록형':
+        return ['목록형', '앨범형', '달력형'][_currentPage];
       default:
-        return ['앨범형', '달력형', '리스트형'][_currentPage];
+        return ['앨범형', '달력형', '목록형'][_currentPage];
     }
   }
 

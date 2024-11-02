@@ -14,12 +14,10 @@ import 'package:food_for_later/screens/settings/app_environment_settings.dart';
 import 'package:food_for_later/screens/settings/app_usage_settings.dart';
 import 'package:food_for_later/screens/settings/feedback_submission.dart';
 import 'package:food_for_later/screens/shpping_list/shopping_list_main_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 //StatefulWidget: 상태가 있는 위젯
 class HomeScreen extends StatefulWidget {
-  final String selectedCategory;
-
-  HomeScreen({Key? key, required this.selectedCategory}) : super(key: key);
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -32,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ShoppingListMainPageState> _shoppingListMainPageKey =
   GlobalKey<ShoppingListMainPageState>();
   late List<Widget> _pages;
+  String selectedRecordListType = '앨범형';
 
   String? selectedCategory;
 
@@ -39,16 +38,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadSelectedRecordListType(); // 초기화 시 Firestore에서 데이터를 불러옴
     // initState에서 _pages 리스트 초기화
     _pages = [
       FridgeMainPage(key: _fridgeMainPageKey), // 냉장고 페이지
       ShoppingListMainPage(key: _shoppingListMainPageKey),
       RecipeMainPage(category: []),
-      ViewRecordMain(selectedCategory: _selectedCategory_records),
+      ViewRecordMain(selectedCategory: selectedRecordListType),
     ];
-    _selectedCategory = widget.selectedCategory;
   }
 
+  void _loadSelectedRecordListType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
+    setState(() {
+      selectedRecordListType = prefs.getString('selectedRecordListType') ?? '앨범형';
+    });
+    print('selectedRecordListType $selectedRecordListType');
+  }
   void _onItemTapped(int index) {
     if (index < _pages.length) {
       setState(() {

@@ -39,6 +39,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
       _selectedCategory_fridge  = prefs.getString('selectedFridge') ?? '기본 냉장고';
+      _selectedCategory_records = prefs.getString('selectedRecordListType') ?? '앨범형';
     });
   }
   // Firestore에서 냉장고 목록 불러오기
@@ -206,7 +207,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
   void _saveSettings() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedFridge', _selectedCategory_fridge);
-    print(_selectedCategory_fridge);
+    await prefs.setString('selectedRecordListType', _selectedCategory_records);
+    print(_selectedCategory_records);
     Navigator.pop(context);
   }
 
@@ -310,11 +312,12 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   ),
                   Spacer(),
                   DropdownButton<String>(
-                    value:
-                        _categories_records.contains(_selectedCategory_records)
-                            ? _selectedCategory_records
-                            : null,
-                    items: _categories_records.map((String category) {
+                    value: _selectedCategory_records,
+                        // _categories_records.contains(_selectedCategory_records)
+                        //     ? _selectedCategory_records
+                        //     : null,
+                    items: _categories_records
+                        .map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
                         child: Text(category),
@@ -324,12 +327,6 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                       setState(() {
                         _selectedCategory_records = newValue!;
                       });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => HomeScreen(selectedCategory: _selectedCategory_records),
-                        ),
-                      );
                     },
                   ),
                 ],
