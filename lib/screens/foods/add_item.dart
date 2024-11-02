@@ -487,6 +487,7 @@ class _AddItemState extends State<AddItem> {
   }
 
   Widget _buildCategoryGrid() {
+    final theme = Theme.of(context);
     return GridView.builder(
         shrinkWrap: true,
         // GridView의 크기를 콘텐츠에 맞게 줄임
@@ -516,8 +517,8 @@ class _AddItemState extends State<AddItem> {
             child: Container(
               decoration: BoxDecoration(
                 color: selectedCategory == category
-                    ? Colors.orange
-                    : Colors.blueAccent,
+                    ? theme.chipTheme.selectedColor
+                    : theme.chipTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(8.0),
               ), // 카테고리 버튼 크기 설정
               height: 60,
@@ -525,7 +526,11 @@ class _AddItemState extends State<AddItem> {
               child: Center(
           child: AutoSizeText(
                   category,
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                      color:  selectedCategory == category
+                          ? theme.chipTheme.secondaryLabelStyle!.color
+                          : theme.chipTheme.labelStyle!.color,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -539,6 +544,7 @@ class _AddItemState extends State<AddItem> {
   }
 
   Widget _buildPreferredCategoryGrid() {
+    final theme = Theme.of(context);
     return GridView.builder(
       shrinkWrap: true,
       // GridView의 크기를 콘텐츠에 맞게 줄임
@@ -568,8 +574,8 @@ class _AddItemState extends State<AddItem> {
           child: Container(
             decoration: BoxDecoration(
               color: selectedCategory == category
-                  ? Colors.orange
-                  : Colors.blueAccent,
+                  ? theme.chipTheme.selectedColor
+                  : theme.chipTheme.backgroundColor,
               borderRadius: BorderRadius.circular(8.0),
             ), // 카테고리 버튼 크기 설정
             height: 60,
@@ -577,7 +583,10 @@ class _AddItemState extends State<AddItem> {
             child: Center(
               child: AutoSizeText(
                 category,
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: selectedCategory == category
+                      ? theme.chipTheme.secondaryLabelStyle!.color
+                      : theme.chipTheme.labelStyle!.color,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -593,6 +602,7 @@ class _AddItemState extends State<AddItem> {
 
   // 카테고리별 아이템을 출력하는 그리드
   Widget _buildCategoryItemsGrid() {
+    final theme = Theme.of(context);
     List<FoodsModel> items = [];
 
     if (selectedCategory != null) {
@@ -638,12 +648,14 @@ class _AddItemState extends State<AddItem> {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.blueAccent,
+                color: theme.chipTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               height: 60, // 카
               child: Center(
-                child: Icon(Icons.add, color: Colors.white, size: 32),
+                child: Icon(Icons.add,
+                    color: theme.chipTheme.labelStyle!.color,
+                    size: 32),
               ),
             ),
           );
@@ -747,15 +759,18 @@ class _AddItemState extends State<AddItem> {
             child: Container(
               decoration: BoxDecoration(
                 color: isDeleted
-                    ? Colors.grey // 삭제된 아이템은 회색
-                    : (isSelected ? Colors.orange : Colors.blueAccent),
+                    ? theme.chipTheme.disabledColor // 삭제된 아이템은 회색
+                    : theme.chipTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               height: 60,
               child: Center(
                 child: AutoSizeText(
                   itemName,
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                      color: isDeleted
+                          ? Colors.grey[800] : theme.chipTheme.labelStyle!.color,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,

@@ -492,6 +492,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
     );
   }
   Widget _buildChips() {
+    final theme = Theme.of(context);
     return Wrap(
       spacing: 6.0,
       runSpacing: 1.0,
@@ -500,27 +501,27 @@ class _ViewResearchListState extends State<ViewResearchList> {
         ...keywords
             .where((keyword) => !(useFridgeIngredientsState && fridgeIngredients.contains(keyword)))
             .map((keyword) {
-          return Material(
-            child: Chip(
-              label: Text(
-                keyword,
-                style: TextStyle(
-                  fontSize: 12.0,
-                ),
+          return Chip(
+            // backgroundColor: theme.scaffoldBackgroundColor,
+            label: Text(
+              keyword,
+              style: TextStyle(
+                fontSize: 12.0,
+                color: theme.chipTheme.labelStyle!.color,
               ),
-              deleteIcon: Icon(Icons.close, size: 16.0),
-              onDeleted: () {
-                setState(() {
-                  keywords.remove(keyword); // 키워드 삭제
-                  loadRecipes();
-                });
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-                side: BorderSide(
-                  color: Colors.grey, // 테두리 색상
-                  width: 0.5, // 테두리 두께 조정
-                ),
+            ),
+            deleteIcon: Icon(Icons.close, size: 16.0),
+            onDeleted: () {
+              setState(() {
+                keywords.remove(keyword); // 키워드 삭제
+                loadRecipes();
+              });
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+              side: BorderSide(
+                // color: Colors.grey, // 테두리 색상
+                width: 0.5, // 테두리 두께 조정
               ),
             ),
           );
@@ -529,52 +530,15 @@ class _ViewResearchListState extends State<ViewResearchList> {
     );
   }
 
-  // Widget _buildKeywords() {
-  //   if (keywords.isNotEmpty) {
-  //     return Wrap(
-  //       spacing: 6.0,
-  //       runSpacing: 1.0,
-  //       children: keywords
-  //           .where((keyword) => !fridgeIngredients.contains(keyword))
-  //           .map((keyword) {
-  //         return Material(
-  //           child: Chip(
-  //             label: Text(
-  //               keyword,
-  //               style: TextStyle(
-  //                 fontSize: 12.0,
-  //               ),
-  //             ),
-  //             deleteIcon: Icon(Icons.close, size: 16.0),
-  //             onDeleted: () {
-  //               setState(() {
-  //                 keywords.remove(keyword); // 키워드 삭제
-  //                 loadRecipes();
-  //               });
-  //             },
-  //             shape: RoundedRectangleBorder(
-  //               borderRadius: BorderRadius.circular(8.0),
-  //               side: BorderSide(
-  //                 color: Colors.grey, // 테두리 색상
-  //                 width: 0.5, // 테두리 두께 조정
-  //               ),
-  //             ),
-  //           ),
-  //         );
-  //       }).toList(),
-  //     );
-  //   } else {
-  //     return Text("키워드가 없습니다."); // 키워드가 없을 때 메시지 표시
-  //   }
-  // }
-
   Widget _buildFridgeIngredientsChip() {
+    final theme = Theme.of(context);
     if (useFridgeIngredientsState) {
       return Chip(
         label: Text(
           "냉장고 재료",
           style: TextStyle(
             fontSize: 12.0,
+            color: theme.chipTheme.labelStyle!.color,
           ),
         ),
         deleteIcon: Icon(Icons.close, size: 16.0),
@@ -588,7 +552,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
           side: BorderSide(
-            color: Colors.grey, // 테두리 색상
+            // color: Colors.grey, // 테두리 색상
             width: 0.5, // 테두리 두께 조정
           ),
         ),

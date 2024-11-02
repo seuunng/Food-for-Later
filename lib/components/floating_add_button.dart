@@ -25,8 +25,7 @@ class FloatingAddButton extends StatelessWidget {
       child: FloatingActionButton(
         heroTag: heroTag,
         onPressed: onPressed,
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(Icons.add, color: theme.colorScheme.onPrimaryContainer),
+        child: Icon(Icons.add),
       ),
     );
   }

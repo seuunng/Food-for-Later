@@ -261,7 +261,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                   padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: Colors.green, width: 2),
+                    // border: Border.all(color: Colors.green, width: 2),
                     borderRadius: BorderRadius.circular(8.0),
                   ), // 카테고리 버튼 크기 설정
                   child: Row(

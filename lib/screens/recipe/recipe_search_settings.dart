@@ -123,6 +123,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('레시피 검색 상세설정'),
@@ -170,14 +171,15 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
                       label: Text(
                         keyword,
                         style: TextStyle(
-                          color: Colors.red, // 텍스트 색상 빨간색으로 변경
+                          color: theme.chipTheme.selectedColor,
                           fontWeight: FontWeight.bold, // 강조를 위해 굵게 설정
                         ),
                       ),
-                      shape: StadiumBorder(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
                         side: BorderSide(
                           color: Colors.red, // 테두리 색상 빨간색으로 변경
-                          width: 1.5, // 테두리 두께 조절
+                          width: 1, // 테두리 두께 조절
                         ),
                       ),
                       onDeleted: () {
@@ -212,6 +214,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
 
   // 조리 방법 카테고리 빌드 함수
   Widget _buildMethodCategory(String category, List<String> methods) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -222,7 +225,12 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             final isSelected =
                 selectedCookingMethods?.contains(method) ?? false;
             return ChoiceChip(
-              label: Text(method),
+              label: Text(method,
+                style: TextStyle(
+                  color: isSelected ?
+                      theme.chipTheme.secondaryLabelStyle?.color
+                      : theme.chipTheme.labelStyle?.color,
+                ),),
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
@@ -233,8 +241,8 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
                   }
                 });
               },
-              selectedColor: Colors.deepPurple[100],
-              backgroundColor: Colors.grey[200],
+              // selectedColor: Colors.deepPurple[100],
+              // backgroundColor: Colors.grey[200],
             );
           }).toList(),
         ),
@@ -245,6 +253,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
 
   Widget _buildPreferredCategory(
       String category, List<PreferredFoodModel> models) {
+    final theme = Theme.of(context);
     return Wrap(
       spacing: 8.0,
       runSpacing: 4.0,
@@ -257,7 +266,13 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             selectedPreferredFoodCategories?.contains(categoryName) ?? false;
         renderedCategories.add(categoryName);
         return ChoiceChip(
-          label: Text(categoryName), // category를 라벨로 설정
+          label: Text(categoryName,
+            style: TextStyle(
+              color: isSelected ?
+              theme.chipTheme.secondaryLabelStyle?.color
+                  : theme.chipTheme.labelStyle?.color,
+            ),
+          ), // category를 라벨로 설정
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
@@ -268,8 +283,8 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
               }
             });
           },
-          selectedColor: Colors.deepPurple[100],
-          backgroundColor: Colors.grey[200],
+          // selectedColor: Colors.deepPurple[100],
+          // backgroundColor: Colors.grey[200],
         );
       })).toList(),
     );

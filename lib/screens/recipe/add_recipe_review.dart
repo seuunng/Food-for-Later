@@ -192,6 +192,7 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
   }
 
   Widget _buildReviewsAddSection() {
+    final theme = Theme.of(context);
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.reviewId == null ? '리뷰쓰기' : '리뷰수정하기'),
@@ -247,9 +248,9 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
                   },
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 15),
-                    side: BorderSide(color: Colors.deepPurple, width: 1),
+                    side: BorderSide(color: theme.colorScheme.primary, width: 1),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                   child: Center(

@@ -55,6 +55,7 @@ class _RecipeGridState extends State<RecipeGrid> {
     );
   }
   Widget _buildCategoryGrid() {
+    final theme = Theme.of(context);
     if (widget.categories.isEmpty) {
       // 기본 카테고리가 비어있을 때 처리
       return Container();
@@ -83,8 +84,8 @@ class _RecipeGridState extends State<RecipeGrid> {
           child: Container(
             decoration: BoxDecoration(
               color: selectedCategory == category
-                  ? Colors.orange
-                  : Colors.blueAccent,
+                  ? theme.chipTheme.selectedColor
+                  : theme.chipTheme.backgroundColor,
               borderRadius: BorderRadius.circular(8.0),
             ), // 카테고리 버튼 크기 설정
             // height: 60,
@@ -92,7 +93,9 @@ class _RecipeGridState extends State<RecipeGrid> {
             child: Center(
               child: AutoSizeText(
                 category,
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: selectedCategory == category
+                    ? theme.chipTheme.disabledColor
+                    : theme.chipTheme.labelStyle!.color,),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -107,6 +110,7 @@ class _RecipeGridState extends State<RecipeGrid> {
   }
 
   Widget _buildCategoryItemsGrid() {
+    final theme = Theme.of(context);
     if (selectedCategory == null) {
       return Container();
     }
@@ -140,14 +144,14 @@ class _RecipeGridState extends State<RecipeGrid> {
           },
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.blueAccent,
+              color: theme.chipTheme.backgroundColor,
               borderRadius: BorderRadius.circular(8.0),
             ),
             height: 60,
             child: Center(
               child: AutoSizeText(
                 currentItem,
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.chipTheme.labelStyle!.color),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,

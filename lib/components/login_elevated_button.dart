@@ -21,8 +21,8 @@ class LoginElevatedButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: theme.colorScheme.primaryContainer, // 배경 색상
-          foregroundColor: theme.colorScheme.onPrimaryContainer, // 텍스트 색상
+          // backgroundColor: theme.colorScheme.primaryContainer, // 배경 색상
+          // foregroundColor: theme.colorScheme.onPrimaryContainer, // 텍스트 색상
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10), // 둥근 모서리
           ),

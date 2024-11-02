@@ -34,6 +34,7 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
   }
 
   Widget _buildCategoryGrid() {
+    final theme = Theme.of(context);
     if (widget.categories.isEmpty) {
       // 기본 카테고리가 비어있을 때 처리
       return Center(child: Text("카테고리가 없습니다."));
@@ -67,8 +68,8 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
           child: Container(
             decoration: BoxDecoration(
               color: selectedCategory == category
-                  ? Colors.orange
-                  : Colors.blueAccent,
+                  ? theme.chipTheme.selectedColor
+                  : theme.chipTheme.backgroundColor,
               borderRadius: BorderRadius.circular(8.0),
             ), // 카테고리 버튼 크기 설정
             // height: 60,
@@ -76,7 +77,7 @@ class _RecipeGridThemeState extends State<RecipeGridTheme> {
             child: Center(
               child: Text(
                 category,
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: theme.chipTheme.labelStyle!.color, fontSize: 16),
               ),
             ),
           ),

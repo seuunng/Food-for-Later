@@ -175,8 +175,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
   @override
   Widget build(BuildContext context) {
-    print('categoryOptions ${categoryOptions}');
-    print('categoryOptions.entries ${categoryOptions.entries}');
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('기록 검색 상세설정'),
@@ -197,14 +197,28 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
               children: categoryOptions.entries.map((entry) {
                 final category = entry.key;
                 final isSelected = entry.value;
-                return ChoiceChip(
-                  label: Text(category),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    _onCategoryChanged(category, selected);
-                  },
-                  selectedColor: Colors.deepPurple[100],
-                  backgroundColor: Colors.grey[200],
+                return Theme(
+                  data: Theme.of(context).copyWith( // 민트색으로 반짝하는 효과 없애기, 근데 효과는 없음
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                  ),
+                  child: ChoiceChip(
+                    label: Text(
+                      category,
+                      style: TextStyle(
+                        color: isSelected ?
+                        theme.chipTheme.secondaryLabelStyle?.color
+                            : theme.chipTheme.labelStyle?.color,
+                      ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      _onCategoryChanged(category, selected);
+                    },
+                    pressElevation: 0, // 터치 시 입체감 없애기
+                    // splashColor: Colors.transparent,
+                  ),
                 );
               }).toList(),
             ),

@@ -71,6 +71,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     showDialog(
       context: context,
       builder: (context) {
+        final theme = Theme.of(context);
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
@@ -135,7 +136,10 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       return Chip(
                         label: Text(
                           unit,
-                          style: TextStyle(fontSize: 12),
+                          style: TextStyle(
+                            color: theme.chipTheme.selectedColor,
+                            fontSize: 12, // 강조를 위해 굵게 설정
+                          ),
                         ),
                         labelPadding: EdgeInsets.symmetric(
                           horizontal: 4.0, // 라벨(텍스트)과 좌우 경계 사이의 여백
@@ -471,6 +475,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       body: ListView.builder(
         itemCount: userData.length,
         itemBuilder: (context, index) {
+          final theme = Theme.of(context);
           final record = userData[index];
           return Dismissible(
               key: Key(record['id']), // 각 항목에 고유한 키를 부여
@@ -496,12 +501,14 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                     style: TextStyle(
                       fontSize: 18.0, // 제목 글씨 크기 키우기
                       fontWeight: FontWeight.bold, // 제목 글씨 굵게
+                      color: theme.colorScheme.onSecondary,
                     ),
                   ),
                   subtitle: Text(
                     '${record['분류'].join(', ')}',
                     style: TextStyle(
                       fontSize: 18.0, // 분류 글씨 크기 키우기
+                      color: theme.colorScheme.onSecondary,
                     ),
                   ),
                   trailing: Row(
@@ -510,6 +517,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       IconButton(
                         icon: Icon(
                           Icons.edit,
+                          color: theme.colorScheme.onSecondary,
                         ),
                         onPressed: () => _addOrEditCategory(index: index),
                       ),

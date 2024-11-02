@@ -69,22 +69,25 @@ class _AddRecipeState extends State<AddRecipe> {
 
     if (widget.recipeData != null) {
       // 기존 레시피 데이터가 있을 때 값 설정
-      recipeNameController.text = widget.recipeData?['recipeName']?.toString() ?? '';
+      recipeNameController.text =
+          widget.recipeData?['recipeName']?.toString() ?? '';
       minuteController.text = widget.recipeData?['cookTime']?.toString() ?? '0';
-      servingsController.text = widget.recipeData?['serving']?.toString() ?? '1';
-      difficultyController.text = widget.recipeData?['difficulty']?.toString() ?? '하';
+      servingsController.text =
+          widget.recipeData?['serving']?.toString() ?? '1';
+      difficultyController.text =
+          widget.recipeData?['difficulty']?.toString() ?? '하';
       selectedDifficulty = widget.recipeData?['difficulty']?.toString() ?? '중';
 
       ingredients = List<String>.from(widget.recipeData?['ingredients'] ?? []);
       themes = List<String>.from(widget.recipeData?['themes'] ?? []);
       methods = List<String>.from(widget.recipeData?['methods'] ?? []);
-      stepsWithImages = List<Map<String, String>>.from(widget.recipeData?['steps'] ?? []);
+      stepsWithImages =
+          List<Map<String, String>>.from(widget.recipeData?['steps'] ?? []);
       mainImages = List<String>.from(widget.recipeData?['mainImages'] ?? []);
 
       selectedIngredients = ingredients;
       selectedMethods = methods;
       selectedThemes = themes;
-
     } else {
       // 새로운 레시피일 때 빈 값으로 초기화
       selectedDifficulty = '중'; // 난이도 기본값 설정
@@ -99,8 +102,7 @@ class _AddRecipeState extends State<AddRecipe> {
 
   Future<void> _loadDataFromFirestore() async {
     try {
-      final ingredientsSnapshot =
-          await _db.collection('foods').get();
+      final ingredientsSnapshot = await _db.collection('foods').get();
       final List<String> ingredientsData = ingredientsSnapshot.docs
           .map((doc) => (doc['foodsName'] as String))
           .toList();
@@ -164,7 +166,6 @@ class _AddRecipeState extends State<AddRecipe> {
 
   // 저장 버튼 누르면 레시피 추가 또는 수정 처리
   void _saveRecipe() async {
-
     try {
       if (mainImages.isEmpty) {
         ScaffoldMessenger.of(context)
@@ -202,7 +203,8 @@ class _AddRecipeState extends State<AddRecipe> {
         String? recipeId = widget.recipeData?['id'];
         print(recipeId);
         if (recipeId == null && widget.recipeData != null) {
-          DocumentReference docRef = _db.collection('recipe').doc(widget.recipeData!['id']);
+          DocumentReference docRef =
+              _db.collection('recipe').doc(widget.recipeData!['id']);
           recipeId = docRef.id;
         }
         await _db.collection('recipe').doc(recipeId).update({
@@ -340,7 +342,8 @@ class _AddRecipeState extends State<AddRecipe> {
 
     // 압축된 이미지 파일을 저장할 경로 지정
     final tempDir = await getTemporaryDirectory();
-    final compressedFile = File('${tempDir.path}/compressed_${file.path.split('/').last}');
+    final compressedFile =
+        File('${tempDir.path}/compressed_${file.path.split('/').last}');
     compressedFile.writeAsBytesSync(compressedImage!);
 
     return compressedFile;
@@ -348,6 +351,7 @@ class _AddRecipeState extends State<AddRecipe> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.recipeData == null ? '레시피 추가' : '레시피 수정'),
@@ -460,6 +464,7 @@ class _AddRecipeState extends State<AddRecipe> {
   }
 
   Widget _buildMainImagePicker() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -489,8 +494,9 @@ class _AddRecipeState extends State<AddRecipe> {
                         });
                       },
                       child: Container(
-                        color: Colors.black54,
-                        child: Icon(Icons.close, size: 18, color: Colors.white),
+                        color: theme.colorScheme.primary,
+                        child: Icon(Icons.close,
+                            size: 18, color: theme.colorScheme.onPrimary),
                       ),
                     ),
                   ),
@@ -551,6 +557,7 @@ class _AddRecipeState extends State<AddRecipe> {
             child: Row(
               // spacing: 8,
               children: filteredIngredients.map((item) {
+                final theme = Theme.of(context);
                 final bool isSelected = selectedIngredients.contains(item);
                 return GestureDetector(
                   onTap: () {
@@ -567,13 +574,15 @@ class _AddRecipeState extends State<AddRecipe> {
                         item,
                         style: TextStyle(
                           color: isSelected
-                              ? Colors.white
-                              : Colors.black, // 선택된 항목은 글씨 색을 흰색으로
+                              ? theme.chipTheme.labelStyle!.color
+                              : theme.chipTheme
+                                  .selectedColor, // 선택된 항목은 글씨 색을 흰색으로
                         ),
                       ),
                       backgroundColor: isSelected
-                          ? Colors.blue
-                          : Colors.transparent, // 선택된 항목은 배경색을 파란색으로
+                          ? theme.chipTheme.selectedColor
+                          : theme
+                              .chipTheme.backgroundColor, // 선택된 항목은 배경색을 파란색으로
                       padding: EdgeInsets.symmetric(
                           horizontal: 4.0, vertical: 0.0), // 글자와 테두리 사이의 여백 줄이기
                       labelPadding: EdgeInsets.symmetric(
@@ -590,11 +599,13 @@ class _AddRecipeState extends State<AddRecipe> {
 
 // 선택된 재료 목록을 표시
   Widget _buildselectedItems(List<String> selectedItems) {
+    final theme = Theme.of(context);
     return Wrap(
       spacing: 8,
       children: selectedItems.map((item) {
         return Chip(
-          label: Text(item),
+          label: Text(item,
+              style: TextStyle(color: theme.chipTheme.labelStyle!.color)),
           padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 0.0),
           labelPadding: EdgeInsets.symmetric(horizontal: 1.0),
           deleteIcon: Icon(Icons.close),
@@ -638,6 +649,7 @@ class _AddRecipeState extends State<AddRecipe> {
     Function(String) onItemSelected,
     String type,
   ) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -686,13 +698,14 @@ class _AddRecipeState extends State<AddRecipe> {
                       item,
                       style: TextStyle(
                         color: isSelected
-                            ? Colors.white
-                            : Colors.black, // 선택된 항목은 글씨 색을 흰색으로
+                            ? theme.chipTheme.secondaryLabelStyle!.color
+                            : theme
+                                .chipTheme.labelStyle!.color, // 선택된 항목은 글씨 색을 흰색으로
                       ),
                     ),
                     backgroundColor: isSelected
-                        ? Colors.blue
-                        : Colors.transparent, // 선택된 항목은 배경색을 파란색으로
+                        ? theme.chipTheme.selectedColor
+                        : theme.chipTheme.backgroundColor, // 선택된 항목은 배경색을 파란색으로
                     padding: EdgeInsets.symmetric(
                         horizontal: 4.0, vertical: 0.0), // 글자와 테두리 사이의 여백 줄이기
                     labelPadding: EdgeInsets.symmetric(
@@ -743,6 +756,7 @@ class _AddRecipeState extends State<AddRecipe> {
 
   //조리방법과이미지 섹션
   Widget _buildStepsWithImagesSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -800,11 +814,11 @@ class _AddRecipeState extends State<AddRecipe> {
                           });
                         },
                         child: Container(
-                          color: Colors.black54,
+                          // color: theme.chipTheme.selectedColor,
                           child: Icon(
                             Icons.close,
                             size: 18,
-                            color: Colors.white,
+                            // color: theme.chipTheme.labelStyle!.color,
                           ),
                         ),
                       ),

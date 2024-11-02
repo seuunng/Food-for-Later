@@ -181,11 +181,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: Drawer(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           child: Column(
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Theme.of(context).drawerTheme.backgroundColor // 라이트 모드일 때
+              color: Theme.of(context).drawerTheme.backgroundColor
             ),
             child: Align(
               alignment: Alignment.centerLeft,
