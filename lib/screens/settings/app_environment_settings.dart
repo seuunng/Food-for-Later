@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
+import 'package:food_for_later/main.dart';
+import 'package:food_for_later/providers/theme_provider.dart';
+import 'package:food_for_later/themes/custom_theme_mode.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppEnvironmentSettings extends StatefulWidget {
   @override
@@ -8,18 +13,36 @@ class AppEnvironmentSettings extends StatefulWidget {
 
 class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
   // 드롭다운 선택을 위한 변수
-  String _selectedCategory_them = 'Light'; // 기본 선택값
-  final List<String> _categories_them = ['Light', 'Dark']; // 카테고리 리스트
+  CustomThemeMode _tempTheme = CustomThemeMode.light;// 임시 테마 값
+  // final List<String> _categories_them = ['Light', 'Dark']; // 카테고리 리스트
   String _selectedCategory_font = 'Arial'; // 기본 선택값
   final List<String> _categories_font = ['Arial', 'Roboto', 'Times New Roman']; // 카테고리 리스트
 
-  void _saveSettings() {
-    // 저장할 데이터를 여기서 처리
-    print('Fridge: $_selectedCategory_them');
-    print('Fridge Category: $_selectedCategory_font');
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedEnvironmentSettingValue();
+  }
+  void _loadSelectedEnvironmentSettingValue() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
+    setState(() {
+      _tempTheme = CustomThemeMode.values.firstWhere(
+              (mode) => mode.toString().split('.').last == prefs.getString('themeMode'),
+          orElse: () => CustomThemeMode.light);
+      _selectedCategory_font = prefs.getString('fontType') ?? 'Arial';
+    });
 
-    // 저장 후 메인 페이지로 이동
-    Navigator.pop(context); // 이전 화면(메인 페이지)으로 돌아가기
+  }
+
+  void _saveSettings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', _tempTheme.toString().split('.').last);
+    await prefs.setString('fontType', _selectedCategory_font);// 저장할 때만 테마를 변경
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    themeProvider.setThemeMode(_tempTheme);
+
+    Navigator.pop(context);
   }
 
   @override
@@ -40,18 +63,19 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
               ),
               Spacer(), // 텍스트와 드롭다운 사이 간격
               Expanded(
-                child: DropdownButton<String>(
-                  value: _selectedCategory_them,
+                child: DropdownButton<CustomThemeMode>(
+                  value: _tempTheme,
                   isExpanded: true, // 드롭다운이 화면 너비에 맞게 확장되도록 설정
-                  items: _categories_them.map((String category) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
+                  // value: Provider.of<ThemeProvider>(context, listen: false).themeMode == ThemeMode.light ? 'Light' : 'Dark',
+                  items: CustomThemeMode.values.map((mode) {
+                    return DropdownMenuItem<CustomThemeMode>(
+                    value: mode,
+                    child: Text(mode.toString().split('.').last),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (CustomThemeMode? newValue) {
                     setState(() {
-                      _selectedCategory_them = newValue!;
+                      _tempTheme = newValue!;
                     });
                   },
                 ),
@@ -93,7 +117,6 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
           buttonTitle: '저장',
           onPressed: _saveSettings,
         ),
-
       ),
     );
   }

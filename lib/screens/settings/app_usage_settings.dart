@@ -208,7 +208,6 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedFridge', _selectedCategory_fridge);
     await prefs.setString('selectedRecordListType', _selectedCategory_records);
-    print(_selectedCategory_records);
     Navigator.pop(context);
   }
 

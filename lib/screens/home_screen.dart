@@ -185,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.lightGreen,
+              color: Theme.of(context).drawerTheme.backgroundColor // 라이트 모드일 때
             ),
             child: Align(
               alignment: Alignment.centerLeft,

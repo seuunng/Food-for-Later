@@ -3,18 +3,17 @@ import 'package:food_for_later/screens/recipe/view_research_list.dart'; // ViewR
 
 class NavbarButton extends StatelessWidget {
   final String buttonTitle;
-  // final List<String> fridgeIngredients; // 냉장고 재료 리스트
   final VoidCallback onPressed;
 
   const NavbarButton({
     Key? key,
-    // required this.fridgeIngredients,
     required this.buttonTitle,
     required this.onPressed,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
     return ElevatedButton(
       onPressed: onPressed,
@@ -22,6 +21,7 @@ class NavbarButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         padding:
             EdgeInsets.symmetric(vertical: 10), // 위아래 패딩을 조정하여 버튼 높이 축소
+        // backgroundColor: theme.colorScheme.primaryContainer,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
         ),
@@ -30,6 +30,7 @@ class NavbarButton extends StatelessWidget {
           fontSize: 18, // 글씨 크기 조정
           fontWeight: FontWeight.w500, // 약간 굵은 글씨체
           letterSpacing: 1.2, //
+          // color: theme.colorScheme.onPrimaryContainer,
         ),
       ),
     );

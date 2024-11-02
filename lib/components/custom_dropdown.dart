@@ -26,6 +26,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -58,7 +59,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
                             IconButton(
                               icon: Icon(
                                 Icons.close,
-                                color: Colors.black,
+                                color: theme.colorScheme.onPrimaryContainer,
                                 size: 16,
                               ),
                               onPressed: () {
