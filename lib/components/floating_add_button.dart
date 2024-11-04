@@ -13,7 +13,6 @@ class FloatingAddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return Container(
       height: 50, // 원하는 높이로 설정

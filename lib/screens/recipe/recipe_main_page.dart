@@ -292,7 +292,8 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.bookmark, size: 60), // 스크랩 아이콘 크기 조정
+                  icon: Icon(Icons.bookmark, size: 60,
+                      color: Theme.of(context).colorScheme.onSurface), // 스크랩 아이콘 크기 조정
                   onPressed: () {
                     Navigator.push(
                       context,

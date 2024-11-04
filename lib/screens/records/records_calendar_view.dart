@@ -150,6 +150,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           icon: Icon(
                             Icons.arrow_back_ios_new,
                             size: 20,
+                            color: theme.textTheme.bodyMedium!.color,
                           ),
                           onPressed: () {
                             setState(() {
@@ -169,6 +170,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           icon: Icon(
                             Icons.arrow_forward_ios,
                             size: 20,
+                            color: theme.textTheme.bodyMedium!.color,
                           ),
                           onPressed: () {
                             setState(() {
@@ -275,10 +277,10 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                       '$day',
                                       style: TextStyle(
                                         color: isSelected
-                                            ? theme.colorScheme.primary
+                                            ? theme.colorScheme.onPrimary
                                             : isToday
-                                                ? theme.colorScheme.primary
-                                                : theme.colorScheme.secondary,
+                                                ? theme.colorScheme.onPrimary
+                                                : theme.colorScheme.onSecondary,
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.normal,

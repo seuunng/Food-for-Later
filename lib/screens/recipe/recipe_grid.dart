@@ -94,7 +94,7 @@ class _RecipeGridState extends State<RecipeGrid> {
               child: AutoSizeText(
                 category,
                 style: TextStyle(color: selectedCategory == category
-                    ? theme.chipTheme.disabledColor
+                    ? theme.chipTheme.secondaryLabelStyle!.color
                     : theme.chipTheme.labelStyle!.color,),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

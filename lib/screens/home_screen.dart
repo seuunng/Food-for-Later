@@ -193,14 +193,15 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 '설정',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                   fontSize: 24,
                 ),
               ),
             ),
           ),
           ListTile(
-            leading: Icon(Icons.person),
+            leading: Icon(Icons.person,
+                color: Theme.of(context).colorScheme.onSurface),
             title: Text('계정 정보'),
             onTap: () {
               Navigator.pop(context); // 사이드바 닫기
@@ -213,7 +214,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.system_security_update_good),
+            leading: Icon(Icons.system_security_update_good,
+                color: Theme.of(context).colorScheme.onSurface),
             title: Text('어플 사용 설정'),
             onTap: () {
               Navigator.pop(context); // 사이드바 닫기
@@ -225,7 +227,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.language),
+            leading: Icon(Icons.language,
+                color: Theme.of(context).colorScheme.onSurface),
             title: Text('어플 환경 설정'),
             onTap: () {
               Navigator.pop(context); // 사이드바 닫기
@@ -238,7 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.send),
+            leading: Icon(Icons.send,
+            color: Theme.of(context).colorScheme.onSurface),
             title: Text('의견보내기'),
             onTap: () {
               Navigator.pop(context); // 사이드바 닫기
@@ -252,7 +256,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Spacer(),
           ListTile(
-            leading: Icon(Icons.verified_user),
+            leading: Icon(Icons.verified_user,
+                color: Theme.of(context).colorScheme.onSurface),
             title: Text('관리자 페이지'),
             onTap: () {
               Navigator.pop(context); // 사이드바 닫기
