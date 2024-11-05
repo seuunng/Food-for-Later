@@ -15,12 +15,6 @@ class AppUsageSettings extends StatefulWidget {
 class _AppUsageSettingsState extends State<AppUsageSettings> {
   String _selectedCategory_fridge = '기본 냉장고' ; // 기본 선택값
   List<String> _categories_fridge = []; // 카테고리 리스트
-  // String _selectedCategory_fridgeCategory = '냉장'; // 기본 선택값
-  // final List<String> _categories_fridgeCategory = [
-  //   '냉장',
-  //   '냉동',
-  //   '실온'
-  // ]; // 카테고리 리스트
   String _selectedCategory_foods = '입고일 기준'; // 기본 선택값
   final List<String> _categories_foods = ['소비기한 기준', '입고일 기준']; // 카테고리 리스트
   String _selectedCategory_records = '앨범형'; // 기본 선택값
@@ -34,12 +28,12 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     _loadSelectedFridge();
   }
   void _loadSelectedFridge() async {
-    // print('SelectedFridge 실행 $selectedFridge');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
       _selectedCategory_fridge  = prefs.getString('selectedFridge') ?? '기본 냉장고';
       _selectedCategory_records = prefs.getString('selectedRecordListType') ?? '앨범형';
+      _selectedCategory_foods = prefs.getString('selectedFoodStatusManagement') ?? '소비기한 기준';
     });
   }
   // Firestore에서 냉장고 목록 불러오기
@@ -208,6 +202,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedFridge', _selectedCategory_fridge);
     await prefs.setString('selectedRecordListType', _selectedCategory_records);
+    await prefs.setString('selectedFoodStatusManagement', _selectedCategory_foods);
     Navigator.pop(context);
   }
 
@@ -241,7 +236,6 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                 onAddNewItem: () {
                   _addNewCategory(_categories_fridge, '냉장고');
                 },
-                // print(selectedItem);
               ),
               Text('가장 자주 보는 냉장고를 기본냉장고로 설정하세요'),
               SizedBox(height: 20),
@@ -253,18 +247,19 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   ),
                   Spacer(),
                   DropdownButton<String>(
-                    value: _categories_foods.contains(_selectedCategory_foods)
-                        ? _selectedCategory_foods
-                        : null,
+                    value: _selectedCategory_foods,
+                    // _categories_foods.contains(_selectedCategory_foods)
+                    //     ? _selectedCategory_foods
+                    //     : null,
                     items: _categories_foods.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
                         child: Text(category),
                       );
                     }).toList(),
-                    onChanged: (String? newValue) {
+                    onChanged: (String? value) {
                       setState(() {
-                        _selectedCategory_foods = newValue!;
+                        _selectedCategory_foods = value!;
                       });
                     },
                   ),
@@ -322,9 +317,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                         child: Text(category),
                       );
                     }).toList(),
-                    onChanged: (String? newValue) {
+                    onChanged: (String? value) {
                       setState(() {
-                        _selectedCategory_records = newValue!;
+                        _selectedCategory_records = value!;
                       });
                     },
                   ),

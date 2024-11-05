@@ -106,7 +106,7 @@ class _FoodsTableState extends State<FoodsTable> {
         '냉장고카테고리': food.defaultFridgeCategory,
         '장보기카테고리': food.shoppingListCategory,
         '소비기한': food.shelfLife,
-        '유통기한': food.expirationDate,
+        // '유통기한': food.expirationDate,
       });
       setState(() {
         userData = foods;

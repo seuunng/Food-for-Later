@@ -6,7 +6,7 @@ class FoodsModel {
   final String defaultCategory;
   final String defaultFridgeCategory;
   final String shoppingListCategory;
-  final int expirationDate;
+  // final int expirationDate;
   final int shelfLife;
 
   FoodsModel({
@@ -15,7 +15,7 @@ class FoodsModel {
     required this.defaultCategory,
     required this.defaultFridgeCategory,
     required this.shoppingListCategory,
-    required this.expirationDate,
+    // required this.expirationDate,
     required this.shelfLife,
   });
 
@@ -29,7 +29,7 @@ class FoodsModel {
       defaultCategory: data['defaultCategory'] ?? '',
       defaultFridgeCategory: data['defaultFridgeCategory'] ?? '',
       shoppingListCategory: data['shoppingListCategory'] ?? '',
-      expirationDate: data['expirationDate'] != null ? int.tryParse(data['expirationDate'].toString()) ?? 0 : 0, // 숫자 변환
+      // expirationDate: data['expirationDate'] != null ? int.tryParse(data['expirationDate'].toString()) ?? 0 : 0, // 숫자 변환
       shelfLife: data['shelfLife'] != null ? int.tryParse(data['shelfLife'].toString()) ?? 0 : 0, // 숫자 변환
     );
   }
@@ -41,7 +41,7 @@ class FoodsModel {
       'DefaultCategory': defaultCategory,
       'DefaultFridgeCategory': defaultFridgeCategory,
       'ShoppingListCategory': shoppingListCategory,
-      'ExpirationDate': expirationDate,
+      // 'ExpirationDate': expirationDate,
       'ShelfLife': shelfLife,
     };
   }

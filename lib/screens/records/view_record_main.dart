@@ -55,7 +55,6 @@ class _ViewRecordMainState extends State<ViewRecordMain> with RouteAware {
       _currentPage = initialPage;
       _getPageTitle();
     });
-    print('selectedRecordListType $selectedRecordListType');
   }
   int _getInitialPage(String recordListType) {
     switch (recordListType) {

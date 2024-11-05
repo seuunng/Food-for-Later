@@ -205,7 +205,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                         mainAxisSpacing: 8.0,
                         crossAxisSpacing: 8.0,
                         childAspectRatio: 0.5),
-                    shrinkWrap: true, // GridView를 스크롤이 아닌 적절한 크기로 축소
+                    shrinkWrap: true,
+                    // GridView를 스크롤이 아닌 적절한 크기로 축소
                     physics: NeverScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
                       if (index < _firstDayOffset(_focusedDate)) {
@@ -261,8 +262,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                               borderRadius: BorderRadius.circular(8.0),
                               border: isSelected
                                   ? Border.all(
-                                  color: theme.colorScheme.secondary,
-                                  width: 2.0)
+                                      color: theme.colorScheme.secondary,
+                                      width: 2.0)
                                   : null,
                             ),
                             child: Align(
@@ -338,9 +339,11 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                                                     rec.contents ??
                                                                         '내용이 없습니다',
                                                                     style: TextStyle(
-                                                                        fontSize: 8,
-                                                                        color: theme.colorScheme.onSecondary
-                                                                    ),
+                                                                        fontSize:
+                                                                            8,
+                                                                        color: theme
+                                                                            .colorScheme
+                                                                            .onSecondary),
                                                                     overflow:
                                                                         TextOverflow
                                                                             .ellipsis,
@@ -414,11 +417,13 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${DateFormat('E').format(date)}  ${date.day}', // 요일과 날짜 출력
+                        '${DateFormat('E').format(date)}  ${date.day}',
+                        // 요일과 날짜 출력
                         textAlign: TextAlign.left,
-                        style: TextStyle(fontWeight: FontWeight.bold,
-
-                          color: Theme.of(context).colorScheme.onSecondary,),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSecondary,
+                        ),
                       ),
                       SizedBox(
                         height: 10,
@@ -455,8 +460,10 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                     Text(
                                       rec.contents ?? '내용이 없습니다',
                                       style: TextStyle(
-                                          fontSize: 16,
-                                          color: Theme.of(context).colorScheme.onSecondary,
+                                        fontSize: 16,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSecondary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -477,9 +484,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
 
   Widget _buildImageWidget(List<String> images) {
     if (images.isEmpty) {
-      return Icon(Icons.image, size: 55,
-          color: Theme.of(context).colorScheme.onSecondary
-      );
+      return Icon(Icons.image,
+          size: 55, color: Theme.of(context).colorScheme.onSecondary);
     }
     String imageUrl = images[0];
     if (Uri.parse(imageUrl).isAbsolute) {
@@ -490,9 +496,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         width: 50,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.broken_image, size: 55,
-              color: Theme.of(context).colorScheme.onSecondary
-          );
+          return Icon(Icons.broken_image,
+              size: 55, color: Theme.of(context).colorScheme.onSecondary);
         },
       );
     } else {
@@ -503,9 +508,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         width: 50,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.broken_image, size: 55,
-              color: Theme.of(context).colorScheme.onSecondary
-          );
+          return Icon(Icons.broken_image,
+              size: 55, color: Theme.of(context).colorScheme.onSecondary);
         },
       );
     }

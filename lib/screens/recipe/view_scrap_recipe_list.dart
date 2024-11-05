@@ -300,7 +300,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                             Row(
                               children: [
                                 Container(
-                                  width: MediaQuery.of(context).size.width * 0.3,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.3,
                                   child: Text(
                                     recipeName,
                                     style: TextStyle(
@@ -381,6 +382,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       ],
     );
   }
+
   Widget _buildRatingStars(double rating) {
     int fullStars = rating.floor(); // 정수 부분의 별
     bool hasHalfStar = (rating - fullStars) >= 0.5; // 반 별이 필요한지 확인

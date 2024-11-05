@@ -29,6 +29,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
   List<String> fridgeName = [];
   String? selectedFridge = '';
+  String? selectedFoodStatusManagement = '';
 
   List<FridgeCategory> storageSections = [];
   FridgeCategory? selectedSection;
@@ -187,7 +188,9 @@ class FridgeMainPageState extends State<FridgeMainPage>
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
       selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
+      selectedFoodStatusManagement = prefs.getString('selectedFoodStatusManagement') ?? '소비기한 기준';
     });
+    print('selectedFoodStatusManagement $selectedFoodStatusManagement');
     _loadFridgeCategoriesFromFirestore(selectedFridge); // 냉장고 데이터 로드
   }
 
@@ -575,7 +578,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
                         foodsData['defaultFridgeCategory'] ?? '기타';
                     String shoppingListCategory =
                         foodsData['shoppingListCategory'] ?? '기타';
-                    int expirationDays = foodsData['expirationDate'] ?? 0;
+                    // int expirationDays = foodsData['expirationDate'] ?? 0;
                     int shelfLife = foodsData['shelfLife'] ?? 0;
 
                     // FridgeItemDetails로 동적으로 데이터를 전달

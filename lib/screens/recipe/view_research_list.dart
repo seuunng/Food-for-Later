@@ -142,7 +142,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
             bool matchesThemes = themes
                 .map((theme) => theme.trim().toLowerCase())
                 .contains(lowerCaseKeyword);
-
             return matchesFoods || matchesMethods || matchesThemes;
           });
         }).toList();
@@ -170,6 +169,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
         }).toList();
       }
 
+// print('prioritizedIngredients $prioritizedIngredients');
+
       // 제외할 키워드를 포함하지 않는 레시피 필터링
       if (excludeKeywords != null && excludeKeywords!.isNotEmpty) {
         filteredDocs = filteredDocs.where((doc) {
@@ -188,6 +189,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
         }).toList();
         keywords = widget.category;
       });
+      // print('matchingRecipes $matchingRecipes');
     } catch (e) {
       print('Error loading recipes: $e');
     }
@@ -399,6 +401,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         matchingRecipes = filteredRecipes;
       });
+      print('matchingRecipes $matchingRecipes');
     } else {
       loadRecipes();
     }
@@ -411,6 +414,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         matchingRecipes = filteredRecipes;
       });
+      // print('_searchByCategoryKeywords $keywords');
+      // print('_searchByCategoryKeywords $filteredRecipes');
     }
   }
 
@@ -437,7 +442,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
     // 최종적으로 상위 10개의 재료를 선택
     List<String> topIngredients =
         prioritizedIngredients.map((entry) => entry.key).take(10).toList();
-
+// print('topIngredients $topIngredients');
     return topIngredients;
   }
 

@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       selectedRecordListType = prefs.getString('selectedRecordListType') ?? '앨범형';
     });
-    print('selectedRecordListType $selectedRecordListType');
+    // print('selectedRecordListType $selectedRecordListType');
   }
   void _onItemTapped(int index) {
     if (index < _pages.length) {

@@ -28,7 +28,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
   List<ShoppingCategory> shoppingListCategories = [];
   ShoppingCategory? selectedShoppingListCategory;
 
-  int expirationDays = 1; // 유통기한 기본값
+  // int expirationDays = 1; // 유통기한 기본값
   int consumptionDays = 1; // 품질유지기한 기본값
 
   // 입력 필드 컨트롤러
@@ -77,7 +77,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
               defaultCategory: '',
               defaultFridgeCategory: '',
               shoppingListCategory: '',
-              expirationDate: 0,
+              // expirationDate: 0,
               shelfLife: 0,
             ),
           );
@@ -241,34 +241,34 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
               ],
             ),
             SizedBox(height: 20),
-            Row(
-              children: [
-                Text('유통기한', style: TextStyle(fontSize: 18)),
-                Spacer(),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.remove),
-                      onPressed: () {
-                        setState(() {
-                          if (expirationDays > 1) expirationDays--;
-                        });
-                      },
-                    ),
-                    Text('$expirationDays 일', style: TextStyle(fontSize: 18)),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () {
-                        setState(() {
-                          expirationDays++;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
+            // Row(
+            //   children: [
+            //     Text('유통기한', style: TextStyle(fontSize: 18)),
+            //     Spacer(),
+            //     Row(
+            //       children: [
+            //         IconButton(
+            //           icon: Icon(Icons.remove),
+            //           onPressed: () {
+            //             setState(() {
+            //               if (expirationDays > 1) expirationDays--;
+            //             });
+            //           },
+            //         ),
+            //         Text('$expirationDays 일', style: TextStyle(fontSize: 18)),
+            //         IconButton(
+            //           icon: Icon(Icons.add),
+            //           onPressed: () {
+            //             setState(() {
+            //               expirationDays++;
+            //             });
+            //           },
+            //         ),
+            //       ],
+            //     ),
+            //   ],
+            // ),
+            // SizedBox(height: 20),
             // 소비기한 선택 드롭다운
             Row(
               children: [
@@ -297,26 +297,26 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                 ),
               ],
             ),
-            SizedBox(height: 20),
-            Row(
-              children: [
-                Text('등록일', style: TextStyle(fontSize: 18)),
-                Spacer(),
-                SizedBox(
-                  width: 150, // 필드 크기
-                  child: TextField(
-                    controller: dateController,
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      hintText: '날짜 선택',
-                      // border: OutlineInputBorder(),
-                    ),
-                    readOnly: true,
-                    onTap: () => _selectDate(context), // 날짜 선택 다이얼로그 호출
-                  ),
-                ),
-              ],
-            ),
+            // SizedBox(height: 20),
+            // Row(
+            //   children: [
+            //     Text('등록일', style: TextStyle(fontSize: 18)),
+            //     Spacer(),
+            //     SizedBox(
+            //       width: 150, // 필드 크기
+            //       child: TextField(
+            //         controller: dateController,
+            //         textAlign: TextAlign.center,
+            //         decoration: InputDecoration(
+            //           hintText: '날짜 선택',
+            //           // border: OutlineInputBorder(),
+            //         ),
+            //         readOnly: true,
+            //         onTap: () => _selectDate(context), // 날짜 선택 다이얼로그 호출
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ],
         ),
       ),
@@ -343,7 +343,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                     'shoppingListCategory':
                         selectedShoppingListCategory?.categoryName ??
                             '', // 쇼핑 리스트 카테고리
-                    'expirationDate': expirationDays, // 유통기한
+                    // 'expirationDate': expirationDays, // 유통기한
                     'shelfLife': consumptionDays, // 품질유지기한
                   });
 

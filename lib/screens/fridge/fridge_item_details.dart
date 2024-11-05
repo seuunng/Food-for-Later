@@ -106,7 +106,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
               defaultCategory: '',
               defaultFridgeCategory: '',
               shoppingListCategory: '',
-              expirationDate: 0,
+              // expirationDate: 0,
               shelfLife: 0,
             ),
           );
@@ -296,33 +296,33 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                 ],
               ),
               SizedBox(height: 20),
-              Row(
-                children: [
-                  Text('유통기한', style: TextStyle(fontSize: 18)),
-                  Spacer(),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.remove),
-                        onPressed: () {
-                          setState(() {
-                            if (expirationDays > 1) expirationDays--;
-                          });
-                        },
-                      ),
-                      Text('$expirationDays 일', style: TextStyle(fontSize: 18)),
-                      IconButton(
-                        icon: Icon(Icons.add),
-                        onPressed: () {
-                          setState(() {
-                            expirationDays++;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              // Row(
+              //   children: [
+              //     Text('유통기한', style: TextStyle(fontSize: 18)),
+              //     Spacer(),
+              //     Row(
+              //       children: [
+              //         IconButton(
+              //           icon: Icon(Icons.remove),
+              //           onPressed: () {
+              //             setState(() {
+              //               if (expirationDays > 1) expirationDays--;
+              //             });
+              //           },
+              //         ),
+              //         Text('$expirationDays 일', style: TextStyle(fontSize: 18)),
+              //         IconButton(
+              //           icon: Icon(Icons.add),
+              //           onPressed: () {
+              //             setState(() {
+              //               expirationDays++;
+              //             });
+              //           },
+              //         ),
+              //       ],
+              //     ),
+              //   ],
+              // ),
               SizedBox(height: 20),
               // 소비기한 선택 드롭다운
               Row(

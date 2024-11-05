@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 class AddItem extends StatefulWidget {
   final String pageTitle;
   final String addButton;
+
   // final String fridgeFieldIndex;
   final String sourcePage;
   final Function onItemAdded;
@@ -43,7 +44,8 @@ class _AddItemState extends State<AddItem> {
   String? selectedSection;
   String searchKeyword = '';
   String? selectedItem;
-  int expirationDays = 7;
+
+  // int expirationDays = 7;
   bool isDeleteMode = false; // 삭제 모드 여부
   List<String> deletedItems = [];
 
@@ -190,7 +192,7 @@ class _AddItemState extends State<AddItem> {
                 defaultCategory: '기타',
                 defaultFridgeCategory: '기타',
                 shoppingListCategory: '기타',
-                expirationDate: 0,
+                // expirationDate: 0,
                 shelfLife: 0,
               ),
             );
@@ -294,12 +296,16 @@ class _AddItemState extends State<AddItem> {
                 items
                     .where((item) => item.toLowerCase().contains(searchKeyword))
                     .map((item) => FoodsModel(
-                          id: 'unknown', // 임시 ID 값 설정
-                          foodsName: item, // item은 String이므로 foodsName에 할당
-                          defaultCategory: category, // 카테고리명 할당
-                          defaultFridgeCategory: '기타', // 기타 필드 값은 임시로 설정
+                          id: 'unknown',
+                          // 임시 ID 값 설정
+                          foodsName: item,
+                          // item은 String이므로 foodsName에 할당
+                          defaultCategory: category,
+                          // 카테고리명 할당
+                          defaultFridgeCategory: '기타',
+                          // 기타 필드 값은 임시로 설정
                           shoppingListCategory: '기타',
-                          expirationDate: 0,
+                          // expirationDate: 0,
                           shelfLife: 0,
                         )),
               );
@@ -316,7 +322,6 @@ class _AddItemState extends State<AddItem> {
       filteredItems = tempFilteredItems;
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -475,7 +480,8 @@ class _AddItemState extends State<AddItem> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  minFontSize: 6, // 최소 글자 크기 설정
+                  minFontSize: 6,
+                  // 최소 글자 크기 설정
                   maxFontSize: 16, // 최대 글자 크기 설정
                 ),
               ),
@@ -524,17 +530,18 @@ class _AddItemState extends State<AddItem> {
               height: 60,
               // margin: EdgeInsets.symmetric(vertical: 8.0),
               child: Center(
-          child: AutoSizeText(
+                child: AutoSizeText(
                   category,
                   style: TextStyle(
-                      color:  selectedCategory == category
-                          ? theme.chipTheme.secondaryLabelStyle!.color
-                          : theme.chipTheme.labelStyle!.color,
+                    color: selectedCategory == category
+                        ? theme.chipTheme.secondaryLabelStyle!.color
+                        : theme.chipTheme.labelStyle!.color,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  minFontSize: 6, // 최소 글자 크기 설정
+                  minFontSize: 6,
+                  // 최소 글자 크기 설정
                   maxFontSize: 16, // 최대 글자 크기 설정
                 ),
               ),
@@ -583,14 +590,16 @@ class _AddItemState extends State<AddItem> {
             child: Center(
               child: AutoSizeText(
                 category,
-                style: TextStyle(color: selectedCategory == category
+                style: TextStyle(
+                  color: selectedCategory == category
                       ? theme.chipTheme.secondaryLabelStyle!.color
                       : theme.chipTheme.labelStyle!.color,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                minFontSize: 6, // 최소 글자 크기 설정
+                minFontSize: 6,
+                // 최소 글자 크기 설정
                 maxFontSize: 16, // 최대 글자 크기 설정
               ),
             ),
@@ -618,7 +627,7 @@ class _AddItemState extends State<AddItem> {
                     defaultCategory: selectedCategory!,
                     defaultFridgeCategory: '기타',
                     shoppingListCategory: '기타',
-                    expirationDate: 0,
+                    // expirationDate: 0,
                     shelfLife: 0,
                   ))
               .toList();
@@ -654,8 +663,7 @@ class _AddItemState extends State<AddItem> {
               height: 60, // 카
               child: Center(
                 child: Icon(Icons.add,
-                    color: theme.chipTheme.labelStyle!.color,
-                    size: 32),
+                    color: theme.chipTheme.labelStyle!.color, size: 32),
               ),
             ),
           );
@@ -699,13 +707,18 @@ class _AddItemState extends State<AddItem> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => FridgeItemDetails(
-                        foodsName: currentItem.foodsName, // 아이템 이름
-                        foodsCategory: defaultCategory, // 동적 카테고리
-                        fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
-                        shoppingListCategory:
-                            shoppingListCategory, // 쇼핑 리스트 카테고리
-                        expirationDays: expirationDays, // 유통기한
-                        consumptionDays: shelfLife, // 소비기한
+                        foodsName: currentItem.foodsName,
+                        // 아이템 이름
+                        foodsCategory: defaultCategory,
+                        // 동적 카테고리
+                        fridgeCategory: defaultFridgeCategory,
+                        // 냉장고 섹션
+                        shoppingListCategory: shoppingListCategory,
+                        // 쇼핑 리스트 카테고리
+                        expirationDays: expirationDays,
+                        // 유통기한
+                        consumptionDays: shelfLife,
+                        // 소비기한
                         registrationDate:
                             DateFormat('yyyy-MM-dd').format(DateTime.now()),
                       ),
@@ -768,13 +781,15 @@ class _AddItemState extends State<AddItem> {
                 child: AutoSizeText(
                   itemName,
                   style: TextStyle(
-                      color: isDeleted
-                          ? Colors.grey[800] : theme.chipTheme.labelStyle!.color,
+                    color: isDeleted
+                        ? Colors.grey[800]
+                        : theme.chipTheme.labelStyle!.color,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  minFontSize: 6, // 최소 글자 크기 설정
+                  minFontSize: 6,
+                  // 최소 글자 크기 설정
                   maxFontSize: 16, // 최대 글자 크기 설정
                 ),
               ),
