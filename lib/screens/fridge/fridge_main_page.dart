@@ -113,10 +113,6 @@ class FridgeMainPageState extends State<FridgeMainPage>
     }
   }
 
-  void refreshFridgeItems() {
-    _loadFridgeCategoriesFromFirestore(selectedFridge); // 아이템 목록 새로고침
-  }
-
   Future<void> _loadFridgeCategoriesFromFirestore(String? fridgeId) async {
     final fridgeId = selectedFridge;
     try {
@@ -142,7 +138,8 @@ class FridgeMainPageState extends State<FridgeMainPage>
         if (!mounted) return;
         String fridgeCategoryId = itemData['fridgeCategoryId'] ?? '기타';
         String itemName = itemData['items'] ?? 'Unknown Item';
-
+        // DateTime registrationDate = (itemData['registrationDate'] as Timestamp?)?.toDate() ?? DateTime.now();
+print('itemName $itemName');
         try {
           final foodsSnapshot = await FirebaseFirestore.instance
               .collection('foods')
@@ -152,7 +149,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
           if (!mounted) return;
           if (foodsSnapshot.docs.isNotEmpty) {
             final foodsData = foodsSnapshot.docs.first.data();
-            int expirationDate = foodsData['expirationDate'] ?? 0;
+            // int expirationDate = foodsData['expirationDate'] ?? 0;
             int shelfLife = foodsData['shelfLife'] ?? 0;
 
             // fridgeCategoryId가 storageSections의 categoryName과 일치하는지 확인
@@ -162,7 +159,8 @@ class FridgeMainPageState extends State<FridgeMainPage>
             if (index >= 0) {
               setState(() {
                 itemLists[index].add({
-                  itemName: expirationDate,
+                  'itemName': itemName,
+                  'shelfLife': shelfLife,
                 });
               });
             } else {
@@ -190,7 +188,6 @@ class FridgeMainPageState extends State<FridgeMainPage>
       selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
       selectedFoodStatusManagement = prefs.getString('selectedFoodStatusManagement') ?? '소비기한 기준';
     });
-    print('selectedFoodStatusManagement $selectedFoodStatusManagement');
     _loadFridgeCategoriesFromFirestore(selectedFridge); // 냉장고 데이터 로드
   }
 
@@ -217,33 +214,36 @@ class FridgeMainPageState extends State<FridgeMainPage>
           as String; // 명시적으로 String 타입으로 변환
     }).toList();
 
+    if (!mounted) return;
     setState(() {
       fridgeName = fridgeList; // fridgeName 리스트에 저장
     });
   }
 
-  // 유통기한에 따른 색상 결정 함수
-  Color _getBackgroundColor(int expirationDays) {
-    if (expirationDays >= 7) {
-      return Colors.lightGreen;
-    } else if (expirationDays < 7 && expirationDays >= 3) {
-      return Colors.yellow;
-    } else {
-      return Colors.deepOrangeAccent;
-    }
+  void refreshFridgeItems() {
+    _loadFridgeCategoriesFromFirestore(selectedFridge); // 아이템 목록 새로고침
   }
 
-// 선택된 섹션에 해당하는 아이템을 가져오는 함수
-//   List<String> _getItemsForSelectedSection() {
-//     if (selectedSection != null) {
-//       int index = storageSections
-//           .indexWhere((section) => section.id == selectedSection!.id);
-//       if (index >= 0 && index < itemLists.length) {
-//         return itemLists[index].map((item) => item.keys.first).toList();
-//       }
-//     }
-//     return [];
-//   }
+  // 유통기한에 따른 색상 결정 함수
+  Color _getBackgroundColor(int shelfLife, DateTime registrationDate) {
+    // 소비기한 또는 유통기한 선택에 따라 색상 결정
+    int daysLeft;
+    if (selectedFoodStatusManagement == '소비기한 기준') {
+      daysLeft = shelfLife;
+    } else {
+      // 등록일 기준으로 남은 기간 계산
+      final today = DateTime.now();
+      daysLeft = shelfLife - today.difference(registrationDate).inDays;
+    }
+
+    if (daysLeft >= 7) {
+      return Colors.lightGreen; // 충분히 남은 기간일 때 녹색
+    } else if (daysLeft < 7 && daysLeft >= 3) {
+      return Colors.yellow; // 만료일이 3일 남았을 때 노란색
+    } else {
+      return Colors.redAccent; // 만료일이 지났을 때 빨간색
+    }
+  }
 
 // 삭제 모드에서 선택된 아이템들을 삭제하기 전에 확인 다이얼로그를 띄우는 함수
   Future<void> _confirmDeleteItems() async {
@@ -442,6 +442,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
   // 각 섹션의 타이틀 빌드
   Widget _buildSectionTitle(String title) {
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -462,8 +463,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
     );
   }
 
-  Widget _buildGridForSection(
-      List<Map<String, dynamic>> items, int sectionIndex) {
+  Widget _buildGridForSection(List<Map<String, dynamic>> items, int sectionIndex) {
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -475,8 +475,10 @@ class FridgeMainPageState extends State<FridgeMainPage>
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        String currentItem = items[index].keys.first; // 아이템 이름
-        int expirationDays = items[index].values.first;
+        String currentItem = items[index]['itemName'] ?? 'Unknown Item'; // 아이템 이름
+        // int expirationDays = items[index].values.first;
+        int shelfLife = items[index]['shelfLife'] ?? 0;
+        DateTime registrationDate = items[index]['registrationDate'] ?? DateTime.now();
         bool isSelected = selectedItems.contains(currentItem);
 
         return AnimatedBuilder(
@@ -591,7 +593,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
                           fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
                           shoppingListCategory:
                               shoppingListCategory, // 쇼핑 리스트 카테고리
-                          expirationDays: expirationDays, // 유통기한
+                          // expirationDays: expirationDays, // 유통기한
                           consumptionDays: shelfLife, // 소비기한
                           registrationDate:
                               DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -609,7 +611,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
                 decoration: BoxDecoration(
                   color: isDeletedMode && isSelected
                       ? Colors.orange
-                      : _getBackgroundColor(expirationDays),
+                      : _getBackgroundColor(shelfLife, registrationDate),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Center(
@@ -680,10 +682,10 @@ class FridgeMainPageState extends State<FridgeMainPage>
     );
   }
 
-  Widget _buildItem(String itemName, int expirationDays) {
+  Widget _buildItem(String itemName, int shelfLife, DateTime registrationDate) {
     return Container(
       decoration: BoxDecoration(
-        color: _getBackgroundColor(expirationDays),
+        color: _getBackgroundColor(shelfLife, registrationDate),
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Center(
@@ -696,7 +698,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
   }
 
   // 물건을 추가할 수 있는 그리드
-  Widget _buildGrid(int sectionIndex) {
+  Widget _buildGrid(int sectionIndex, DateTime registrationDate) {
     if (sectionIndex >= itemLists.length) {
       return Container(); // 인덱스가 범위를 벗어나면 빈 컨테이너 반환
     }
@@ -837,7 +839,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
                           foodsData['defaultFridgeCategory'] ?? '기타';
                       String shoppingListCategory =
                           foodsData['shoppingListCategory'] ?? '기타';
-                      int expirationDays = foodsData['expirationDate'] ?? 0;
+                      // int expirationDays = foodsData['expirationDate'] ?? 0;
                       int shelfLife = foodsData['shelfLife'] ?? 0;
 
                       // FridgeItemDetails로 동적으로 데이터를 전달
@@ -850,7 +852,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
                             fridgeCategory: defaultFridgeCategory, // 냉장고 섹션
                             shoppingListCategory:
                                 shoppingListCategory, // 쇼핑 리스트 카테고리
-                            expirationDays: expirationDays, // 유통기한
+                            // expirationDays: expirationDays, // 유통기한
                             consumptionDays: shelfLife, // 소비기한
                             registrationDate:
                                 DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -868,7 +870,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
                   decoration: BoxDecoration(
                     color: isDeletedMode && isSelected
                         ? Colors.orange // 삭제 모드에서 선택된 항목은 주황색
-                        : _getBackgroundColor(expirationDays),
+                        : _getBackgroundColor(expirationDays, registrationDate),
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: Center(

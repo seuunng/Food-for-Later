@@ -192,7 +192,6 @@ class _AddItemState extends State<AddItem> {
                 defaultCategory: '기타',
                 defaultFridgeCategory: '기타',
                 shoppingListCategory: '기타',
-                // expirationDate: 0,
                 shelfLife: 0,
               ),
             );
@@ -210,6 +209,7 @@ class _AddItemState extends State<AddItem> {
             'items': itemName,
             'FridgeId': fridgeId, // Firestore에 저장할 필드
             'fridgeCategoryId': fridgeCategoryId,
+            'registrationDate': Timestamp.fromDate(DateTime.now()),
           });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -305,6 +305,7 @@ class _AddItemState extends State<AddItem> {
                           defaultFridgeCategory: '기타',
                           // 기타 필드 값은 임시로 설정
                           shoppingListCategory: '기타',
+                          // registrationDate: DateTime.now(),
                           // expirationDate: 0,
                           shelfLife: 0,
                         )),
@@ -627,6 +628,7 @@ class _AddItemState extends State<AddItem> {
                     defaultCategory: selectedCategory!,
                     defaultFridgeCategory: '기타',
                     shoppingListCategory: '기타',
+                    // registrationDate: DateTime.now(),
                     // expirationDate: 0,
                     shelfLife: 0,
                   ))
@@ -715,8 +717,6 @@ class _AddItemState extends State<AddItem> {
                         // 냉장고 섹션
                         shoppingListCategory: shoppingListCategory,
                         // 쇼핑 리스트 카테고리
-                        expirationDays: expirationDays,
-                        // 유통기한
                         consumptionDays: shelfLife,
                         // 소비기한
                         registrationDate:

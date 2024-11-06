@@ -101,6 +101,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
             defaultCategory: '기타',
             defaultFridgeCategory: '기타',
             shoppingListCategory: '기타',
+            // registrationDate: DateTime.now(),
             // expirationDate: 0,
             shelfLife: 0,
           ),

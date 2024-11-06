@@ -77,6 +77,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
               defaultCategory: '',
               defaultFridgeCategory: '',
               shoppingListCategory: '',
+              // registrationDate: DateTime.now(),
               // expirationDate: 0,
               shelfLife: 0,
             ),

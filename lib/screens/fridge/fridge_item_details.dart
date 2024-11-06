@@ -12,7 +12,6 @@ class FridgeItemDetails extends StatefulWidget {
   final String foodsCategory;
   final String fridgeCategory;
   final String shoppingListCategory;
-  final int expirationDays;
   final int consumptionDays;
   final String registrationDate;
 
@@ -21,7 +20,6 @@ class FridgeItemDetails extends StatefulWidget {
     required this.foodsCategory,
     required this.fridgeCategory,
     required this.shoppingListCategory,
-    required this.expirationDays,
     required this.consumptionDays,
     required this.registrationDate,
   });
@@ -61,7 +59,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
     _loadFridgeCategoriesFromFirestore();
     _loadShoppingListCategoriesFromFirestore();
 
-    expirationDays = widget.expirationDays;
+    // expirationDays = widget.expirationDays;
     consumptionDays = widget.consumptionDays;
     dateController.text = widget.registrationDate;
 
@@ -107,6 +105,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
               defaultFridgeCategory: '',
               shoppingListCategory: '',
               // expirationDate: 0,
+              // registrationDate: DateTime.now(),
               shelfLife: 0,
             ),
           );

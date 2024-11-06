@@ -8,6 +8,7 @@ class FoodsModel {
   final String shoppingListCategory;
   // final int expirationDate;
   final int shelfLife;
+  // final DateTime registrationDate;
 
   FoodsModel({
     required this.id,
@@ -17,6 +18,7 @@ class FoodsModel {
     required this.shoppingListCategory,
     // required this.expirationDate,
     required this.shelfLife,
+    // required this.registrationDate,
   });
 
   // Firestore에서 데이터를 가져오는 생성자
@@ -31,6 +33,7 @@ class FoodsModel {
       shoppingListCategory: data['shoppingListCategory'] ?? '',
       // expirationDate: data['expirationDate'] != null ? int.tryParse(data['expirationDate'].toString()) ?? 0 : 0, // 숫자 변환
       shelfLife: data['shelfLife'] != null ? int.tryParse(data['shelfLife'].toString()) ?? 0 : 0, // 숫자 변환
+      // registrationDate: (data['registrationDate'] as Timestamp).toDate(), // Timestamp를 DateTime으로 변환
     );
   }
 
@@ -43,6 +46,7 @@ class FoodsModel {
       'ShoppingListCategory': shoppingListCategory,
       // 'ExpirationDate': expirationDate,
       'ShelfLife': shelfLife,
+      // 'registrationDate': registrationDate,
     };
   }
 }
