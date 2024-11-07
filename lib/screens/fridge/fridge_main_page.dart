@@ -138,8 +138,9 @@ class FridgeMainPageState extends State<FridgeMainPage>
         if (!mounted) return;
         String fridgeCategoryId = itemData['fridgeCategoryId'] ?? '기타';
         String itemName = itemData['items'] ?? 'Unknown Item';
-        // DateTime registrationDate = (itemData['registrationDate'] as Timestamp?)?.toDate() ?? DateTime.now();
-print('itemName $itemName');
+        Timestamp registrationTimestamp = itemData['registrationDate'] ?? Timestamp.now();
+        DateTime registrationDate = registrationTimestamp.toDate();
+        
         try {
           final foodsSnapshot = await FirebaseFirestore.instance
               .collection('foods')
@@ -161,6 +162,7 @@ print('itemName $itemName');
                 itemLists[index].add({
                   'itemName': itemName,
                   'shelfLife': shelfLife,
+                  'registrationDate': registrationDate,
                 });
               });
             } else {
@@ -220,28 +222,66 @@ print('itemName $itemName');
     });
   }
 
+  Future<DateTime?> getRegistrationDate(String itemId) async {
+    try {
+      // fridge_items 컬렉션에서 특정 문서(itemId)를 가져옴
+      DocumentSnapshot document = await FirebaseFirestore.instance
+          .collection('fridge_items')
+          .doc(itemId)
+          .get();
+
+      // registrationDate 필드를 DateTime 형식으로 변환
+      if (document.exists && document.data() != null) {
+        Timestamp timestamp = document['registrationDate'];
+        DateTime registrationDate = timestamp.toDate();
+        return registrationDate;
+      } else {
+        print("문서가 존재하지 않거나 데이터가 없음.");
+        return null;
+      }
+    } catch (e) {
+      print("오류 발생: $e");
+      return null;
+    }
+  }
+
   void refreshFridgeItems() {
     _loadFridgeCategoriesFromFirestore(selectedFridge); // 아이템 목록 새로고침
   }
 
   // 유통기한에 따른 색상 결정 함수
   Color _getBackgroundColor(int shelfLife, DateTime registrationDate) {
-    // 소비기한 또는 유통기한 선택에 따라 색상 결정
-    int daysLeft;
-    if (selectedFoodStatusManagement == '소비기한 기준') {
-      daysLeft = shelfLife;
-    } else {
-      // 등록일 기준으로 남은 기간 계산
-      final today = DateTime.now();
-      daysLeft = shelfLife - today.difference(registrationDate).inDays;
-    }
+    int dayLeft;
+    final today = DateTime.now();
 
-    if (daysLeft >= 7) {
-      return Colors.lightGreen; // 충분히 남은 기간일 때 녹색
-    } else if (daysLeft < 7 && daysLeft >= 3) {
-      return Colors.yellow; // 만료일이 3일 남았을 때 노란색
+print('selectedFoodStatusManagement $selectedFoodStatusManagement');
+    print('registrationDate $registrationDate');
+print(' shelfLife $shelfLife');
+
+    if (selectedFoodStatusManagement == '소비기한 기준') {
+      // 소비기한 기준으로 dayLeft를 남은 일수로 계산
+      dayLeft = shelfLife - today.difference(registrationDate).inDays;
+
+      // 소비기한 기준 색상 설정
+      if (dayLeft > 3) {
+        return Colors.green; // 3일 초과 남았을 때: 녹색
+      } else if (dayLeft == 3) {
+        return Colors.yellow; // 3일 남았을 때: 노랑색
+      } else {
+        return Colors.red; // 소비기한이 지나거나 3일 미만 남았을 때: 빨강색
+      }
     } else {
-      return Colors.redAccent; // 만료일이 지났을 때 빨간색
+      // 유통기한 기준으로 dayLeft를 등록일 기준으로 계산
+      dayLeft = today.difference(registrationDate).inDays;
+print('dayLeft $dayLeft');
+      // 입고일 기준 색상 설정
+      if (dayLeft >= 0 && dayLeft <= 7) {
+        return Colors.green; // 1~7일: 녹색
+      } else if (dayLeft >= 8 && dayLeft <= 10) {
+        return Colors.yellow; // 8~10일: 노랑색
+      } else {
+        return Colors.red; // 11일 이상: 빨강색
+      }
     }
   }
 
@@ -480,7 +520,9 @@ print('itemName $itemName');
         int shelfLife = items[index]['shelfLife'] ?? 0;
         DateTime registrationDate = items[index]['registrationDate'] ?? DateTime.now();
         bool isSelected = selectedItems.contains(currentItem);
+        String formattedDate = DateFormat('yyyy-MM-dd').format(registrationDate);
 
+        print('22registrationDate $registrationDate');
         return AnimatedBuilder(
           animation: _animation,
           builder: (context, child) {
@@ -582,6 +624,7 @@ print('itemName $itemName');
                         foodsData['shoppingListCategory'] ?? '기타';
                     // int expirationDays = foodsData['expirationDate'] ?? 0;
                     int shelfLife = foodsData['shelfLife'] ?? 0;
+                    DateTime registrationDate = items[index]['registrationDate'] ?? DateTime.now();
 
                     // FridgeItemDetails로 동적으로 데이터를 전달
                     Navigator.push(
@@ -595,8 +638,7 @@ print('itemName $itemName');
                               shoppingListCategory, // 쇼핑 리스트 카테고리
                           // expirationDays: expirationDays, // 유통기한
                           consumptionDays: shelfLife, // 소비기한
-                          registrationDate:
-                              DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                          registrationDate: formattedDate,
                         ),
                       ),
                     );
@@ -841,7 +883,8 @@ print('itemName $itemName');
                           foodsData['shoppingListCategory'] ?? '기타';
                       // int expirationDays = foodsData['expirationDate'] ?? 0;
                       int shelfLife = foodsData['shelfLife'] ?? 0;
-
+                      DateTime registrationDate = items[index]['registrationDate'] ?? DateTime.now();
+                      String formattedDate = DateFormat('yyyy-MM-dd').format(registrationDate);
                       // FridgeItemDetails로 동적으로 데이터를 전달
                       Navigator.push(
                         context,
@@ -854,8 +897,7 @@ print('itemName $itemName');
                                 shoppingListCategory, // 쇼핑 리스트 카테고리
                             // expirationDays: expirationDays, // 유통기한
                             consumptionDays: shelfLife, // 소비기한
-                            registrationDate:
-                                DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                            registrationDate: formattedDate,
                           ),
                         ),
                       );
