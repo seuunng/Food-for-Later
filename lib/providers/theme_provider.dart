@@ -4,12 +4,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
   CustomThemeMode _themeMode = CustomThemeMode.light; // 기본 테마
+  String _fontType;
+  ThemeData _themeData = ThemeData.light();
 
   CustomThemeMode get themeMode => _themeMode;
+  String get fontType => _fontType;
+  ThemeData get themeData => _themeData;
 
-  ThemeProvider() {
+  ThemeProvider(this._fontType) {
     _loadThemeMode();
+    _updateTheme();
   }
+
 
   void _loadThemeMode() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -18,6 +24,7 @@ class ThemeProvider extends ChangeNotifier {
       (e) => e.toString().split('.').last == themeModeString,
       orElse: () => CustomThemeMode.light,
     );
+    _fontType = prefs.getString('fontType') ?? 'NanumGothic';
     notifyListeners();
   }
 
@@ -33,6 +40,42 @@ class ThemeProvider extends ChangeNotifier {
     _themeMode = themeMode;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('themeMode', themeMode.toString().split('.').last);
+    _updateTheme();
+    notifyListeners();
+  }
+
+  void setFontType(String font) async{
+    _fontType = font;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('fontType', font);
+    _updateTheme();
+    notifyListeners();
+  }
+
+  void _updateTheme() {
+    _themeData = currentTheme.copyWith(
+      textTheme: ThemeData.light().textTheme.apply(fontFamily: _fontType),
+      appBarTheme: AppBarTheme(
+        titleTextStyle: TextStyle(
+          fontFamily: _fontType,
+          fontSize: 20,
+          color: currentTheme.appBarTheme.titleTextStyle?.color,
+          // color: Colors.black, // 적절한 색상 설정
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: currentTheme.elevatedButtonTheme.style?.backgroundColor,
+          foregroundColor: currentTheme.elevatedButtonTheme.style?.foregroundColor,
+          textStyle: MaterialStateProperty.all(
+            TextStyle(
+              fontFamily: _fontType,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    );
     notifyListeners();
   }
 
@@ -307,7 +350,6 @@ class ThemeProvider extends ChangeNotifier {
     ),
   );
 
-  // 다양한 테마를 정의합니다.
   final ThemeData pinkTheme = ThemeData(
     brightness: Brightness.light, //전체 앱의 테마 밝기 모드를 설정
     primaryColor: Color(0xFFE2A69E), //앱의 기본 색상을 설정
@@ -386,30 +428,8 @@ class ThemeProvider extends ChangeNotifier {
   }
 }
 
-// final ThemeData darkTheme = ThemeData(
-//   brightness: Brightness.dark, // 앱의 기본 테마
-//   primaryColor: Colors.blueGrey[800], //앱의 기본 색상
-//   scaffoldBackgroundColor: Colors.black, //Scaffold의 배경색
-//   // backgroundColor: Colors.grey[900], //카드나 다이얼로그 같은 배경 요소의 색상
-//   cardColor: Colors.grey[850], //Card 위젯의 배경색을 설정
-//   textTheme: TextTheme( //기본 본문 텍스트 스타일
-//     bodyMedium: TextStyle(color: Colors.white70),
-//     // bodyText2: TextStyle(color: Colors.white70),
-//     // headline6: TextStyle(color: Colors.white),
-//   ),
-//   appBarTheme: AppBarTheme( //AppBar에 대한 스타일
-//     color: Colors.black87,
-//     iconTheme: IconThemeData(color: Colors.white),
-//   ),
-//   drawerTheme: DrawerThemeData(
-//     backgroundColor: Colors.blueGrey[800], // 사이드바 배경색 설정
-//   ),
-//   buttonTheme: ButtonThemeData( //버튼 스타일을 정의
-//     buttonColor: Colors.blueGrey[700],
-//     textTheme: ButtonTextTheme.primary,
-//   ),
-//   colorScheme: ColorScheme.dark().copyWith(
-//     primary: Colors.blueAccent, //기본 테마 색상
-//     secondary: Colors.tealAccent,  //보조 테마 색상
-//   ),
-// );
+// ThemeData _themeData = ThemeData.light(); // 기본 테마 데이터
+//
+// ThemeData get themeData => _themeData;
+
+

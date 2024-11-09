@@ -254,10 +254,6 @@ class FridgeMainPageState extends State<FridgeMainPage>
     int dayLeft;
     final today = DateTime.now();
 
-print('selectedFoodStatusManagement $selectedFoodStatusManagement');
-    print('registrationDate $registrationDate');
-print(' shelfLife $shelfLife');
-
     if (selectedFoodStatusManagement == '소비기한 기준') {
       // 소비기한 기준으로 dayLeft를 남은 일수로 계산
       dayLeft = shelfLife - today.difference(registrationDate).inDays;
@@ -273,7 +269,7 @@ print(' shelfLife $shelfLife');
     } else {
       // 유통기한 기준으로 dayLeft를 등록일 기준으로 계산
       dayLeft = today.difference(registrationDate).inDays;
-print('dayLeft $dayLeft');
+      
       // 입고일 기준 색상 설정
       if (dayLeft >= 0 && dayLeft <= 7) {
         return Colors.green; // 1~7일: 녹색

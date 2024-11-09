@@ -25,12 +25,12 @@ class NavbarButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12), // 버튼의 모서리를 둥글게
         ),
         elevation: 5,
-        textStyle: TextStyle(
-          fontSize: 18, // 글씨 크기 조정
-          fontWeight: FontWeight.w500, // 약간 굵은 글씨체
-          letterSpacing: 1.2, //
-          // color: theme.colorScheme.onPrimaryContainer,
-        ),
+        // textStyle: TextStyle(
+        //   // fontSize: 18, // 글씨 크기 조정
+        //   // fontWeight: FontWeight.w500, // 약간 굵은 글씨체
+        //   letterSpacing: 1.2, //
+        //   // color: theme.colorScheme.onPrimaryContainer,
+        // ),
       ),
     );
   }

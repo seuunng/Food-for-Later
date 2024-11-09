@@ -24,12 +24,14 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String initialFont = prefs.getString('fontType') ?? 'Arial';
   // SharedPreferences prefs = await SharedPreferences.getInstance();
   // String themeMode = prefs.getString('themeMode') ?? 'Light';
   KakaoSdk.init(nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e');
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+      create: (_) => ThemeProvider(initialFont),
       child: MyApp(),
     ),
   );
@@ -48,7 +50,8 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
       return MaterialApp(
         title: '이따뭐먹지',
-        theme: themeProvider.currentTheme,
+        // theme: themeProvider.currentTheme,
+        theme: themeProvider.themeData,
         home: AuthStateWidget(),
         // HomeScreen을 메인 화면으로 설정
         routes: {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/main.dart';
+import 'package:food_for_later/providers/font_provider.dart';
 import 'package:food_for_later/providers/theme_provider.dart';
 import 'package:food_for_later/themes/custom_theme_mode.dart';
 import 'package:provider/provider.dart';
@@ -15,14 +16,28 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
   // 드롭다운 선택을 위한 변수
   CustomThemeMode _tempTheme = CustomThemeMode.light;// 임시 테마 값
   // final List<String> _categories_them = ['Light', 'Dark']; // 카테고리 리스트
-  String _selectedCategory_font = 'Arial'; // 기본 선택값
-  final List<String> _categories_font = ['Arial', 'Roboto', 'Times New Roman']; // 카테고리 리스트
+  String _selectedCategory_font = 'NanumGothic'; // 기본 선택값
+  List<String> _categories_font = [];
 
   @override
   void initState() {
     super.initState();
     _loadSelectedEnvironmentSettingValue();
+    _loadFonts();
   }
+
+  void _loadFonts() async {
+    final fontProvider = FontProvider();
+    await fontProvider.loadFonts();
+    setState(() {
+      _categories_font = fontProvider.fonts.toSet().toList(); // 중복 제거
+      // _selectedCategory_font가 _categories_font에 없는 경우 초기화
+      if (!_categories_font.contains(_selectedCategory_font)) {
+        _selectedCategory_font = _categories_font.isNotEmpty ? _categories_font.first : 'Arial';
+      }
+    });
+  }
+
   void _loadSelectedEnvironmentSettingValue() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
@@ -30,7 +45,7 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
       _tempTheme = CustomThemeMode.values.firstWhere(
               (mode) => mode.toString().split('.').last == prefs.getString('themeMode'),
           orElse: () => CustomThemeMode.light);
-      _selectedCategory_font = prefs.getString('fontType') ?? 'Arial';
+      _selectedCategory_font = prefs.getString('fontType') ?? 'NanumGothic';
     });
 
   }
@@ -41,6 +56,7 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
     await prefs.setString('fontType', _selectedCategory_font);// 저장할 때만 테마를 변경
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     themeProvider.setThemeMode(_tempTheme);
+    themeProvider.setFontType(_selectedCategory_font);
 
     Navigator.pop(context);
   }
@@ -94,10 +110,10 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
                 child: DropdownButton<String>(
                   value: _selectedCategory_font,
                   isExpanded: true, // 드롭다운이 화면 너비에 맞게 확장되도록 설정
-                  items: _categories_font.map((String category) {
+                  items: _categories_font.map((String font) {
                     return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
+                      value: font,
+                      child: Text(font),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {

@@ -93,6 +93,34 @@ flutter:
     - assets/images/google_logo.png
     - assets/images/kakao_talk_logo.png
     - assets/images/naver_logo.png
+    - assets/fonts/
+
+  fonts:
+    - family: 나눔고딕
+      fonts:
+        - asset: assets/fonts/NanumGothic.ttf
+
+    - family: 이서윤
+      fonts:
+        - asset: assets/fonts/LeeSeoyun.ttf
+          weight: 400
+
+    - family: 배찌
+      fonts:
+        - asset: assets/fonts/Bazzi.ttf
+
+    - family: 칠판지우개
+      fonts:
+        - asset: assets/fonts/Chilpanjiugae.ttf
+
+    - family: 오이샐러드
+      fonts:
+        - asset: assets/fonts/cucumbersalad.ttf
+
+    - family: 동동
+      fonts:
+        - asset: assets/fonts/Dongdong.ttf
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

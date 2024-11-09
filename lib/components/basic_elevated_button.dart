@@ -35,7 +35,7 @@ class BasicElevatedButton extends StatelessWidget {
           SizedBox(width: 8),
           Text(
             buttonTitle,
-            style: TextStyle(fontSize: 16), // 텍스트 크기
+            // style: TextStyle(fontSize: 16), // 텍스트 크기
           ),
         ],
       ),
