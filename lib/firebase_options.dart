@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -51,7 +48,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBl_i5hCKgo-HPZqbi-Sf-Ey5BjzlDQx0E',
-    appId: '1:897589496124:android:5bc34ade1467f4048eb639',
+    appId: '1:897589496124:android:ce3073c291afd5258eb639',
     messagingSenderId: '897589496124',
     projectId: 'food-for-later',
     storageBucket: 'food-for-later.appspot.com',
@@ -63,6 +60,19 @@ class DefaultFirebaseOptions {
     messagingSenderId: '897589496124',
     projectId: 'food-for-later',
     storageBucket: 'food-for-later.appspot.com',
+    androidClientId: '897589496124-mqudmevsl1fnujtg5av3nfa5qkmmlvir.apps.googleusercontent.com',
+    iosClientId: '897589496124-0lvf9jpu1u8567657fb2bj0cm97f7d1c.apps.googleusercontent.com',
     iosBundleId: 'com.example.foodForLater',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCVwCjP8Tn1FX7gxVO_IG_lJur8TLsu6Zc',
+    appId: '1:897589496124:web:2f55ce54afa252a68eb639',
+    messagingSenderId: '897589496124',
+    projectId: 'food-for-later',
+    authDomain: 'food-for-later.firebaseapp.com',
+    storageBucket: 'food-for-later.appspot.com',
+    measurementId: 'G-BFFCMJR6QT',
+  );
+
 }

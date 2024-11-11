@@ -4,7 +4,7 @@ import 'package:food_for_later/screens/recipe/view_research_list.dart'; // ViewR
 class BasicElevatedButton extends StatelessWidget {
   final String buttonTitle;
   final IconData iconTitle;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const BasicElevatedButton({
     Key? key,

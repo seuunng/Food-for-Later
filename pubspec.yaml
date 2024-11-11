@@ -96,10 +96,6 @@ flutter:
     - assets/fonts/
 
   fonts:
-    - family: 나눔고딕
-      fonts:
-        - asset: assets/fonts/NanumGothic.ttf
-
     - family: 이서윤
       fonts:
         - asset: assets/fonts/LeeSeoyun.ttf
@@ -120,6 +116,70 @@ flutter:
     - family: 동동
       fonts:
         - asset: assets/fonts/Dongdong.ttf
+
+    - family: 그림일기
+      fonts:
+        - asset: assets/fonts/Geurimilgi.ttf
+
+    - family: 고운바탕
+      fonts:
+        - asset: assets/fonts/GowunBatang.ttf
+
+    - family: 수박양
+      fonts:
+        - asset: assets/fonts/ladywatermelon.ttf
+
+    - family: 말랑말랑
+      fonts:
+        - asset: assets/fonts/MalangMalang.ttf
+
+    - family: 마루부리
+      fonts:
+        - asset: assets/fonts/MaruBuri.ttf
+
+    - family: 나눔바른펜
+      fonts:
+        - asset: assets/fonts/NanumBarunpen.ttf
+
+    - family: 나눔손글씨
+      fonts:
+        - asset: assets/fonts/NanumBrush.ttf
+
+    - family: 나눔펜
+      fonts:
+        - asset: assets/fonts/NanumPen.ttf
+
+    - family: 나눔스퀘어
+      fonts:
+        - asset: assets/fonts/NanumSquare.ttf
+
+    - family: 고운밤
+      fonts:
+        - asset: assets/fonts/prettynight.ttf
+
+    - family: 빛나는별
+      fonts:
+        - asset: assets/fonts/Shiningstar.ttf
+
+    - family: 심플해
+      fonts:
+        - asset: assets/fonts/Simplehae.ttf
+
+    - family: 쑥쑥
+      fonts:
+        - asset: assets/fonts/Ssukssuk.ttf
+
+    - family: 숑숑
+      fonts:
+        - asset: assets/fonts/Syongsyong.ttf
+
+    - family: 타닥타닥
+      fonts:
+        - asset: assets/fonts/TadakTadak.ttf
+
+    - family: 김콩해
+      fonts:
+        - asset: assets/fonts/김콩해.ttf
 
 
   # To add assets to your application, add an assets section, like this:

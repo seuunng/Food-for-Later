@@ -85,42 +85,46 @@ class _RecipeTrendTableState extends State<RecipeTrendTable> {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: columns.map((column) {
-            return DataColumn(
-              label: GestureDetector(
-                onTap: () => _sortBy(column['name'], column['state']),
-                child: Row(
-                  children: [
-                    Text(column['name']),
-                    Icon(
-                      column['state'] == SortState.ascending
-                          ? Icons.arrow_upward
-                          : column['state'] == SortState.descending
-                              ? Icons.arrow_downward
-                              : Icons.sort,
-                      size: 16,
-                    ),
-                  ],
+    return  Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.only(top:1),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: columns.map((column) {
+              return DataColumn(
+                label: GestureDetector(
+                  onTap: () => _sortBy(column['name'], column['state']),
+                  child: Row(
+                    children: [
+                      Text(column['name']),
+                      Icon(
+                        column['state'] == SortState.ascending
+                            ? Icons.arrow_upward
+                            : column['state'] == SortState.descending
+                                ? Icons.arrow_downward
+                                : Icons.sort,
+                        size: 16,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
-          rows: userData.map((row) {
-            return DataRow(cells: [
-              DataCell(Text(row['순위'].toString())), // '순위' 필드 사용
-              DataCell(Text(row['제목'].toString())), // '제목' 필드 사용
-              DataCell(Text(row['닉네임'].toString())), // '닉네임' 필드 사용
-              DataCell(Text(row['작성일'].toString())), // '작성일' 필드 사용
-              DataCell(Text(row['조회수'].toString())), // '조회수' 필드 사용
-              DataCell(Text(row['스크랩'].toString())), // '스크랩' 필드 사용
-              DataCell(Text(row['따라하기'].toString())), // '따라하기' 필드 사용
-              DataCell(Text(row['공유'].toString())), // '공유' 필드 사용
-            ]);
-          }).toList(),
+              );
+            }).toList(),
+            rows: userData.map((row) {
+              return DataRow(cells: [
+                DataCell(Text(row['순위'].toString())), // '순위' 필드 사용
+                DataCell(Text(row['제목'].toString())), // '제목' 필드 사용
+                DataCell(Text(row['닉네임'].toString())), // '닉네임' 필드 사용
+                DataCell(Text(row['작성일'].toString())), // '작성일' 필드 사용
+                DataCell(Text(row['조회수'].toString())), // '조회수' 필드 사용
+                DataCell(Text(row['스크랩'].toString())), // '스크랩' 필드 사용
+                DataCell(Text(row['따라하기'].toString())), // '따라하기' 필드 사용
+                DataCell(Text(row['공유'].toString())), // '공유' 필드 사용
+              ]);
+            }).toList(),
+          ),
         ),
       ),
     );

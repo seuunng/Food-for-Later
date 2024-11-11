@@ -55,10 +55,11 @@ class ThemeProvider extends ChangeNotifier {
   void _updateTheme() {
     _themeData = currentTheme.copyWith(
       textTheme: ThemeData.light().textTheme.apply(fontFamily: _fontType),
-      appBarTheme: AppBarTheme(
+      appBarTheme: currentTheme.appBarTheme.copyWith(
         titleTextStyle: TextStyle(
           fontFamily: _fontType,
           fontSize: 20,
+          fontWeight: FontWeight.w800,
           color: currentTheme.appBarTheme.titleTextStyle?.color,
           // color: Colors.black, // 적절한 색상 설정
         ),
@@ -70,6 +71,7 @@ class ThemeProvider extends ChangeNotifier {
           textStyle: MaterialStateProperty.all(
             TextStyle(
               fontFamily: _fontType,
+              fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
           ),
@@ -87,7 +89,7 @@ class ThemeProvider extends ChangeNotifier {
     appBarTheme: AppBarTheme( //AppBar 위젯의 테마를 설정
       color: Colors.white,
       iconTheme: IconThemeData(color: Colors.black),
-      titleTextStyle: TextStyle(color: Colors.black, fontSize: 20),
+      titleTextStyle: TextStyle(color: Colors.black),
     ),
     drawerTheme: DrawerThemeData(
       backgroundColor: Colors.white,

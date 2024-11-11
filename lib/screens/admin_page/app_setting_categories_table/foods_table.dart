@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/shopping_category_model.dart';
@@ -7,7 +8,6 @@ import 'package:food_for_later/models/shopping_category_model.dart';
 enum SortState { none, ascending, descending }
 
 class FoodsTable extends StatefulWidget {
-
   @override
   _FoodsTableState createState() => _FoodsTableState();
 }
@@ -116,13 +116,12 @@ class _FoodsTableState extends State<FoodsTable> {
   }
 
   Future<void> _loadDefaultFoodsCategories() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('foods')
-        .get();
+    final snapshot = await FirebaseFirestore.instance.collection('foods').get();
 
     final categories = snapshot.docs
         .map((doc) => doc.data()['defaultCategory'] as String?)
-        .where((category) => category != null && category.isNotEmpty) // null과 빈 값 필터링
+        .where((category) =>
+            category != null && category.isNotEmpty) // null과 빈 값 필터링
         .cast<String>() // String으로 타입 캐스팅
         .toSet() // 중복 제거
         .toList(); // 리스트로 변환
@@ -150,19 +149,17 @@ class _FoodsTableState extends State<FoodsTable> {
 
   // 사용자 데이터를 추가하는 함수
   void _addFood(String categoryName, Map<String, dynamic> newItem) async {
-    final snapshot =
-        FirebaseFirestore.instance.collection('foods');
+    final snapshot = FirebaseFirestore.instance.collection('foods');
 
     try {
-        await snapshot.add({
-          'foodsName': _foodNameController.text,
-          'defaultCategory': _selectedCategory,
-          'defaultFridgeCategory': _selectedFridgeCategory,
-          'shoppingListCategory': _selectedShoppingListCategory,
-          'expirationDate': _expirationDateController.text,
-          'shelfLife': _shelfLifeController.text,
-        });
-
+      await snapshot.add({
+        'foodsName': _foodNameController.text,
+        'defaultCategory': _selectedCategory,
+        'defaultFridgeCategory': _selectedFridgeCategory,
+        'shoppingListCategory': _selectedShoppingListCategory,
+        'expirationDate': _expirationDateController.text,
+        'shelfLife': _shelfLifeController.text,
+      });
     } catch (e) {
       print('Firestore에 저장하는 중 오류가 발생했습니다: $e');
     }
@@ -199,33 +196,33 @@ class _FoodsTableState extends State<FoodsTable> {
 
     try {
       if (selectedFood.containsKey('documentId')) {
-      // Firestore에서 foods 컬렉션을 참조
-      final docRef = FirebaseFirestore.instance
-          .collection('foods')
-          .doc(selectedFood['documentId']); // 각 음식의 문서 ID
+        // Firestore에서 foods 컬렉션을 참조
+        final docRef = FirebaseFirestore.instance
+            .collection('foods')
+            .doc(selectedFood['documentId']); // 각 음식의 문서 ID
 
-      // Firestore에 데이터를 업데이트
-      await docRef.update({
-        'foodsName': foodName,
-        'defaultCategory': category,
-        'defaultFridgeCategory': fridgeCategory,
-        'shoppingListCategory': shoppingListCategory,
-        'shelfLife': shelfLife,
-        'expirationDate': expirationDate,
-      });
+        // Firestore에 데이터를 업데이트
+        await docRef.update({
+          'foodsName': foodName,
+          'defaultCategory': category,
+          'defaultFridgeCategory': fridgeCategory,
+          'shoppingListCategory': shoppingListCategory,
+          'shelfLife': shelfLife,
+          'expirationDate': expirationDate,
+        });
 
-      // 로컬 상태에서도 데이터 업데이트
-      setState(() {
-        userData[index] = {
-          ...selectedFood,
-          '식품명': foodName,
-          '카테고리': category,
-          '냉장고카테고리': fridgeCategory,
-          '장보기카테고리': shoppingListCategory,
-          '소비기한': shelfLife,
-          '유통기한': expirationDate,
-        };
-      });
+        // 로컬 상태에서도 데이터 업데이트
+        setState(() {
+          userData[index] = {
+            ...selectedFood,
+            '식품명': foodName,
+            '카테고리': category,
+            '냉장고카테고리': fridgeCategory,
+            '장보기카테고리': shoppingListCategory,
+            '소비기한': shelfLife,
+            '유통기한': expirationDate,
+          };
+        });
       } else {
         print('문서 ID가 없습니다. 업데이트할 수 없습니다.');
       }
@@ -309,7 +306,7 @@ class _FoodsTableState extends State<FoodsTable> {
 
       // 정렬 동작
       if (newSortState == SortState.none) {
-        userData = List.from(originalData);  // 원본 데이터로 복원
+        userData = List.from(originalData); // 원본 데이터로 복원
       } else {
         userData.sort((a, b) {
           int result = a[columnName].compareTo(b[columnName]);
@@ -337,400 +334,422 @@ class _FoodsTableState extends State<FoodsTable> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        children: [
-          // 제목이 있는 행
-          Table(
-            border: TableBorder(
-              horizontalInside: BorderSide(width: 1, color: Colors.black),
-            ),
-            columnWidths: const {
-              0: FixedColumnWidth(40), // 체크박스 열 크기
-              1: FixedColumnWidth(40),
-              2: FixedColumnWidth(120),
-              3: FixedColumnWidth(100),
-              4: FixedColumnWidth(120),
-              5: FixedColumnWidth(80),
-              6: FixedColumnWidth(80),
-              7: FixedColumnWidth(180),
-              8: FixedColumnWidth(80),
-            },
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.only(top: 1),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
             children: [
-              TableRow(
-                children: columns.map((column) {
-                  return TableCell(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                              width: 1, color: Colors.black), // 셀 아래 테두리 추가
+              // 제목이 있는 행
+              Table(
+                border: TableBorder(
+                  horizontalInside: BorderSide(width: 1, color: Colors.black),
+                ),
+                columnWidths: const {
+                  0: FixedColumnWidth(40), // 체크박스 열 크기
+                  1: FixedColumnWidth(40),
+                  2: FixedColumnWidth(120),
+                  3: FixedColumnWidth(100),
+                  4: FixedColumnWidth(120),
+                  5: FixedColumnWidth(80),
+                  6: FixedColumnWidth(80),
+                  7: FixedColumnWidth(180),
+                  8: FixedColumnWidth(80),
+                },
+                children: [
+                  TableRow(
+                    children: columns.map((column) {
+                      return TableCell(
+                        child: Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                  width: 1, color: Colors.black), // 셀 아래 테두리 추가
+                            ),
+                          ),
+                          child: column['name'] == '선택' ||
+                                  column['name'] == '변동'
+                              ? Center(
+                                  child: Text(column['name']),
+                                )
+                              : GestureDetector(
+                                  onTap: () =>
+                                      _sortBy(column['name'], column['state']),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(column['name']),
+                                        Icon(
+                                          column['state'] == SortState.ascending
+                                              ? Icons.arrow_upward
+                                              : column['state'] ==
+                                                      SortState.descending
+                                                  ? Icons.arrow_downward
+                                                  : Icons.sort,
+                                          size: 12,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+
+              // 입력 필드들이 들어간 행
+              Table(
+                border: TableBorder(
+                  horizontalInside: BorderSide(width: 1, color: Colors.black),
+                ),
+                columnWidths: const {
+                  0: FixedColumnWidth(40),
+                  1: FixedColumnWidth(40),
+                  2: FixedColumnWidth(120),
+                  3: FixedColumnWidth(100),
+                  4: FixedColumnWidth(120),
+                  5: FixedColumnWidth(80),
+                  6: FixedColumnWidth(80),
+                  7: FixedColumnWidth(180),
+                  8: FixedColumnWidth(100),
+                },
+                children: [
+                  TableRow(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                            width: 1, color: Colors.black), // 셀 아래 테두리 추가
+                      ),
+                    ),
+                    children: [
+                      TableCell(child: SizedBox.shrink()),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text('no'))),
+                      TableCell(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedCategory,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value;
+                            });
+                          },
+                          items: categoryOptions.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
+                          decoration: InputDecoration(
+                            hintText: '카테고리',
+                            hintStyle: TextStyle(
+                              fontSize: 12, // 글씨 크기 줄이기
+                              color: Colors.grey, // 글씨 색상 회색으로
+                            ),
+                            contentPadding:
+                                EdgeInsets.only(bottom: 13, left: 20),
+                          ),
+                          style: TextStyle(
+                            fontSize: 14, // 선택된 값의 글씨 크기
+                            color: Colors.black, // 선택된 값의 색상
+                          ),
+                          alignment: Alignment.bottomCenter,
                         ),
                       ),
-                      child: column['name'] == '선택' || column['name'] == '변동'
-                          ? Center(
-                              child: Text(column['name']),
-                            )
-                          : GestureDetector(
-                              onTap: () =>
-                                  _sortBy(column['name'], column['state']),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(column['name']),
-                                    Icon(
-                                      column['state'] == SortState.ascending
-                                          ? Icons.arrow_upward
-                                          : column['state'] == SortState.descending
-                                              ? Icons.arrow_downward
-                                              : Icons.sort,
-                                      size: 12,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                      TableCell(
+                        child: TextField(
+                          controller: _foodNameController,
+                          keyboardType: TextInputType.text,
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            hintText: '식품명',
+                            hintStyle: TextStyle(
+                              fontSize: 14, // 글씨 크기 줄이기
+                              color: Colors.grey, // 글씨 색상 회색으로
                             ),
-                    ),
+                            suffixIcon: _foodNameController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.clear, size: 16),
+                                    onPressed: () {
+                                      setState(() {
+                                        _foodNameController
+                                            .clear(); // 입력 필드 내용 삭제
+                                      });
+                                    },
+                                  )
+                                : null, // 내용이 없을 때는 버튼을 표시하지 않음
+                          ),
+                          onChanged: (value) {
+                            setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
+                          },
+                        ),
+                      ),
+                      TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedFridgeCategory,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedFridgeCategory = value;
+                            });
+                          },
+                          items: fridgeCategoryOptions.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
+                          decoration: InputDecoration(
+                            hintText: '냉장고 선택',
+                            hintStyle: TextStyle(
+                              fontSize: 14, // 글씨 크기 줄이기
+                              color: Colors.grey, // 글씨 색상 회색으로
+                            ),
+                            contentPadding:
+                                EdgeInsets.only(bottom: 13, left: 20),
+                          ),
+                          style: TextStyle(
+                            fontSize: 14, // 선택된 값의 글씨 크기
+                            color: Colors.black, // 선택된 값의 색상
+                          ),
+                          alignment: Alignment.bottomCenter,
+                        ),
+                      ),
+                      TableCell(
+                        child: TextField(
+                          controller: _shelfLifeController,
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: '소비기한',
+                            hintStyle: TextStyle(
+                              fontSize: 14, // 글씨 크기 줄이기
+                              color: Colors.grey, // 글씨 색상 회색으로
+                            ),
+                            suffixIcon: _shelfLifeController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.clear, size: 16),
+                                    onPressed: () {
+                                      setState(() {
+                                        _shelfLifeController
+                                            .clear(); // 입력 필드 내용 삭제
+                                      });
+                                    },
+                                  )
+                                : null, // 내용이 없을 때는 버튼을 표시하지 않음
+                          ),
+                          onChanged: (value) {
+                            setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
+                          },
+                        ),
+                      ),
+                      TableCell(
+                        child: TextField(
+                          controller: _expirationDateController,
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: '유통기한',
+                            hintStyle: TextStyle(
+                              fontSize: 14, // 글씨 크기 줄이기
+                              color: Colors.grey, // 글씨 색상 회색으로
+                            ),
+                            suffixIcon:
+                                _expirationDateController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(Icons.clear, size: 16),
+                                        onPressed: () {
+                                          setState(() {
+                                            _expirationDateController
+                                                .clear(); // 입력 필드 내용 삭제
+                                          });
+                                        },
+                                      )
+                                    : null, // 내용이 없을 때는 버튼을 표시하지 않음
+                          ),
+                          onChanged: (value) {
+                            setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
+                          },
+                        ),
+                      ),
+                      TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedShoppingListCategory,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedShoppingListCategory = value;
+                            });
+                          },
+                          items: shoppingCategoryOptions.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
+                          decoration: InputDecoration(
+                            hintText: '장보기 선택',
+                            hintStyle: TextStyle(
+                              fontSize: 14, // 글씨 크기 줄이기
+                              color: Colors.grey, // 글씨 색상 회색으로
+                            ),
+                            contentPadding:
+                                EdgeInsets.only(bottom: 13, left: 20),
+                          ),
+                          style: TextStyle(
+                            fontSize: 14, // 선택된 값의 글씨 크기
+                            color: Colors.black, // 선택된 값의 색상
+                          ),
+                          alignment: Alignment.bottomCenter,
+                        ),
+                      ),
+                      TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: SizedBox(
+                          width: 60, // 버튼의 너비를 설정
+                          height: 30, // 버튼의 높이를 설정
+                          child: BasicElevatedButton(
+                              onPressed: () {
+                                if (isEditing) {
+                                  if (selectedFoodIndex != null) {
+                                    _updateFood(selectedFoodIndex!);
+                                  }
+                                } else {
+                                  Map<String, dynamic> newItem = {
+                                    'itemName': _foodNameController.text,
+                                    'defaultFridgeCategory':
+                                        _selectedFridgeCategory,
+                                    'shoppingListCategory':
+                                        _selectedShoppingListCategory,
+                                    'shelfLife': int.tryParse(
+                                        _shelfLifeController.text), // 소비기한 추가
+                                    'expirationDate': int.tryParse(
+                                        _expirationDateController
+                                            .text), // 유통기한 추가
+                                    'isDisabled': false, // 기본값 설정
+                                  };
+                                  // _selectedCategory가 null일 수 있으므로 체크 후 호출
+                                  if (_selectedCategory != null) {
+                                    _addFood(_selectedCategory!, newItem);
+                                  } else {
+                                    print('카테고리를 선택하세요.');
+                                  }
+                                }
+
+                                setState(() {
+                                  _clearFields();
+                                  _refreshTable();
+                                });
+                              },
+                              iconTitle: Icons.add,
+                              buttonTitle: '추가'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              // 데이터가 추가되는 테이블
+              Table(
+                border: TableBorder(
+                  horizontalInside: BorderSide(width: 1, color: Colors.black),
+                ),
+                columnWidths: const {
+                  0: FixedColumnWidth(40),
+                  1: FixedColumnWidth(40),
+                  2: FixedColumnWidth(120),
+                  3: FixedColumnWidth(100),
+                  4: FixedColumnWidth(120),
+                  5: FixedColumnWidth(80),
+                  6: FixedColumnWidth(80),
+                  7: FixedColumnWidth(180),
+                  8: FixedColumnWidth(100),
+                },
+                children: userData.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  Map<String, dynamic> row = entry.value;
+                  return TableRow(
+                    children: [
+                      TableCell(
+                        child: Checkbox(
+                          value: selectedRows.contains(index),
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                selectedRows.add(index);
+                              } else {
+                                selectedRows.remove(index);
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Container(
+                              height: 40,
+                              child:
+                                  Center(child: Text(row['연번'].toString())))),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text(row['카테고리']))),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text(row['식품명']))),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text(row['냉장고카테고리']))),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text(row['소비기한'].toString()))),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text(row['유통기한'].toString()))),
+                      TableCell(
+                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          child: Center(child: Text(row['장보기카테고리']))),
+                      TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: SizedBox(
+                          width: 60, // 버튼의 너비를 설정
+                          height: 30, // 버튼의 높이를 설정
+                          child: BasicElevatedButton(
+                            onPressed: () => _editFood(row['연번'] - 1),
+                            iconTitle: Icons.edit,
+                            buttonTitle: '수정',
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 }).toList(),
               ),
-            ],
-          ),
-
-          // 입력 필드들이 들어간 행
-          Table(
-            border: TableBorder(
-              horizontalInside: BorderSide(width: 1, color: Colors.black),
-            ),
-            columnWidths: const {
-              0: FixedColumnWidth(40),
-              1: FixedColumnWidth(40),
-              2: FixedColumnWidth(120),
-              3: FixedColumnWidth(100),
-              4: FixedColumnWidth(120),
-              5: FixedColumnWidth(80),
-              6: FixedColumnWidth(80),
-              7: FixedColumnWidth(180),
-              8: FixedColumnWidth(80),
-            },
-            children: [
-              TableRow(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                        width: 1, color: Colors.black), // 셀 아래 테두리 추가
-                  ),
-                ),
-                children: [
-                  TableCell(child: SizedBox.shrink()),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text('no'))),
-                  TableCell(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedCategory,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value;
-                        });
-                      },
-                      items: categoryOptions.map((String category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      decoration: InputDecoration(
-                        hintText: '카테고리',
-                        hintStyle: TextStyle(
-                          fontSize: 12, // 글씨 크기 줄이기
-                          color: Colors.grey, // 글씨 색상 회색으로
-                        ),
-                        contentPadding: EdgeInsets.only(bottom: 13, left: 20),
-                      ),
-                      style: TextStyle(
-                        fontSize: 14, // 선택된 값의 글씨 크기
-                        color: Colors.black, // 선택된 값의 색상
-                      ),
-                      alignment: Alignment.bottomCenter,
-                    ),
-                  ),
-                  TableCell(
-                    child: TextField(
-                      controller: _foodNameController,
-                      keyboardType: TextInputType.text,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        hintText: '식품명',
-                        hintStyle: TextStyle(
-                          fontSize: 14, // 글씨 크기 줄이기
-                          color: Colors.grey, // 글씨 색상 회색으로
-                        ),
-                        suffixIcon: _foodNameController.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(Icons.clear, size: 16),
-                                onPressed: () {
-                                  setState(() {
-                                    _foodNameController.clear(); // 입력 필드 내용 삭제
-                                  });
-                                },
-                              )
-                            : null, // 내용이 없을 때는 버튼을 표시하지 않음
-                      ),
-                      onChanged: (value) {
-                        setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
-                      },
-                    ),
-                  ),
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedFridgeCategory,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedFridgeCategory = value;
-                        });
-                      },
-                      items: fridgeCategoryOptions.map((String category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      decoration: InputDecoration(
-                        hintText: '냉장고 선택',
-                        hintStyle: TextStyle(
-                          fontSize: 14, // 글씨 크기 줄이기
-                          color: Colors.grey, // 글씨 색상 회색으로
-                        ),
-                        contentPadding: EdgeInsets.only(bottom: 13, left: 20),
-                      ),
-                      style: TextStyle(
-                        fontSize: 14, // 선택된 값의 글씨 크기
-                        color: Colors.black, // 선택된 값의 색상
-                      ),
-                      alignment: Alignment.bottomCenter,
-                    ),
-                  ),
-                  TableCell(
-                    child: TextField(
-                      controller: _shelfLifeController,
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: '소비기한',
-                        hintStyle: TextStyle(
-                          fontSize: 14, // 글씨 크기 줄이기
-                          color: Colors.grey, // 글씨 색상 회색으로
-                        ),
-                        suffixIcon: _shelfLifeController.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(Icons.clear, size: 16),
-                                onPressed: () {
-                                  setState(() {
-                                    _shelfLifeController.clear(); // 입력 필드 내용 삭제
-                                  });
-                                },
-                              )
-                            : null, // 내용이 없을 때는 버튼을 표시하지 않음
-                      ),
-                      onChanged: (value) {
-                        setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
-                      },
-                    ),
-                  ),
-                  TableCell(
-                    child: TextField(
-                      controller: _expirationDateController,
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: '유통기한',
-                        hintStyle: TextStyle(
-                          fontSize: 14, // 글씨 크기 줄이기
-                          color: Colors.grey, // 글씨 색상 회색으로
-                        ),
-                        suffixIcon: _expirationDateController.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(Icons.clear, size: 16),
-                                onPressed: () {
-                                  setState(() {
-                                    _expirationDateController
-                                        .clear(); // 입력 필드 내용 삭제
-                                  });
-                                },
-                              )
-                            : null, // 내용이 없을 때는 버튼을 표시하지 않음
-                      ),
-                      onChanged: (value) {
-                        setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
-                      },
-                    ),
-                  ),
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedShoppingListCategory,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedShoppingListCategory = value;
-                        });
-                      },
-                      items: shoppingCategoryOptions.map((String category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      decoration: InputDecoration(
-                        hintText: '장보기 선택',
-                        hintStyle: TextStyle(
-                          fontSize: 14, // 글씨 크기 줄이기
-                          color: Colors.grey, // 글씨 색상 회색으로
-                        ),
-                        contentPadding: EdgeInsets.only(bottom: 13, left: 20),
-                      ),
-                      style: TextStyle(
-                        fontSize: 14, // 선택된 값의 글씨 크기
-                        color: Colors.black, // 선택된 값의 색상
-                      ),
-                      alignment: Alignment.bottomCenter,
-                    ),
-                  ),
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: SizedBox(
-                      width: 60, // 버튼의 너비를 설정
-                      height: 30, // 버튼의 높이를 설정
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (isEditing) {
-                            if (selectedFoodIndex != null) {
-                              _updateFood(selectedFoodIndex!);
-                            }
-                          } else {
-                            Map<String, dynamic> newItem = {
-                              'itemName': _foodNameController.text,
-                              'defaultFridgeCategory': _selectedFridgeCategory,
-                              'shoppingListCategory':
-                                  _selectedShoppingListCategory,
-                              'shelfLife': int.tryParse(
-                                  _shelfLifeController.text), // 소비기한 추가
-                              'expirationDate': int.tryParse(
-                                  _expirationDateController.text), // 유통기한 추가
-                              'isDisabled': false, // 기본값 설정
-                            };
-                            // _selectedCategory가 null일 수 있으므로 체크 후 호출
-                            if (_selectedCategory != null) {
-                              _addFood(_selectedCategory!, newItem);
-                            } else {
-                              print('카테고리를 선택하세요.');
-                            }
-                          }
-
-                          setState(() {
-                            _clearFields();
-                            _refreshTable();
-                          });
-                        },
-                        child: Text('추가'),
-                      ),
-                    ),
-                  ),
-                ],
+              SizedBox(height: 20,),
+              // 선택한 행 삭제 버튼
+              BasicElevatedButton(
+                onPressed: selectedRows.isNotEmpty
+                    ? () {
+                        // 선택된 모든 행 삭제
+                        for (int index in selectedRows) {
+                          _deleteSelectedRows(index);
+                        }
+                      }
+                    : null,
+                iconTitle: Icons.delete,
+                buttonTitle: '선택한 항목 삭제',
               ),
+              SizedBox(height: 20,),
             ],
           ),
-
-          // 데이터가 추가되는 테이블
-          Table(
-            border: TableBorder(
-              horizontalInside: BorderSide(width: 1, color: Colors.black),
-            ),
-            columnWidths: const {
-              0: FixedColumnWidth(40),
-              1: FixedColumnWidth(40),
-              2: FixedColumnWidth(120),
-              3: FixedColumnWidth(100),
-              4: FixedColumnWidth(120),
-              5: FixedColumnWidth(80),
-              6: FixedColumnWidth(80),
-              7: FixedColumnWidth(180),
-              8: FixedColumnWidth(80),
-            },
-            children: userData.asMap().entries.map((entry) {
-              int index = entry.key;
-              Map<String, dynamic> row = entry.value;
-              return TableRow(
-                children: [
-                  TableCell(
-                    child: Checkbox(
-                      value: selectedRows.contains(index),
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            selectedRows.add(index);
-                          } else {
-                            selectedRows.remove(index);
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                          height: 40,
-                          child: Center(child: Text(row['연번'].toString())))),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['카테고리']))),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['식품명']))),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['냉장고카테고리']))),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['소비기한'].toString()))),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['유통기한'].toString()))),
-                  TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Center(child: Text(row['장보기카테고리']))),
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: SizedBox(
-                      width: 60, // 버튼의 너비를 설정
-                      height: 30, // 버튼의 높이를 설정
-                      child: ElevatedButton(
-                        onPressed: () => _editFood(row['연번'] - 1), // 수정 버튼 클릭 시
-                        child: Text('수정'),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-          // 선택한 행 삭제 버튼
-          ElevatedButton(
-            onPressed: selectedRows.isNotEmpty
-                ? () {
-                    // 선택된 모든 행 삭제
-                    for (int index in selectedRows) {
-                      _deleteSelectedRows(index);
-                    }
-                  }
-                : null,
-            child: Text('선택한 항목 삭제'),
-          ),
-        ],
+        ),
       ),
     );
   }

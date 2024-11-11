@@ -13,7 +13,7 @@ class AdminAppSettingsManagement extends StatefulWidget {
 class _AdminAppSettingsManagementState
     extends State<AdminAppSettingsManagement> {
   final List<Tab> myTabs = <Tab>[
-    Tab(text: '재료별 카테고리'),
+    Tab(text: '식품 목록'),
     Tab(text: '테마별 카테고리'),
     Tab(text: '조리방법별 카테고리'),
     Tab(text: '선호식품 카테고리'),

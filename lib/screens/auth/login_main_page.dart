@@ -1,13 +1,15 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:intl/intl.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/login_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -15,13 +17,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final TextEditingController _emailController = TextEditingController();
   // final TextEditingController _nickNameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String errorMessage = '';
 
+  final String formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
   bool _validateInputs() {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() {
@@ -32,16 +35,35 @@ class _LoginPageState extends State<LoginPage> {
     return true;
   }
 
+  Future<void> addUserToFirestore(firebase_auth.User user) async {
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+    // Firestore에서 총 사용자 수를 가져와 연번 계산
+    final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
+
+    final docSnapshot = await userDoc.get();
+    if (!docSnapshot.exists) {
+      await userDoc.set({
+        'nickname': user.displayName ?? '닉네임 없음',
+        'email': user.email ?? '이메일 없음',
+        'signupdate': formattedDate,
+        // '성별': '', // 기본값
+        // '생년월일': '', // 기본값
+      });
+    }
+  }
+
   Future<void> signInWithEmailAndPassword() async {
     if (!_validateInputs()) return;
     try {
       // Firebase의 이메일/비밀번호 인증
-      UserCredential result = await _auth.signInWithEmailAndPassword(
+      firebase_auth.UserCredential result = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       // 로그인 성공 시 홈 화면으로 이동
       if (result.user != null) {
+        await addUserToFirestore(result.user!);
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         // 사용자 정보가 없을 경우 오류 메시지 표시
@@ -49,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
           errorMessage = '로그인 실패: 사용자 정보를 가져올 수 없습니다.';
         });
       }
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = '로그인 실패: ${e.code} - ${e.message}';
       });
@@ -65,12 +87,15 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> registerWithEmailAndPassword() async {
     if (!_validateInputs()) return;
     try {
-      await _auth.createUserWithEmailAndPassword(
+      firebase_auth.UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      Navigator.pushReplacementNamed(context, '/home'); // 홈으로 이동
-    } on FirebaseAuthException catch (e) {
+      if (result.user != null) {
+        await addUserToFirestore(result.user!); // Firestore에 사용자 추가
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on firebase_auth.FirebaseAuthException catch (e) {
       // FirebaseAuthException 별 오류 처리
       switch (e.code) {
         case 'email-already-in-use':
@@ -105,14 +130,17 @@ class _LoginPageState extends State<LoginPage> {
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
+      final firebase_auth.OAuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
       // Firebase에 사용자 인증
-      await _auth.signInWithCredential(credential);
-      Navigator.pushReplacementNamed(context, '/home'); // 홈으로 이동
+      firebase_auth.UserCredential result = await _auth.signInWithCredential(credential);
+      if (result.user != null) {
+        await addUserToFirestore(result.user!); // Firestore에 사용자 추가
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
       setState(() {
         errorMessage = 'Google 로그인 실패: ${e.toString()}';
@@ -124,18 +152,21 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> signInWithKakao() async {
     try {
       // Kakao 로그인
-      bool isInstalled = await isKakaoTalkInstalled();
-      OAuthToken token;
+      bool isInstalled = await kakao.isKakaoTalkInstalled();
+      kakao.OAuthToken token = isInstalled
+          ? await kakao.UserApi.instance.loginWithKakaoTalk()
+          : await kakao.UserApi.instance.loginWithKakaoAccount();
 
       print('isInstalled $isInstalled');
 
+
       if (isInstalled) {
-        token = await UserApi.instance.loginWithKakaoTalk();
+        token = await kakao.UserApi.instance.loginWithKakaoTalk();
 
         print('token $token');
 
       } else {
-        token = await UserApi.instance.loginWithKakaoAccount();
+        token = await kakao.UserApi.instance.loginWithKakaoAccount();
       }
 
       // Kakao Access Token으로 Firebase Custom Token 생성 및 로그인
@@ -146,8 +177,12 @@ class _LoginPageState extends State<LoginPage> {
       final firebaseCustomToken = await createFirebaseToken(kakaoAccessToken);
       print('firebaseCustomToken $firebaseCustomToken');
       // Firebase 로그인
-      await _auth.signInWithCustomToken(firebaseCustomToken);
-      Navigator.pushReplacementNamed(context, '/home'); // 홈으로 이동
+      firebase_auth.UserCredential result = await _auth.signInWithCustomToken(firebaseCustomToken);
+
+      if (result.user != null) {
+        await addUserToFirestore(result.user!); // Firestore에 사용자 추가
+        Navigator.pushReplacementNamed(context, '/home');
+      }
 
     } catch (e) {
       print('카카오 로그인 오류: $e');

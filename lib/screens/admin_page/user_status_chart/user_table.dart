@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 enum SortState { none, ascending, descending }
@@ -8,58 +9,47 @@ class UserTable extends StatefulWidget {
 }
 
 class _UserTableState extends State<UserTable> {
+
+  // 초기 사용자 데이터 빈 리스트로 설정
+  List<Map<String, dynamic>> userData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
+  // Firestore에서 사용자 데이터를 가져오는 함수
+  Future<void> fetchUserData() async {
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    setState(() {
+      userData = snapshot.docs.asMap().entries.map((entry) {
+        final index = entry.key + 1; // 1부터 시작하는 연번
+        final data = entry.value.data();
+        return {
+          '연번': index,
+          '이메일': data['email'] ?? '',
+          '닉네임': data['nickname'] ?? '',
+          '가입일': data['signupdate'] ?? '',
+          // '성별': data['성별'] ?? '',
+          // '생년월일': data['생년월일'] ?? '',
+        };
+      }).toList();
+    });
+  }
+
   // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '연번', 'state': SortState.none},
+    {'name': '이메일', 'state': SortState.none},
     {'name': '닉네임', 'state': SortState.none},
     {'name': '가입일', 'state': SortState.none},
-    {'name': '성별', 'state': SortState.none},
-    {'name': '생년월일', 'state': SortState.none},
+    // {'name': '성별', 'state': SortState.none},
+    // {'name': '생년월일', 'state': SortState.none},
     {'name': '오픈횟수', 'state': SortState.none},
     {'name': '사용시간', 'state': SortState.none},
     {'name': '레시피', 'state': SortState.none},
     {'name': '기록', 'state': SortState.none},
     {'name': '스크랩', 'state': SortState.none},
-  ];
-
-  // 사용자 데이터
-  List<Map<String, dynamic>> userData = [
-    {
-      '연번': 1,
-      '닉네임': '승희네',
-      '가입일': '2024/04/30',
-      '성별': '여성',
-      '생년월일': '1989/05/17',
-      '오픈횟수': 20,
-      '사용시간': 100,
-      '레시피': 10,
-      '기록': 30,
-      '스크랩': 45,
-    },
-    {
-      '연번': 2,
-      '닉네임': '지환',
-      '가입일': '2024/05/01',
-      '성별': '남성',
-      '생년월일': '1989/05/17',
-      '오픈횟수': 15,
-      '사용시간': 80,
-      '레시피': 8,
-      '기록': 25,
-      '스크랩': 40,
-    },
-    {
-      '연번': 3,
-      '닉네임': '영희',
-      '가입일': '2024/03/15',
-      '성별': '여성',
-      '생년월일': '1989/05/17',
-      '오픈횟수': 30,
-      '사용시간': 150,
-      '레시피': 12,
-      '기록': 40,
-      '스크랩': 55,
-    },
   ];
 
   void _sortBy(String columnName, SortState currentState) {
