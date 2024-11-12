@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 enum SortState { none, ascending, descending }
 
@@ -21,15 +22,22 @@ class _UserTableState extends State<UserTable> {
   // Firestore에서 사용자 데이터를 가져오는 함수
   Future<void> fetchUserData() async {
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
+
     setState(() {
       userData = snapshot.docs.asMap().entries.map((entry) {
         final index = entry.key + 1; // 1부터 시작하는 연번
         final data = entry.value.data();
+        final signUpDateRaw = data['signupdate'];
+        final signUpDate = signUpDateRaw is Timestamp
+            ? signUpDateRaw.toDate()
+            : DateTime.parse(signUpDateRaw.toString());
+
+        final formattedDate = DateFormat('yyyy-MM-dd').format(signUpDate);
         return {
           '연번': index,
           '이메일': data['email'] ?? '',
           '닉네임': data['nickname'] ?? '',
-          '가입일': data['signupdate'] ?? '',
+          '가입일': formattedDate,
           // '성별': data['성별'] ?? '',
           // '생년월일': data['생년월일'] ?? '',
         };
