@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -149,7 +150,7 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
           return Icon(Icons.broken_image, size: 50);
         },
       );
-    } else {
+    } else if (!kIsWeb) {
       // 로컬 파일 경로인 경우
       return Image.file(
         File(imageUrl),
@@ -158,6 +159,9 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
           return Icon(Icons.broken_image, size: 50);
         },
       );
+    } else {
+      // 웹 환경에서 로컬 파일 경로가 주어진 경우
+      return Icon(Icons.broken_image, size: 50); // 기본 아이콘 반환
     }
   }
 }

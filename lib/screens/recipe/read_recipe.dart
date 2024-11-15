@@ -5,6 +5,7 @@ import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/add_recipe_review.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ReadRecipe extends StatefulWidget {
   final String recipeId;
@@ -87,7 +88,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Future<void> loadScrapedData(String recipeId) async {
-    final userId = '현재 유저아이디';
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
           .instance
@@ -105,7 +106,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Future<void> loadLikedData(String recipeId) async {
-    final userId = '현재 유저아이디';
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
           .instance
@@ -123,7 +124,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _toggleLike() async {
-    final userId = '현재 유저아이디'; // 실제 사용자의 ID로 대체해야 함
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     try {
       // 스크랩 상태 확인을 위한 쿼리
@@ -168,7 +169,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _toggleScraped() async {
-    final userId = '현재 유저아이디'; // 실제 사용자의 ID로 대체해야 함
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     try {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
@@ -218,6 +219,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
 
   void _addToShoppingListDialog() async {
     Future<void> _addToShoppingList(List<String> ingredients) async {
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       try {
         for (int i = 0; i < ingredients.length; i++) {
           if (selectedIngredients[i] &&
@@ -225,7 +227,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
             final existingItemSnapshot = await FirebaseFirestore.instance
                 .collection('shopping_items')
                 .where('items', isEqualTo: ingredients[i])
-                .where('userId', isEqualTo: '현재 유저아이디') // 현재 유저의 아이템만 확인
+                .where('userId', isEqualTo: userId) // 현재 유저의 아이템만 확인
                 .get();
 
             if (existingItemSnapshot.docs.isEmpty) {
@@ -235,7 +237,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                   .add({
                 'items': ingredients[i],
                 'isChecked': false, // 체크되지 않은 상태로 저장
-                'userId': '현재 유저아이디', // 사용자 ID
+                'userId': userId, // 사용자 ID
               });
             } else {
               print('"${ingredients[i]}"이(가) 이미 장바구니에 있습니다.');

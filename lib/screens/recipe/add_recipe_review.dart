@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddRecipeReview extends StatefulWidget {
   late final String recipeId;
@@ -24,7 +25,6 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
   TextEditingController reviewContentController = TextEditingController();
   List<String> selectedImages = [];
   int selectedRating = 0;
-  String userId = '현재 유저아이디';
   List<String>? _imageFiles = [];
   List<String> reviewImages = [];
   String imageUrl = '';
@@ -139,6 +139,7 @@ class _AddRecipeReviewState extends State<AddRecipeReview> {
 
   // 저장 버튼 클릭 시 처리
   void _saveReview() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     String reviewContent = reviewContentController.text;
 
     if (reviewContent.isEmpty || selectedRating == 0) {

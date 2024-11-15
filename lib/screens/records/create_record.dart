@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:food_for_later/components/navbar_button.dart';
@@ -11,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateRecord extends StatefulWidget {
   final String? recordId; // recordId를 받을 수 있도록 수정
@@ -191,9 +193,18 @@ class _CreateRecordState extends State<CreateRecord> {
       }
 
       if (!_imageFiles!.contains(file.path)) {
+        if (kIsWeb) {
+          // 웹 환경에서는 Blob URL 생성
+          final bytes = await file.readAsBytes();
+          final blobUrl = Uri.dataFromBytes(bytes, mimeType: 'image/jpeg').toString();
         setState(() {
           _imageFiles!.add(file.path); // 로컬 경로를 XFile 객체로 변환하여 추가
         });
+        } else {
+          setState(() {
+            _imageFiles!.add(file.path); // 로컬 파일 경로 추가
+          });
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -239,6 +250,8 @@ class _CreateRecordState extends State<CreateRecord> {
 
 // 저장 버튼 누르면 레시피 추가 또는 수정 처리
   void _saveRecord() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     if (selectedField.isEmpty || selectedContents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('필수 입력 항목을 입력하세요.')),
@@ -269,6 +282,7 @@ class _CreateRecordState extends State<CreateRecord> {
       color: '#${selectedColor.value.toRadixString(16).padLeft(8, '0')}',
       zone: selectedCategory,
       records: recordDetails,
+      userId: userId,
     );
 
     try {
@@ -477,7 +491,7 @@ class _CreateRecordState extends State<CreateRecord> {
               subtitle: Wrap(
                 spacing: 8.0,
                 runSpacing: 8.0,
-                children: imagePaths.map<Widget>((imagePath) {
+                children: _imageFiles!.map((imagePath) {
                   // URL과 로컬 파일 구분
                   if (imagePath.startsWith('http') ||
                       imagePath.startsWith('https')) {
@@ -491,6 +505,7 @@ class _CreateRecordState extends State<CreateRecord> {
                       },
                     );
                   } else if (imagePath.startsWith('/')) {
+                    // 로컬 파일 경로인 경우
                     return Image.file(
                       File(imagePath),
                       width: 50,
@@ -545,7 +560,15 @@ class _CreateRecordState extends State<CreateRecord> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(4.0),
-                        child: Image.file(
+                        child: kIsWeb?  Image.network(
+                          imagePath,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(Icons.error); // 로드 실패 시 아이콘 표시
+                          },
+                        ):Image.file(
                           File(imagePath), // 개별 이미지의 경로에 접근
                           width: 50,
                           height: 50,

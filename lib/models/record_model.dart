@@ -7,6 +7,7 @@ class RecordModel {
   String zone;
   String color;
   List<RecordDetail> records;
+  String userId; // 추가된 userId 필드
 
   RecordModel({
     required this.id,
@@ -14,6 +15,7 @@ class RecordModel {
     required this.zone,
     required this.color,
     required this.records,
+    required this.userId, // 생성자에 추가
   });
 
   // Firestore에서 데이터를 가져와서 Record 객체로 변환하는 메서드
@@ -27,6 +29,7 @@ class RecordModel {
       records: (data['records'] as List)
           .map((item) => RecordDetail.fromMap(item))
           .toList(),
+      userId: data['userId'] ?? '', // userId 추가
     );
   }
 // fromJson 메서드 추가
@@ -50,11 +53,8 @@ class RecordModel {
           : DateTime.now(), // 기본값 설정
       zone: json['zone'] ?? '',
       color: json['color'] ?? '#000000',
-      records: json['records'] != null && json['records'] is List
-          ? (json['records'] as List<dynamic>)
-          .map((e) => RecordDetail.fromJson(e as Map<String, dynamic>))
-          .toList()
-          : [],
+      records: recordDetails,
+      userId: json['userId'] ?? '', // userId 추가
     );
   }
 
@@ -66,6 +66,7 @@ class RecordModel {
       'zone': zone,
       'color': color,
       'records': records.map((item) => item.toMap()).toList(),
+      'userId': userId,
     };
   }
   Color get colorAsColor => Color(int.parse(color.replaceFirst('#', '0xff')));

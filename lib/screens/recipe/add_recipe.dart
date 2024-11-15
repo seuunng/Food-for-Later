@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddRecipe extends StatefulWidget {
   final Map<String, dynamic>? recipeData; // 수정 시 전달될 레시피 데이터
@@ -167,6 +169,8 @@ class _AddRecipeState extends State<AddRecipe> {
   // 저장 버튼 누르면 레시피 추가 또는 수정 처리
   void _saveRecipe() async {
     try {
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
       if (mainImages.isEmpty) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('메인 이미지를 최소 1장 선택해주세요')));
@@ -178,11 +182,10 @@ class _AddRecipeState extends State<AddRecipe> {
         return;
       }
 
-      print(widget.recipeData == null);
       if (widget.recipeData == null) {
         final newItem = RecipeModel(
           id: _db.collection('recipe').doc().id,
-          userID: '사용자 ID',
+          userID: userId,
           difficulty: selectedDifficulty,
           serving: int.parse(servingsController.text),
           time: int.parse(minuteController.text),
@@ -699,8 +702,8 @@ class _AddRecipeState extends State<AddRecipe> {
                       style: TextStyle(
                         color: isSelected
                             ? theme.chipTheme.secondaryLabelStyle!.color
-                            : theme
-                                .chipTheme.labelStyle!.color, // 선택된 항목은 글씨 색을 흰색으로
+                            : theme.chipTheme.labelStyle!
+                                .color, // 선택된 항목은 글씨 색을 흰색으로
                       ),
                     ),
                     backgroundColor: isSelected
@@ -797,12 +800,22 @@ class _AddRecipeState extends State<AddRecipe> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(4.0),
-                      child: Image.file(
-                        File(imagePath), // 개별 이미지의 경로에 접근
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
+                      child: kIsWeb
+                          ? Image.network(
+                              imagePath,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.error);
+                              },
+                            )
+                          : Image.file(
+                              File(imagePath), // 개별 이미지의 경로에 접근
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                     Positioned(
                       right: 0,

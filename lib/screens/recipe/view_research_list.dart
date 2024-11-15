@@ -4,7 +4,7 @@ import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:food_for_later/screens/recipe/view_recipe_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/preferred_food_model.dart';
 
 class ViewResearchList extends StatefulWidget {
@@ -22,7 +22,7 @@ class ViewResearchList extends StatefulWidget {
 
 class _ViewResearchListState extends State<ViewResearchList> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final userId = '현재 유저아이디';
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   String? selectedCategory;
   List<String> keywords = [];
   List<RecipeModel> matchingRecipes = [];
@@ -238,6 +238,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
   }
 
   Future<bool> loadScrapedData(String recipeId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
           .instance

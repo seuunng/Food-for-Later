@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ViewScrapRecipeList extends StatefulWidget {
   @override
@@ -10,7 +11,6 @@ class ViewScrapRecipeList extends StatefulWidget {
 
 class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final userId = '현재 유저아이디'; // 실제 유저 아이디로 대체
   String? selectedRecipe;
   String selectedFilter = '기본함';
 
@@ -45,6 +45,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   }
 
   Future<List<RecipeModel>> fetchRecipesByScrap() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       // foods, methods, themes에서 각각 키워드를 포함하는 레시피를 검색
       QuerySnapshot snapshot = await _db
@@ -92,6 +93,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   }
 
   Future<bool> loadScrapedData(String recipeId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
           .instance
@@ -112,6 +114,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   }
 
   void _toggleScraped(String recipeId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       // 스크랩 상태 확인을 위한 쿼리
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =

@@ -7,6 +7,7 @@ import 'package:food_for_later/screens/records/create_record.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class RecordsListView extends StatefulWidget {
   @override
@@ -389,9 +390,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                             );
                                           }
                                         }).toList()
-                                      : [
-                                          Container(),
-                                        ], //s가 null일 경우 빈 컨테이너를 표시
+                                      : <Widget>[], //s가 null일 경우 빈 컨테이너를 표시
                                 ),
                               ],
                             ),
