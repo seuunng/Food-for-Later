@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:food_for_later/firebase_service.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
@@ -64,6 +65,7 @@ class _LoginPageState extends State<LoginPage> {
       // 로그인 성공 시 홈 화면으로 이동
       if (result.user != null) {
         await addUserToFirestore(result.user!);
+        await recordSessionStart();
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         // 사용자 정보가 없을 경우 오류 메시지 표시
@@ -139,12 +141,17 @@ class _LoginPageState extends State<LoginPage> {
       firebase_auth.UserCredential result = await _auth.signInWithCredential(credential);
       if (result.user != null) {
         await addUserToFirestore(result.user!); // Firestore에 사용자 추가
-        Navigator.pushReplacementNamed(context, '/home');
+        await recordSessionStart();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
     } catch (e) {
-      setState(() {
-        errorMessage = 'Google 로그인 실패: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Google 로그인 실패: ${e.toString()}';
+        });
+      }
       print('Google 로그인 실패: $e');
     }
   }
@@ -162,7 +169,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (isInstalled) {
         token = await kakao.UserApi.instance.loginWithKakaoTalk();
-
+        await recordSessionStart();
         print('token $token');
 
       } else {
@@ -181,7 +188,9 @@ class _LoginPageState extends State<LoginPage> {
 
       if (result.user != null) {
         await addUserToFirestore(result.user!); // Firestore에 사용자 추가
-        Navigator.pushReplacementNamed(context, '/home');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
 
     } catch (e) {

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
+import 'package:food_for_later/firebase_service.dart';
 import 'package:food_for_later/screens/auth/login_main_page.dart';
 import 'package:http/http.dart' as http;
 
@@ -408,6 +409,7 @@ class _AccountInformationState extends State<AccountInformation> {
               child: Text('로그아웃'),
               onPressed: () async {
                 Navigator.pop(context);
+                await recordSessionEnd();
                 await FirebaseAuth.instance.signOut(); // 로그아웃 처리
                 Navigator.pushReplacement(
                   context,

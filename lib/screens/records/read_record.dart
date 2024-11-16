@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/records/create_record.dart';
@@ -188,7 +189,7 @@ class _ReadRecordState extends State<ReadRecord> {
                             spacing: 8.0,
                             runSpacing: 8.0,
                             children: rec.images.map((imagePath) {
-                              if (imagePath.startsWith('http') || imagePath.startsWith('https')) {
+                              if (Uri.parse(imagePath).isAbsolute) {
                                 // 원격 이미지 URL일 경우
                                 return Image.network(
                                   imagePath,
@@ -196,10 +197,10 @@ class _ReadRecordState extends State<ReadRecord> {
                                   height: 60,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return Text('Error loading image');
+                                    return Icon(Icons.broken_image, size: 60);
                                   },
                                 );
-                              } else if (File(imagePath).existsSync()) {
+                              } else if (!kIsWeb && File(imagePath).existsSync()) {
                                 // 로컬 이미지 파일 경로일 경우
                                 return Image.file(
                                   File(imagePath),

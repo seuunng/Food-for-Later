@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -16,47 +17,140 @@ class UserTimeState extends State<UserTime> {
 
   int touchedIndex = -1;
 
-  // bool isPlaying = false;
+  Future<Map<int, int>> fetchUsageData() async {
+    final usageData = <int, int>{};
+    for (int i = 0; i < 24; i++) {
+      usageData[i] = 0; // 초기화
+    }
+
+    final userCollection = FirebaseFirestore.instance.collection('users');
+    final querySnapshot = await userCollection.get();
+
+    for (var doc in querySnapshot.docs) {
+      final sessions =
+          List<Map<String, dynamic>>.from(doc['openSessions'] ?? []);
+      for (var session in sessions) {
+        if (session['startTime'] != null) {
+          final startTime = (session['startTime'] as Timestamp).toDate();
+          final hour = startTime.hour; // 0~23 시간대 추출
+          usageData[hour] = usageData[hour]! + 1;
+        }
+      }
+    }
+
+    return usageData;
+  }
+
+  Future<List<BarChartGroupData>> buildChartGroups() async {
+    final usageData = await fetchUsageData();
+    final groupData = <BarChartGroupData>[];
+
+    for (int i = 0; i < 24; i += 3) {
+      // 3시간 단위로 묶어서 데이터 집계
+      double sum = 0;
+      for (int j = i; j < i + 3 && j < 24; j++) {
+        sum += usageData[j]!.toDouble();
+      }
+
+      groupData.add(
+        makeGroupData(i ~/ 3, sum), // 3시간 단위의 평균 사용량
+      );
+    }
+
+    return groupData;
+  }
+
+  Future<BarChartData> mainBarData() async {
+    final groups = await buildChartGroups();
+    return BarChartData(
+      barTouchData: BarTouchData(
+          // 터치 데이터 처리 유지
+          ),
+      titlesData: FlTitlesData(
+        show: true,
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false), // 상단 제목 제거
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (double value, TitleMeta meta) {
+              final hourLabels = [
+                '0~3시',
+                '3~6시',
+                '6~9시',
+                '9~12시',
+                '12~15시',
+                '15~18시',
+                '18~21시',
+                '21~24시'
+              ];
+              return SideTitleWidget(
+                axisSide: meta.axisSide,
+                child: Text(hourLabels[value.toInt()]),
+              );
+            },
+            reservedSize: 30,
+          ),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false), // 오른쪽 제목 제거
+        ),
+      ),
+      borderData: FlBorderData(
+        show: false, // 테두리 제거
+      ),
+      barGroups: groups,
+      gridData: const FlGridData(show: false),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12.0, right: 12.0),
-      child: Container( // 차트의 화면 비율을 설정
-        constraints: BoxConstraints(
-          maxWidth: double.infinity, // 부모 컨테이너의 가로를 채움
-          maxHeight: 300, // 최대 세로 크기
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white, // 배경색 설정
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.5),
-              spreadRadius: 5,
-              blurRadius: 7,
-              offset: Offset(0, 3), // 그림자 위치
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(12.0),
-          child: BarChart(
-            mainBarData(), // 차트 데이터를 mainBarData로 설정
-            swapAnimationDuration: animDuration,
-          ),
-        ),
+    return FutureBuilder<BarChartData>(
+      future: mainBarData(),
+
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('데이터를 불러오는 중 오류가 발생했습니다.'));
+        }
+        return Padding(
+          padding: const EdgeInsets.only(left: 12.0, right: 12.0),
+          child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white, // 배경색 설정
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 5,
+                    blurRadius: 7,
+                    offset: Offset(0, 3), // 그림자 위치
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(12.0), // 내부 여백
+              child: BarChart(snapshot.data!)),
+        );
+      },
     );
   }
 
   // 차트 그룹 데이터 생성
   BarChartGroupData makeGroupData(
-      int x,
-      double y, {
-        bool isTouched = false,
-        Color? barColor,
-        double width = 22,
-        List<int> showTooltips = const [],
-      }) {
+    int x,
+    double y, {
+    bool isTouched = false,
+    Color? barColor,
+    double width = 22,
+    List<int> showTooltips = const [],
+  }) {
     return BarChartGroupData(
       x: x,
       barRods: [
@@ -78,117 +172,8 @@ class UserTimeState extends State<UserTime> {
     );
   }
 
-  // 실제 데이터를 보여줄 함수
-  BarChartData mainBarData() {
-    return BarChartData(
-      barTouchData: BarTouchData(
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipColor: (_) => Colors.blueGrey,
-          tooltipHorizontalAlignment: FLHorizontalAlignment.right,
-          tooltipMargin: -10,
-          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-            return BarTooltipItem(
-              'Value\n',
-              const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-              children: <TextSpan>[
-                TextSpan(
-                  text: '${rod.toY - 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        touchCallback: (FlTouchEvent event, barTouchResponse) {
-          setState(() {
-            if (!event.isInterestedForInteractions ||
-                barTouchResponse == null ||
-                barTouchResponse.spot == null) {
-              touchedIndex = -1;
-              return;
-            }
-            touchedIndex = barTouchResponse.spot!.touchedBarGroupIndex;
-          });
-        },
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (double value, TitleMeta meta) {
-              const style = TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              );
-              Widget text;
-              switch (value.toInt()) {
-                case 0:
-                  text = const Text('0시', style: style);
-                  break;
-                case 1:
-                  text = const Text('3시', style: style);
-                  break;
-                case 2:
-                  text = const Text('6시', style: style);
-                  break;
-                case 3:
-                  text = const Text('9시', style: style);
-                  break;
-                case 4:
-                  text = const Text('12시', style: style);
-                  break;
-                case 5:
-                  text = const Text('15시', style: style);
-                  break;
-                case 6:
-                  text = const Text('18시', style: style);
-                  break;
-                case 7:
-                  text = const Text('21시', style: style);
-                  break;
-                default:
-                  text = const Text('', style: style);
-                  break;
-              }
-              return SideTitleWidget(
-                axisSide: meta.axisSide,
-                child: text,
-              );
-            },
-            reservedSize: 30,
-          ),
-        ),
-        leftTitles: const AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: false,
-          ),
-        ),
-      ),
-      borderData: FlBorderData(
-        show: false,
-      ),
-      barGroups: showingGroups(),
-      gridData: const FlGridData(show: false),
-    );
-  }
-
   // 차트 그룹 데이터를 생성하는 함수
   List<BarChartGroupData> showingGroups() => List.generate(7, (i) {
-    return makeGroupData(i, 5 + i.toDouble());
-  });
+        return makeGroupData(i, 5 + i.toDouble());
+      });
 }

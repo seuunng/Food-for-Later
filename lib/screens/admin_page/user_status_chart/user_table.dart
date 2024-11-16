@@ -59,6 +59,9 @@ class _UserTableState extends State<UserTable> {
       final totalUsageTime = openSessions.fold<int>(0, (sum, session) {
         final startTime = session['startTime'] as Timestamp;
         final endTime = session['endTime'] as Timestamp;
+        if (startTime is! Timestamp || endTime is! Timestamp) {
+          return sum; // 잘못된 데이터는 건너뜀
+        }
         return sum + endTime.toDate().difference(startTime.toDate()).inMinutes;
       });
 
@@ -67,8 +70,8 @@ class _UserTableState extends State<UserTable> {
         '이메일': data['email'] ?? '',
         '닉네임': data['nickname'] ?? '',
         '가입일': formattedDate,
-        '오픈횟수': openCount,
-        '사용시간': totalUsageTime,
+        '접속횟수': openCount,
+        '사용시간(분)': totalUsageTime,
         '레시피': recipeCount,
         '기록': recordCount,
         '스크랩': scrapCount,
@@ -91,7 +94,7 @@ class _UserTableState extends State<UserTable> {
     // {'name': '성별', 'state': SortState.none},
     // {'name': '생년월일', 'state': SortState.none},
     {'name': '접속횟수', 'state': SortState.none},
-    {'name': '사용시간', 'state': SortState.none},
+    {'name': '사용시간(분)', 'state': SortState.none},
     {'name': '레시피', 'state': SortState.none},
     {'name': '기록', 'state': SortState.none},
     {'name': '스크랩', 'state': SortState.none},

@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:food_for_later/firebase_options.dart';
+import 'package:food_for_later/firebase_service.dart';
 import 'package:food_for_later/providers/theme_provider.dart';
 import 'package:food_for_later/screens/auth/login_main_page.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
@@ -24,6 +25,7 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
+  // await recordSessionStart();
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String initialFont = prefs.getString('fontType') ?? 'Arial';
   // SharedPreferences prefs = await SharedPreferences.getInstance();
