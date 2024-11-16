@@ -22,7 +22,7 @@ class AddRecipe extends StatefulWidget {
 
 class _AddRecipeState extends State<AddRecipe> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
+  late DateTime createdDate;
   late TextEditingController recipeNameController;
   late TextEditingController minuteController;
   late TextEditingController stepDescriptionController;
@@ -68,6 +68,8 @@ class _AddRecipeState extends State<AddRecipe> {
     ingredientsSearchController = TextEditingController();
     methodsSearchController = TextEditingController();
     themesSearchController = TextEditingController();
+
+    createdDate = DateTime.now();
 
     if (widget.recipeData != null) {
       // 기존 레시피 데이터가 있을 때 값 설정
@@ -186,6 +188,7 @@ class _AddRecipeState extends State<AddRecipe> {
         final newItem = RecipeModel(
           id: _db.collection('recipe').doc().id,
           userID: userId,
+          date: createdDate,
           difficulty: selectedDifficulty,
           serving: int.parse(servingsController.text),
           time: int.parse(minuteController.text),

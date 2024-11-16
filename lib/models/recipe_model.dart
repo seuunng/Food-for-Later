@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class RecipeModel {
   final String id;
   final String userID;
@@ -12,6 +14,7 @@ class RecipeModel {
   final List<String> mainImages;
   double rating;
   int views;
+  DateTime date;
 
   RecipeModel({
     required this.id,
@@ -25,6 +28,7 @@ class RecipeModel {
     required this.recipeName,
     required this.steps,
     required this.mainImages,
+    required this.date,
     this.rating = 0.0,
     this.views = 0,
   });
@@ -41,6 +45,7 @@ class RecipeModel {
 
     return RecipeModel(
       id: data['ID'] ?? '',
+      date: (data['date'] as Timestamp).toDate(),
       recipeName: data['recipeName'] ?? '',
       difficulty: data['difficulty'] ?? '',
       serving: data['serving'] ?? 0,
@@ -86,6 +91,7 @@ class RecipeModel {
       'mainImages': mainImages, // 메인사진 저장
       'rating': rating, // 별점 저장
       'views': views,
+      'date': date
     };
   }
 }

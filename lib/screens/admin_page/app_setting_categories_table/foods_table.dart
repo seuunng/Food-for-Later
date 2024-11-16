@@ -21,7 +21,7 @@ class _FoodsTableState extends State<FoodsTable> {
     {'name': '식품명', 'state': SortState.none},
     {'name': '냉장고카테고리', 'state': SortState.none},
     {'name': '소비기한', 'state': SortState.none},
-    {'name': '유통기한', 'state': SortState.none},
+    // {'name': '유통기한', 'state': SortState.none},
     {'name': '장보기카테고리', 'state': SortState.none},
     {'name': '변동', 'state': SortState.none}
   ];
@@ -174,7 +174,7 @@ class _FoodsTableState extends State<FoodsTable> {
       _selectedFridgeCategory = selectedFood['냉장고카테고리'] ?? '';
       _selectedShoppingListCategory = selectedFood['장보기카테고리'] ?? '';
       _shelfLifeController.text = selectedFood['소비기한'].toString();
-      _expirationDateController.text = selectedFood['유통기한'].toString();
+      // _expirationDateController.text = selectedFood['유통기한'].toString();
     });
     isEditing = true;
     selectedFoodIndex = index;
@@ -191,8 +191,8 @@ class _FoodsTableState extends State<FoodsTable> {
         _selectedShoppingListCategory ?? selectedFood['장보기카테고리'];
     final shelfLife =
         int.tryParse(_shelfLifeController.text) ?? selectedFood['소비기한'];
-    final expirationDate =
-        int.tryParse(_expirationDateController.text) ?? selectedFood['유통기한'];
+    // final expirationDate =
+    //     int.tryParse(_expirationDateController.text) ?? selectedFood['유통기한'];
 
     try {
       if (selectedFood.containsKey('documentId')) {
@@ -208,7 +208,7 @@ class _FoodsTableState extends State<FoodsTable> {
           'defaultFridgeCategory': fridgeCategory,
           'shoppingListCategory': shoppingListCategory,
           'shelfLife': shelfLife,
-          'expirationDate': expirationDate,
+          // 'expirationDate': expirationDate,
         });
 
         // 로컬 상태에서도 데이터 업데이트
@@ -220,7 +220,7 @@ class _FoodsTableState extends State<FoodsTable> {
             '냉장고카테고리': fridgeCategory,
             '장보기카테고리': shoppingListCategory,
             '소비기한': shelfLife,
-            '유통기한': expirationDate,
+            // '유통기한': expirationDate,
           };
         });
       } else {
@@ -354,9 +354,9 @@ class _FoodsTableState extends State<FoodsTable> {
                   3: FixedColumnWidth(100),
                   4: FixedColumnWidth(120),
                   5: FixedColumnWidth(80),
-                  6: FixedColumnWidth(80),
-                  7: FixedColumnWidth(180),
-                  8: FixedColumnWidth(80),
+                  // 6: FixedColumnWidth(80),
+                  6: FixedColumnWidth(180),
+                  7: FixedColumnWidth(80),
                 },
                 children: [
                   TableRow(
@@ -416,9 +416,9 @@ class _FoodsTableState extends State<FoodsTable> {
                   3: FixedColumnWidth(100),
                   4: FixedColumnWidth(120),
                   5: FixedColumnWidth(80),
-                  6: FixedColumnWidth(80),
-                  7: FixedColumnWidth(180),
-                  8: FixedColumnWidth(100),
+                  // 6: FixedColumnWidth(80),
+                  6: FixedColumnWidth(180),
+                  7: FixedColumnWidth(100),
                 },
                 children: [
                   TableRow(
@@ -550,35 +550,35 @@ class _FoodsTableState extends State<FoodsTable> {
                           },
                         ),
                       ),
-                      TableCell(
-                        child: TextField(
-                          controller: _expirationDateController,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            hintText: '유통기한',
-                            hintStyle: TextStyle(
-                              fontSize: 14, // 글씨 크기 줄이기
-                              color: Colors.grey, // 글씨 색상 회색으로
-                            ),
-                            suffixIcon:
-                                _expirationDateController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(Icons.clear, size: 16),
-                                        onPressed: () {
-                                          setState(() {
-                                            _expirationDateController
-                                                .clear(); // 입력 필드 내용 삭제
-                                          });
-                                        },
-                                      )
-                                    : null, // 내용이 없을 때는 버튼을 표시하지 않음
-                          ),
-                          onChanged: (value) {
-                            setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
-                          },
-                        ),
-                      ),
+                      // TableCell(
+                      //   child: TextField(
+                      //     controller: _expirationDateController,
+                      //     textAlign: TextAlign.center,
+                      //     keyboardType: TextInputType.number,
+                      //     decoration: InputDecoration(
+                      //       hintText: '유통기한',
+                      //       hintStyle: TextStyle(
+                      //         fontSize: 14, // 글씨 크기 줄이기
+                      //         color: Colors.grey, // 글씨 색상 회색으로
+                      //       ),
+                      //       suffixIcon:
+                      //           _expirationDateController.text.isNotEmpty
+                      //               ? IconButton(
+                      //                   icon: Icon(Icons.clear, size: 16),
+                      //                   onPressed: () {
+                      //                     setState(() {
+                      //                       _expirationDateController
+                      //                           .clear(); // 입력 필드 내용 삭제
+                      //                     });
+                      //                   },
+                      //                 )
+                      //               : null, // 내용이 없을 때는 버튼을 표시하지 않음
+                      //     ),
+                      //     onChanged: (value) {
+                      //       setState(() {}); // 입력 내용이 바뀔 때 상태 업데이트
+                      //     },
+                      //   ),
+                      // ),
                       TableCell(
                         verticalAlignment: TableCellVerticalAlignment.middle,
                         child: DropdownButtonFormField<String>(
@@ -630,9 +630,9 @@ class _FoodsTableState extends State<FoodsTable> {
                                         _selectedShoppingListCategory,
                                     'shelfLife': int.tryParse(
                                         _shelfLifeController.text), // 소비기한 추가
-                                    'expirationDate': int.tryParse(
-                                        _expirationDateController
-                                            .text), // 유통기한 추가
+                                    // 'expirationDate': int.tryParse(
+                                    //     _expirationDateController
+                                    //         .text), // 유통기한 추가
                                     'isDisabled': false, // 기본값 설정
                                   };
                                   // _selectedCategory가 null일 수 있으므로 체크 후 호출
@@ -669,9 +669,9 @@ class _FoodsTableState extends State<FoodsTable> {
                   3: FixedColumnWidth(100),
                   4: FixedColumnWidth(120),
                   5: FixedColumnWidth(80),
-                  6: FixedColumnWidth(80),
-                  7: FixedColumnWidth(180),
-                  8: FixedColumnWidth(100),
+                  // 6: FixedColumnWidth(80),
+                  6: FixedColumnWidth(180),
+                  7: FixedColumnWidth(100),
                 },
                 children: userData.asMap().entries.map((entry) {
                   int index = entry.key;
@@ -710,9 +710,9 @@ class _FoodsTableState extends State<FoodsTable> {
                       TableCell(
                           verticalAlignment: TableCellVerticalAlignment.middle,
                           child: Center(child: Text(row['소비기한'].toString()))),
-                      TableCell(
-                          verticalAlignment: TableCellVerticalAlignment.middle,
-                          child: Center(child: Text(row['유통기한'].toString()))),
+                      // TableCell(
+                      //     verticalAlignment: TableCellVerticalAlignment.middle,
+                      //     child: Center(child: Text(row['유통기한'].toString()))),
                       TableCell(
                           verticalAlignment: TableCellVerticalAlignment.middle,
                           child: Center(child: Text(row['장보기카테고리']))),
