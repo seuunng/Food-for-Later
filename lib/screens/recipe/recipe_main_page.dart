@@ -217,6 +217,28 @@ class _RecipeMainPageState extends State<RecipeMainPage>
   //     print('Error searching by top ingredients: $e');
   //   }
   // }
+  void _saveSearchKeyword(String keyword) async {
+    final searchRef = FirebaseFirestore.instance.collection('search_keywords');
+
+    try {
+      final snapshot = await searchRef.doc(keyword).get();
+      if (snapshot.exists) {
+        // 기존 데이터가 있으면 검색 횟수를 증가
+        await searchRef.doc(keyword).update({
+          'count': FieldValue.increment(1),
+        });
+      } else {
+        // 새로운 검색어를 추가
+        await searchRef.doc(keyword).set({
+          'keyword': keyword,
+          'count': 1,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('검색어 저장 중 오류 발생: $e');
+    }
+  }
 
   List<String> _getTopIngredientsByCategoryPriority(
       Map<String, List<String>> itemsByCategory,
@@ -277,6 +299,7 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                       setState(() {
                         searchKeyword = value.trim();
                       });
+                      _saveSearchKeyword(searchKeyword);
                       _searchController.clear();
                       // 엔터 키를 눌렀을 때 ViewResearchList로 이동
                       Navigator.push(

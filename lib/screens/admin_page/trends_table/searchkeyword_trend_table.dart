@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 enum SortState { none, ascending, descending }
@@ -9,6 +10,43 @@ class SearchkeywordTrendTable extends StatefulWidget {
 }
 
 class _SearchkeywordTrendTableState extends State<SearchkeywordTrendTable> {
+  List<Map<String, dynamic>> userData  = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSearchTrends();
+  }
+
+  void _loadSearchTrends() async {
+    final trends = await _fetchSearchTrends();
+    setState(() {
+      userData  = trends;
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchSearchTrends() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('search_keywords')
+          .orderBy('count', descending: true) // 검색 횟수 기준 내림차순 정렬
+          .limit(10) // 상위 10개만 가져옴
+          .get();
+
+      int rank = 1; // 순위를 1부터 시작
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          '순위': rank++,
+          '키워드': data['keyword'] ?? 'N/A',
+          '검색횟수': data['count'] ?? 0,
+        };
+      }).toList();
+    } catch (e) {
+      print('검색 트렌드 데이터를 가져오는 중 오류 발생: $e');
+      return [];
+    }
+  }
   // 각 열에 대한 정렬 상태를 관리하는 리스트
   List<Map<String, dynamic>> columns = [
     {'name': '순위', 'state': SortState.none},
@@ -17,23 +55,23 @@ class _SearchkeywordTrendTableState extends State<SearchkeywordTrendTable> {
   ];
 
   // 사용자 데이터
-  List<Map<String, dynamic>> userData = [
-    {
-      '순위': 1,
-      '키워드': '탄탄멘',
-      '검색횟수': 300,
-    },
-    {
-      '순위': 2,
-      '키워드': '마라',
-      '검색횟수': 300,
-    },
-    {
-      '순위': 3,
-      '키워드': '다이어트',
-      '검색횟수': 300,
-    },
-  ];
+  // List<Map<String, dynamic>> userData = [
+  //   {
+  //     '순위': 1,
+  //     '키워드': '탄탄멘',
+  //     '검색횟수': 300,
+  //   },
+  //   {
+  //     '순위': 2,
+  //     '키워드': '마라',
+  //     '검색횟수': 300,
+  //   },
+  //   {
+  //     '순위': 3,
+  //     '키워드': '다이어트',
+  //     '검색횟수': 300,
+  //   },
+  // ];
 
   void _sortBy(String columnName, SortState currentState) {
     setState(() {
