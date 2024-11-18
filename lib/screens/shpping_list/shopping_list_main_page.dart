@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
@@ -31,13 +32,14 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
 
   bool showCheckBoxes = false;
   Map<String, List<String>> groupedItems = {};
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
     super.initState();
-    _loadItemsFromFirestore('현재 유저아이디');
+    _loadItemsFromFirestore(userId);
     _loadCategoriesFromFirestore();
-    _loadFridgeCategoriesFromFirestore('현재 유저아이디');
+    _loadFridgeCategoriesFromFirestore(userId);
     _loadSelectedFridge();
 
     setState(() {
@@ -257,8 +259,6 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
         ? selectedFridge
         : '기본 냉장고';
 
-    print('_addItemsToFridge() 실행 - 선택된 Fridge ID: $fridgeId');
-
     if (fridgeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('선택된 냉장고를 찾을 수 없습니다.')),
@@ -279,7 +279,6 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
         for (int index = 0; index < checkedItems[category]!.length; index++) {
             if (checkedItems[category]![index]) {
               String itemName = categoryItems[index];
-              print('추가 중인 아이템: $itemName');
 
               // FoodsModel에서 해당 itemName에 맞는 데이터를 찾기
             final matchingFood = await FirebaseFirestore.instance
@@ -316,6 +315,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
                   'items': itemName,
                   'FridgeId': fridgeId, // 선택된 냉장고
                   'fridgeCategoryId': fridgeCategoryId,
+                  'userId': userId,
                   // 'expirationDate': expirationDate,
                   // 'shelfLife': shelfLife,
                 });
@@ -324,7 +324,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
               final snapshot = await FirebaseFirestore.instance
                   .collection('shopping_items')
                   .where('items', isEqualTo: itemName)
-                  .where('userId', isEqualTo: '현재 유저아이디') // 유저 ID로 필터
+                  .where('userId', isEqualTo: userId) // 유저 ID로 필터
                   .get();
 
               if (snapshot.docs.isNotEmpty) {
@@ -394,7 +394,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
             final snapshot = await FirebaseFirestore.instance
                 .collection('shopping_items')
                 .where('items', isEqualTo: itemName)
-                .where('userId', isEqualTo: '현재 유저아이디') // 유저 ID로 필터
+                .where('userId', isEqualTo: userId) // 유저 ID로 필터
                 .get();
 
             if (snapshot.docs.isNotEmpty) {
@@ -520,7 +520,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
             itemLists.clear(); // 중복 방지를 위해 아이템 리스트 초기화
             checkedItems.clear(); // 체크박스 상태 초기화
             strikeThroughItems.clear(); // 취소선 상태 초기화
-            _loadItemsFromFirestore('현재 유저아이디');
+            _loadItemsFromFirestore(userId);
           });
         },
       ):null,

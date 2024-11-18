@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
   DateTime? endDate;
   List<String>? selectedCategories;
   bool isLoading = true; // 데이터를 불러오는 중 상태 표시
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
@@ -95,7 +97,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Query query = FirebaseFirestore.instance.collection('record');
+    Query query = FirebaseFirestore.instance.collection('record')
+        .where('userId', isEqualTo: userId);
 
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {

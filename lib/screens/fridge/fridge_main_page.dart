@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:food_for_later/components/floating_add_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/main.dart';
@@ -26,7 +27,8 @@ class FridgeMainPageState extends State<FridgeMainPage>
     with RouteAware, SingleTickerProviderStateMixin {
   DateTime currentDate = DateTime.now();
   // late final DeleteModeObserver _deleteModeObserver;
-
+  // 카테고리 리스트
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   List<String> fridgeName = [];
   String? selectedFridge = '';
   String? selectedFoodStatusManagement = '';
@@ -118,6 +120,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('fridge_items')
+          .where('userId', isEqualTo: userId)
           .where('FridgeId', isEqualTo: fridgeId)
           .get(); // 해당 유저 ID에 맞는 냉장고 데이터
 
@@ -209,7 +212,9 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
   Future<void> _loadFridgeNameFromFirestore() async {
     final snapshot =
-        await FirebaseFirestore.instance.collection('fridges').get();
+        await FirebaseFirestore.instance.collection('fridges')
+            .where('userId', isEqualTo: userId)
+            .get();
 
     List<String> fridgeList = snapshot.docs.map((doc) {
       return (doc['FridgeName'] ?? 'Unknown Fridge')
@@ -331,6 +336,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
             .collection('fridge_items')
             .where('items', isEqualTo: item) // 선택된 아이템 이름과 일치하는 문서 검색
             .where('FridgeId', isEqualTo: selectedFridge) // 선택된 냉장고 ID 필터
+            .where('userId', isEqualTo: userId)
             .get();
 
         if (snapshot.docs.isNotEmpty) {
@@ -518,7 +524,6 @@ class FridgeMainPageState extends State<FridgeMainPage>
         bool isSelected = selectedItems.contains(currentItem);
         String formattedDate = DateFormat('yyyy-MM-dd').format(registrationDate);
 
-        print('22registrationDate $registrationDate');
         return AnimatedBuilder(
           animation: _animation,
           builder: (context, child) {

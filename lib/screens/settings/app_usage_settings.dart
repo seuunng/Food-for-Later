@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
@@ -19,6 +20,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
   final List<String> _categories_foods = ['소비기한 기준', '입고일 기준']; // 카테고리 리스트
   String _selectedCategory_records = '앨범형'; // 기본 선택값
   final List<String> _categories_records = ['앨범형', '달력형', '목록형']; // 카테고리 리스트
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   String _newCategory = '';
   @override
@@ -39,7 +41,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
   // Firestore에서 냉장고 목록 불러오기
   void _loadFridgeCategoriesFromFirestore() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('fridges').get();
+      final snapshot = await FirebaseFirestore.instance.collection('fridges')
+          .where('userId', isEqualTo: userId)
+          .get();
       List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
 
       if (fridgeList.isEmpty) {
@@ -63,6 +67,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
       // Firestore에 기본 냉장고 추가
       await FirebaseFirestore.instance.collection('fridges').add({
         'FridgeName': '기본 냉장고',
+        'userId': userId,
       });
       // UI 업데이트
       setState(() {
@@ -77,12 +82,12 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     }
   }
 
-  Future<void> _addNewFridgeToFirestore(String newFridgeName, String userId) async {
+  Future<void> _addNewFridgeToFirestore(String newFridgeName) async {
     final fridgeRef = FirebaseFirestore.instance.collection('fridges');
     try {
       await fridgeRef.add({
         'FridgeName': newFridgeName,
-        'UserID': userId,
+        'userId': userId,
       });
     } catch (e) {
       print('냉장고 추가 중 오류가 발생했습니다: $e');
@@ -123,7 +128,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               child: Text('추가'),
               onPressed: () async {
                 if (newCategory.isNotEmpty) {
-                  await _addNewFridgeToFirestore(newCategory, '현재 유저 아이디');
+                  await _addNewFridgeToFirestore(newCategory);
                   setState(() {
                     categories.add(newCategory);
                     // 추가 후 선택된 카테고리 업데이트
@@ -165,6 +170,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   // 해당 냉장고 이름과 일치하는 문서를 찾음
                   final snapshot = await fridgeRef
                       .where('FridgeName', isEqualTo: category)
+                      .where('userId', isEqualTo: userId)
                       .get();
 
                   for (var doc in snapshot.docs) {

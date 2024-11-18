@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/records/read_record.dart';
@@ -17,6 +18,7 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
   DateTime? endDate;
   List<String>? selectedCategories;
   bool isLoading = true; // 데이터를 불러오는 중 상태 표시
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
@@ -58,6 +60,13 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
   Widget build(BuildContext context) {
     // Firestore 쿼리 필터링
     Query query = FirebaseFirestore.instance.collection('record');
+    if (userId != null) {
+      query = query.where('userId', isEqualTo: userId);
+    }
+
+    print('userId $userId');
+    print('starttime $startDate');
+    print('endtime $endDate');
 
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {

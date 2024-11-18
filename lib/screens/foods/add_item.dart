@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
@@ -9,6 +10,7 @@ import 'package:food_for_later/models/preferred_food_model.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddItem extends StatefulWidget {
   final String pageTitle;
@@ -44,6 +46,7 @@ class _AddItemState extends State<AddItem> {
   String? selectedSection;
   String searchKeyword = '';
   String? selectedItem;
+  String? selectedFridge = '';
 
   // int expirationDays = 7;
   bool isDeleteMode = false; // 삭제 모드 여부
@@ -62,12 +65,21 @@ class _AddItemState extends State<AddItem> {
   void initState() {
     super.initState();
     // removeDuplicates(); // 중복 제거 함수 호출
+    _loadSelectedFridge();
     if (widget.sourcePage == 'preferred_foods_category') {
       _loadPreferredFoodsCategoriesFromFirestore();
     } else {
       _loadCategoriesFromFirestore();
     }
     _loadDeletedItems();
+  }
+
+  void _loadSelectedFridge() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
+    setState(() {
+      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
+    });
   }
 
   void _navigateToAddItemPage() async {
@@ -179,7 +191,8 @@ class _AddItemState extends State<AddItem> {
 
   // 물건 추가 다이얼로그
   Future<void> _addItemsToFridge() async {
-    final fridgeId = '1번 냉장고'; // 여기에 실제 유저 ID를 추가하세요
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final fridgeId = selectedFridge; // 여기에 실제 유저 ID를 추가하세요
 
     try {
       for (String itemName in selectedItems) {
@@ -210,6 +223,7 @@ class _AddItemState extends State<AddItem> {
             'FridgeId': fridgeId, // Firestore에 저장할 필드
             'fridgeCategoryId': fridgeCategoryId,
             'registrationDate': Timestamp.fromDate(DateTime.now()),
+            'userId': userId,
           });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -237,7 +251,7 @@ class _AddItemState extends State<AddItem> {
   }
 
   Future<void> _addItemsToShoppingList() async {
-    final userId = '현재 유저아이디'; // 여기에 실제 유저 ID를 추가하세요
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     try {
       for (String itemName in selectedItems) {
