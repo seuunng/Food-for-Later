@@ -28,6 +28,7 @@ class _CreateRecordState extends State<CreateRecord> {
   late TextEditingController fieldController;
   late TextEditingController contentsController;
   late TextEditingController dateController;
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   late String selectedCategory = '식단';
   late String selectedField = '아침';
@@ -86,6 +87,7 @@ class _CreateRecordState extends State<CreateRecord> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('record_categories')
+          .where('userId', isEqualTo: userId)
           .get();
 
       if (snapshot.docs.isNotEmpty) {

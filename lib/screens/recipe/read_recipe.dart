@@ -21,6 +21,7 @@ class ReadRecipe extends StatefulWidget {
 }
 
 class _ReadRecipeState extends State<ReadRecipe> {
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   List<String> ingredients = []; // 재료 목록
   String recipeName = '';
   int views=0;
@@ -116,7 +117,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
           .get();
 
       setState(() {
-        isScraped = snapshot.docs.first.data()['isLiked'] ?? false;
+        isLiked = snapshot.docs.first.data()['isLiked'] ?? false;
       });
     } catch (e) {
       print("Error fetching recipe isLiked data: $e");
@@ -169,7 +170,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _toggleScraped() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     try {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =

@@ -34,6 +34,7 @@ class AddItem extends StatefulWidget {
 
 class _AddItemState extends State<AddItem> {
   DateTime currentDate = DateTime.now();
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   static const List<String> storageSections = [];
 
@@ -141,6 +142,7 @@ class _AddItemState extends State<AddItem> {
       final snapshot = await FirebaseFirestore.instance
           .collection('deleted_foods')
           .where('isDeleted', isEqualTo: true)
+          .where('userId', isEqualTo: userId)
           .get();
 
       setState(() {
@@ -148,8 +150,6 @@ class _AddItemState extends State<AddItem> {
             .map((doc) => doc.data()['itemName'] as String)
             .toSet();
       });
-
-      print('Deleted items: $deletedItemNames');
     } catch (e) {
       print('Failed to load deleted items: $e');
     }
@@ -340,7 +340,6 @@ class _AddItemState extends State<AddItem> {
 
   @override
   Widget build(BuildContext context) {
-    String formattedDate = DateFormat('yyyy-MM-dd').format(currentDate);
 
     return Scaffold(
       appBar: AppBar(
@@ -752,6 +751,7 @@ class _AddItemState extends State<AddItem> {
                       await FirebaseFirestore.instance
                           .collection('deleted_foods')
                           .where('itemName', isEqualTo: currentItem.foodsName)
+                          .where('userId', isEqualTo: userId)
                           .get()
                           .then((snapshot) {
                         for (var doc in snapshot.docs) {
@@ -774,7 +774,7 @@ class _AddItemState extends State<AddItem> {
                       await FirebaseFirestore.instance
                           .collection('deleted_foods')
                           .doc(currentItem.id)
-                          .set({'isDeleted': true, 'itemName': itemName});
+                          .set({'isDeleted': true, 'itemName': itemName, 'userId': userId});
 
                       setState(() {
                         isDeleted = true;

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
@@ -13,6 +14,7 @@ class EditRecordCategories extends StatefulWidget {
 class _EditRecordCategoriesState extends State<EditRecordCategories> {
   // Firestore에서 가져온 카테고리 데이터를 저장하는 리스트
   List<Map<String, dynamic>> userData = [];
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   final TextEditingController _recordCategoryController =
       TextEditingController();
@@ -30,7 +32,9 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   void _loadCategories() async {
     try {
       final snapshot =
-          await FirebaseFirestore.instance.collection('record_categories').get();
+          await FirebaseFirestore.instance.collection('record_categories')
+              .where('userId', isEqualTo: userId)
+              .get();
       final categories = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
@@ -344,6 +348,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       'zone': _recordCategoryController.text,
       'units': units,
       'color': '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
+      'userId': userId,
     };
 
     String? previousZone;

@@ -52,6 +52,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
   bool useFridgeIngredientsState = false;
   Map<String, List<String>> itemsByCategory = {};
   // String? category = widget.category.isNotEmpty ? widget.category[0] : null;
+
   @override
   void initState() {
     super.initState();
@@ -273,6 +274,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       // Firestore에서 데이터를 불러옴
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
           .get(); // 특정 category 필드 안에 있는 데이터를 가져오기 위해 전체 문서를 가져옵니다
 
       final Map<String, List<String>> allFoods = {};
@@ -468,6 +470,56 @@ class _ViewResearchListState extends State<ViewResearchList> {
 // print('topIngredients $topIngredients');
     return topIngredients;
   }
+
+  void _toggleScraped(String recipeId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    try {
+      QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
+      await FirebaseFirestore.instance
+          .collection('scraped_recipes')
+          .where('recipeId', isEqualTo: recipeId)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      if (existingScrapedRecipes.docs.isEmpty) {
+        // 스크랩이 존재하지 않으면 새로 추가
+        await FirebaseFirestore.instance.collection('scraped_recipes').add({
+          'userId': userId,
+          'recipeId': recipeId,
+          'isScraped': true,
+        });
+
+        setState(() {
+          isScraped = true; // 스크랩 상태로 변경
+        });
+      } else {
+        // 스크랩이 존재하면 업데이트
+        DocumentSnapshot<Map<String, dynamic>> doc =
+            existingScrapedRecipes.docs.first;
+        bool currentIsScraped = doc.data()?['isScraped'] ?? false;
+
+        await FirebaseFirestore.instance
+            .collection('scraped_recipes')
+            .doc(doc.id)
+            .update({'isScraped': !currentIsScraped});
+
+        setState(() {
+          isScraped = !currentIsScraped; // 스크랩 상태 변경
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isScraped ? '스크랩이 추가되었습니다.' : '스크랩이 해제되었습니다.'),
+        ));
+      }
+    } catch (e) {
+      print('Error scraping recipe: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('레시피 스크랩 중 오류가 발생했습니다.'),
+      ));
+    }
+  }
+
 
   void _refreshRecipeData() {
     loadRecipes(); // 레시피 목록을 다시 불러오는 메서드
@@ -708,7 +760,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                           ? Icons.bookmark
                                           : Icons.bookmark_border,
                                       size: 20), // 스크랩 아이콘 크기 조정
-                                  onPressed: () {},
+                                  onPressed: () => _toggleScraped(recipe.id),
                                 ),
                               ],
                             ),

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_login.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
@@ -33,11 +35,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedRecordListType = '앨범형';
 
   String? selectedCategory;
+  bool isAdmin = false;
 
   // 각 페이지를 저장하는 리스트
   @override
   void initState() {
     super.initState();
+    _checkAdminRole();
     _loadSelectedRecordListType(); // 초기화 시 Firestore에서 데이터를 불러옴
     // initState에서 _pages 리스트 초기화
     _pages = [
@@ -168,6 +172,26 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<String?> _getUserRole() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return null;
+
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      return userDoc.data()?['role'] as String?;
+    } catch (e) {
+      print('Error fetching user role: $e');
+      return null;
+    }
+  }
+  Future<void> _checkAdminRole() async {
+    String? role = await _getUserRole();
+    if (role == 'admin') {
+      setState(() {
+        isAdmin = true;
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -255,6 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           Spacer(),
+          if (isAdmin)
           ListTile(
             leading: Icon(Icons.verified_user,
                 color: Theme.of(context).colorScheme.onSurface),

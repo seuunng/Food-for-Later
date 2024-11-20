@@ -64,10 +64,6 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
       query = query.where('userId', isEqualTo: userId);
     }
 
-    print('userId $userId');
-    print('starttime $startDate');
-    print('endtime $endDate');
-
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {
       query = query

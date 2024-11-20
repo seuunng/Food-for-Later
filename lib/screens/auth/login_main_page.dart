@@ -48,6 +48,7 @@ class _LoginPageState extends State<LoginPage> {
         'nickname': user.displayName ?? '닉네임 없음',
         'email': user.email ?? '이메일 없음',
         'signupdate': formattedDate,
+        'role': 'user',
         // '성별': '', // 기본값
         // '생년월일': '', // 기본값
       });
