@@ -14,7 +14,7 @@ class AppUsageSettings extends StatefulWidget {
 }
 
 class _AppUsageSettingsState extends State<AppUsageSettings> {
-  String _selectedCategory_fridge = '기본 냉장고' ; // 기본 선택값
+  String _selectedCategory_fridge = '기본 냉장고'; // 기본 선택값
   List<String> _categories_fridge = []; // 카테고리 리스트
   String _selectedCategory_foods = '입고일 기준'; // 기본 선택값
   final List<String> _categories_foods = ['소비기한 기준', '입고일 기준']; // 카테고리 리스트
@@ -29,22 +29,28 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     _loadFridgeCategoriesFromFirestore(); // 초기화 시 Firestore에서 데이터를 불러옴
     _loadSelectedFridge();
   }
+
   void _loadSelectedFridge() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
-      _selectedCategory_fridge  = prefs.getString('selectedFridge') ?? '기본 냉장고';
-      _selectedCategory_records = prefs.getString('selectedRecordListType') ?? '앨범형';
-      _selectedCategory_foods = prefs.getString('selectedFoodStatusManagement') ?? '소비기한 기준';
+      _selectedCategory_fridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
+      _selectedCategory_records =
+          prefs.getString('selectedRecordListType') ?? '앨범형';
+      _selectedCategory_foods =
+          prefs.getString('selectedFoodStatusManagement') ?? '소비기한 기준';
     });
   }
+
   // Firestore에서 냉장고 목록 불러오기
   void _loadFridgeCategoriesFromFirestore() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('fridges')
+      final snapshot = await FirebaseFirestore.instance
+          .collection('fridges')
           .where('userId', isEqualTo: userId)
           .get();
-      List<String> fridgeList = snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
+      List<String> fridgeList =
+          snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
 
       if (fridgeList.isEmpty) {
         await _createDefaultFridge(); // 기본 냉장고 추가
@@ -164,40 +170,40 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               },
             ),
             TextButton(
-              child: Text('삭제'),
-              onPressed: () async {
-                try {
-                  // 해당 냉장고 이름과 일치하는 문서를 찾음
-                  final snapshot = await fridgeRef
-                      .where('FridgeName', isEqualTo: category)
-                      .where('userId', isEqualTo: userId)
-                      .get();
+                child: Text('삭제'),
+                onPressed: () async {
+                  try {
+                    // 해당 냉장고 이름과 일치하는 문서를 찾음
+                    final snapshot = await fridgeRef
+                        .where('FridgeName', isEqualTo: category)
+                        .where('userId', isEqualTo: userId)
+                        .get();
 
-                  for (var doc in snapshot.docs) {
-                    // Firestore에서 문서 삭제
-                    await fridgeRef.doc(doc.id).delete();
-                  }
-
-                  // UI 업데이트
-                  setState(() {
-                    _categories_fridge.remove(category);
-                    if (_categories_fridge.isNotEmpty) {
-                      _selectedCategory_fridge = _categories_fridge.first;
-                    } else {
-                      _createDefaultFridge(); // 모든 냉장고가 삭제되면 기본 냉장고 생성
+                    for (var doc in snapshot.docs) {
+                      // Firestore에서 문서 삭제
+                      await fridgeRef.doc(doc.id).delete();
                     }
-                  });
 
-                  Navigator.pop(context);
-                } catch (e) {
-                  print('Error deleting fridge: $e');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('냉장고를 삭제하는 중 오류가 발생했습니다.')),
-                  );
-                  Navigator.pop(context);
-                };
-              }
-            ),
+                    // UI 업데이트
+                    setState(() {
+                      _categories_fridge.remove(category);
+                      if (_categories_fridge.isNotEmpty) {
+                        _selectedCategory_fridge = _categories_fridge.first;
+                      } else {
+                        _createDefaultFridge(); // 모든 냉장고가 삭제되면 기본 냉장고 생성
+                      }
+                    });
+
+                    Navigator.pop(context);
+                  } catch (e) {
+                    print('Error deleting fridge: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('냉장고를 삭제하는 중 오류가 발생했습니다.')),
+                    );
+                    Navigator.pop(context);
+                  }
+                  ;
+                }),
           ],
         );
       },
@@ -208,7 +214,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedFridge', _selectedCategory_fridge);
     await prefs.setString('selectedRecordListType', _selectedCategory_records);
-    await prefs.setString('selectedFoodStatusManagement', _selectedCategory_foods);
+    await prefs.setString(
+        'selectedFoodStatusManagement', _selectedCategory_foods);
     Navigator.pop(context);
   }
 
@@ -227,10 +234,10 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
               CustomDropdown(
                 title: '냉장고 선택',
                 items: _categories_fridge,
-                selectedItem: _selectedCategory_fridge,
-              // _categories_fridge.contains(_selectedCategory_fridge)
-                //     ? _selectedCategory_fridge!
-                //     : (_categories_fridge.isNotEmpty ? _categories_fridge.first : '기본 냉장고'),
+                selectedItem:
+                    _categories_fridge.contains(_selectedCategory_fridge)
+                        ? _selectedCategory_fridge
+                        : '기본 냉장고', // 리스트에 없으면 기본값 설정
                 onItemChanged: (value) {
                   setState(() {
                     _selectedCategory_fridge = value;
@@ -313,11 +320,10 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   Spacer(),
                   DropdownButton<String>(
                     value: _selectedCategory_records,
-                        // _categories_records.contains(_selectedCategory_records)
-                        //     ? _selectedCategory_records
-                        //     : null,
-                    items: _categories_records
-                        .map((String category) {
+                    // _categories_records.contains(_selectedCategory_records)
+                    //     ? _selectedCategory_records
+                    //     : null,
+                    items: _categories_records.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
                         child: Text(category),

@@ -42,7 +42,11 @@ class _RecipeGridState extends State<RecipeGrid> {
             child: _buildCategoryGrid(),
           ),
           if (!widget.categories.isEmpty && selectedCategory != null) ...[
-            Divider(thickness: 2),
+            Divider(thickness: 1,
+              color: Colors.grey, // 색상 설정
+              indent: 20, // 왼쪽 여백
+              endIndent: 20, // 오른쪽 여백),),
+            ),
           ],
           if (selectedCategory != null) ...[
             Padding(

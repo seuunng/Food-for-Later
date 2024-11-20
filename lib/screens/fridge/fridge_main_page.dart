@@ -95,24 +95,8 @@ class FridgeMainPageState extends State<FridgeMainPage>
     routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
   }
 
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   // print("Dependencies changed - attempting to stop delete mode");
-  //   // final route = ModalRoute.of(context);
-  //   // if (route is PageRoute) {
-  //   //   routeObserver.subscribe(this, route); // PageRoute인 경우에만 구독
-  //   // }
-  //   stopDeleteMode();  // 페이지로 돌아올 때 삭제 모드 초기화
-  //   _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
-  //   // Navigator.of(context).widget.observers.remove(_deleteModeObserver);
-  // }
-
   void _loadCategoriesAndFridgeData() async {
     await _loadCategoriesFromFirestore();
-    if (storageSections.isNotEmpty) {
-      _loadFridgeCategoriesFromFirestore(selectedFridge ?? '기본 냉장고');
-    }
   }
 
   Future<void> _loadFridgeCategoriesFromFirestore(String? fridgeId) async {
@@ -402,7 +386,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
             Expanded(
               child: DropdownButtonFormField<String>(
                 value:
-                    fridgeName.contains(selectedFridge) ? selectedFridge : null,
+                    fridgeName.contains(selectedFridge) ? selectedFridge : '기본 냉장고',
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,

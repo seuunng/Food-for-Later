@@ -178,7 +178,9 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage> with RouteAw
   void _loadFridgeCategoriesFromFirestore(String userId) async {
     try {
       final snapshot =
-          await FirebaseFirestore.instance.collection('fridges').get();
+          await FirebaseFirestore.instance.collection('fridges')
+              .where('userId', isEqualTo: userId)
+              .get();
       List<String> fridgeList =
           snapshot.docs.map((doc) => doc['FridgeName'] as String).toList();
 

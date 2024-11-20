@@ -340,7 +340,6 @@ class _AddItemState extends State<AddItem> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.pageTitle),
@@ -391,7 +390,12 @@ class _AddItemState extends State<AddItem> {
               else
                 _buildCategoryGrid(),
               if (selectedCategory != null) ...[
-                Divider(thickness: 2),
+                Divider(
+                  thickness: 1,
+                  color: Colors.grey, // 색상 설정
+                  indent: 20, // 왼쪽 여백
+                  endIndent: 20, // 오른쪽 여백),),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: _buildCategoryItemsGrid(),
@@ -672,7 +676,9 @@ class _AddItemState extends State<AddItem> {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: theme.chipTheme.backgroundColor,
+                color: selectedItems == items
+                    ? theme.chipTheme.selectedColor
+                    : theme.chipTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               height: 60, // 카
@@ -714,7 +720,6 @@ class _AddItemState extends State<AddItem> {
                       foodsData['defaultFridgeCategory'] ?? '기타';
                   String shoppingListCategory =
                       foodsData['shoppingListCategory'] ?? '기타';
-                  int expirationDays = foodsData['expirationDate'] ?? 0;
                   int shelfLife = foodsData['shelfLife'] ?? 0;
 
                   // FridgeItemDetails로 동적으로 데이터를 전달
@@ -774,7 +779,11 @@ class _AddItemState extends State<AddItem> {
                       await FirebaseFirestore.instance
                           .collection('deleted_foods')
                           .doc(currentItem.id)
-                          .set({'isDeleted': true, 'itemName': itemName, 'userId': userId});
+                          .set({
+                        'isDeleted': true,
+                        'itemName': itemName,
+                        'userId': userId
+                      });
 
                       setState(() {
                         isDeleted = true;
@@ -787,7 +796,9 @@ class _AddItemState extends State<AddItem> {
               decoration: BoxDecoration(
                 color: isDeleted
                     ? theme.chipTheme.disabledColor // 삭제된 아이템은 회색
-                    : theme.chipTheme.backgroundColor,
+                    : isSelected
+                        ? theme.chipTheme.selectedColor
+                        : theme.chipTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               height: 60,
@@ -797,7 +808,9 @@ class _AddItemState extends State<AddItem> {
                   style: TextStyle(
                     color: isDeleted
                         ? Colors.grey[800]
-                        : theme.chipTheme.labelStyle!.color,
+                        : isSelected
+                            ? theme.chipTheme.secondaryLabelStyle!.color
+                            : theme.chipTheme.labelStyle!.color,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
