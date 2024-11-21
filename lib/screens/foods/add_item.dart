@@ -60,6 +60,7 @@ class _AddItemState extends State<AddItem> {
   Map<String, List<PreferredFoodModel>> itemsByPreferredCategory = {};
   List<FoodsModel> items = [];
   Set<String> deletedItemNames = {};
+  bool isSearchActive = false; // 검색 상태를 관리하는 변수
 
   // initState 또는 빌드 직전에 중복 제거
   @override
@@ -301,6 +302,7 @@ class _AddItemState extends State<AddItem> {
     List<FoodsModel> tempFilteredItems = [];
     setState(() {
       searchKeyword = keyword.trim().toLowerCase();
+      isSearchActive = true; // 검색 버튼을 누르면 검색 활성화
 
       if (widget.sourcePage == 'preferred_foods_category') {
         itemsByPreferredCategory.forEach((category, categoryModels) {
@@ -327,14 +329,17 @@ class _AddItemState extends State<AddItem> {
             });
           }
         });
-      } else {}
-      itemsByCategory.forEach((category, items) {
-        tempFilteredItems.addAll(
-          items.where(
-              (item) => item.foodsName.toLowerCase().contains(searchKeyword)),
-        );
-      });
+      } else {
+        itemsByCategory.forEach((category, items) {
+          tempFilteredItems.addAll(
+            items.where(
+                (item) => item.foodsName.toLowerCase().contains(searchKeyword)),
+          );
+        });
+      }
+      // 결과 저장
       filteredItems = tempFilteredItems;
+      print("Filtered items updated: $filteredItems"); // 디버깅
     });
   }
 
@@ -347,39 +352,37 @@ class _AddItemState extends State<AddItem> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            if (selectedItems.isEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: '검색어 입력',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                              vertical: 8.0, horizontal: 10.0),
-                        ),
-                        onChanged: (value) {
-                          _searchItems(value); // 검색어 입력 시 아이템 필터링
-                        },
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText: '검색어 입력',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 8.0, horizontal: 10.0),
                       ),
-                    ),
-                    SizedBox(width: 10),
-                    BasicElevatedButton(
-                      onPressed: () {
-                        _searchItems(searchKeyword); // 검색 버튼 클릭 시 검색어 필터링
+                      onChanged: (value) {
+                        _searchItems(value); // 검색어 입력 시 아이템 필터링
                       },
-                      iconTitle: Icons.search,
-                      buttonTitle: '검색',
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 10),
+                  BasicElevatedButton(
+                    onPressed: () {
+                      _searchItems(searchKeyword); // 검색 버튼 클릭 시 검색어 필터링
+                    },
+                    iconTitle: Icons.search,
+                    buttonTitle: '검색',
+                  ),
+                ],
               ),
-            ],
-            if (filteredItems.isNotEmpty) ...[
+            ),
+            if (isSearchActive) ...[
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: _buildFilteredItemsGrid(),
@@ -405,7 +408,9 @@ class _AddItemState extends State<AddItem> {
           ],
         ),
       ),
-      bottomNavigationBar: selectedItems.isNotEmpty
+      bottomNavigationBar: selectedItems.isNotEmpty &&
+              (widget.sourcePage == 'shoppingList' ||
+                  widget.sourcePage == 'fridge')
           ? Container(
               color: Colors.transparent,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -428,6 +433,7 @@ class _AddItemState extends State<AddItem> {
   }
 
   Widget _buildFilteredItemsGrid() {
+    final theme = Theme.of(context);
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -438,8 +444,7 @@ class _AddItemState extends State<AddItem> {
         mainAxisSpacing: 8.0,
         childAspectRatio: 1,
       ),
-      itemCount: filteredItems.length +
-          (filteredItems.contains(searchKeyword) ? 0 : 1),
+      itemCount: filteredItems.isEmpty ? 1 : filteredItems.length + 1,
       itemBuilder: (context, index) {
         if (index == filteredItems.length) {
           // 마지막 그리드 항목에 "검색어로 새 항목 추가" 항목 표시
@@ -456,8 +461,8 @@ class _AddItemState extends State<AddItem> {
             child: Container(
               decoration: BoxDecoration(
                 color: selectedItems.contains(searchKeyword)
-                    ? Colors.orange
-                    : Colors.cyan,
+                    ? theme.chipTheme.selectedColor
+                    : Colors.grey,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               height: 60,
@@ -486,15 +491,19 @@ class _AddItemState extends State<AddItem> {
             child: Container(
               decoration: BoxDecoration(
                 color: selectedItems.contains(itemName)
-                    ? Colors.orange
-                    : Colors.blueAccent,
+                    ? theme.chipTheme.selectedColor
+                    : theme.chipTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               height: 60,
               child: Center(
                 child: AutoSizeText(
                   itemName,
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: selectedItems.contains(itemName)
+                        ? theme.chipTheme.secondaryLabelStyle!.color
+                        : theme.chipTheme.labelStyle!.color,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -695,15 +704,17 @@ class _AddItemState extends State<AddItem> {
           bool isDeleted = deletedItemNames.contains(itemName);
           // 기존 아이템 그리드 렌더링
           return GestureDetector(
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  selectedItems.remove(itemName);
-                } else {
-                  selectedItems.add(itemName);
-                }
-              });
-            },
+            onTap: widget.sourcePage != 'update_foods_category'
+                ? () {
+                    setState(() {
+                      if (isSelected) {
+                        selectedItems.remove(itemName);
+                      } else {
+                        selectedItems.add(itemName);
+                      }
+                    });
+                  }
+                : null,
             onDoubleTap: () async {
               try {
                 final foodsSnapshot = await FirebaseFirestore.instance

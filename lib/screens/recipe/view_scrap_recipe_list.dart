@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:food_for_later/components/custom_dropdown.dart';
 import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,28 +15,64 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   String? selectedRecipe;
   String selectedFilter = '기본함';
 
-// 요리명 리스트
+  // 요리명 리스트
   List<String> scrapedRecipes = [];
   List<RecipeModel> recipeList = [];
   List<RecipeModel> myRecipeList = []; // 나의 레시피 리스트
-  // List<String> ingredients = ['닭고기', '소금', '후추'];
-  String ratings = '★★★★☆';
-
+  String ratings = '';
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   // 사용자별 즐겨찾기
-  List<String> userFavorites = ['사용자명1', '사용자명2'];
+  List<String> _scraped_groups = [];
 
   // 냉장고에 있는 재료 리스트
   List<String> fridgeIngredients = [];
-
+  bool isLoading = true; // 로딩 상태 추가
   bool isScraped = false;
 
   @override
   void initState() {
     super.initState();
-    fetchRecipesByScrap();
-    _loadFridgeItemsFromFirestore();
+    _loadData();
+    _loadScrapedGroups();
   }
 
+  Future<void> _loadData() async {
+    setState(() {
+      isLoading = true; // 로딩 상태 시작
+    });
+
+    await fetchRecipesByScrap();
+    await _loadFridgeItemsFromFirestore();
+
+    setState(() {
+      isLoading = false; // 로딩 상태 종료
+    });
+  }
+  Future<void> _loadScrapedGroups() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('scraped_group')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      setState(() {
+        _scraped_groups = snapshot.docs
+            .map((doc) => doc['scrapedGroupName'] as String)
+            .toList();
+
+        // 기본값 설정: 첫 번째 그룹 선택
+        if (_scraped_groups.isNotEmpty) {
+          selectedFilter = _scraped_groups[0];
+        } else {
+          // 기본 그룹이 없으면 생성
+          _createDefaultGroup();
+        }
+      });
+    } catch (e) {
+      print('Error loading scraped groups: $e');
+    }
+  }
   // 레시피 목록 필터링 함수
   List<RecipeModel> getFilteredRecipes() {
     if (selectedFilter == '기본함') {
@@ -161,6 +198,144 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
     }
   }
 
+  Future<void> _createDefaultGroup() async {
+    try {
+      // Firestore에 기본 냉장고 추가
+      await FirebaseFirestore.instance.collection('scraped_group').add({
+        'scrapedGroupName': '기본함',
+        'userId': userId,
+      });
+      // UI 업데이트
+      setState(() {
+        if (!_scraped_groups.contains('기본함')) {
+          _scraped_groups.add('기본함'); // 기본 그룹 추가
+        }
+        selectedFilter = '기본함'; // 기본 그룹 선택
+      });
+    } catch (e) {
+      print('Error creating default fridge: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기본 냉장고를 생성하는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  Future<void> _addNewScrapedGroupToFirestore(String newScrapedGroupName) async {
+    final ref = FirebaseFirestore.instance.collection('scraped_group');
+    try {
+      await ref.add({
+        'scrapedGroupName': newScrapedGroupName,
+        'userId': userId,
+      });
+    } catch (e) {
+      print('스크랩 그룹 추가 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  // 새로운 카테고리 추가 함수
+  void _addNewGroup(List<String> categories, String categoryType) {
+    if (categories.length >= 10) {
+      // 카테고리 개수가 3개 이상이면 추가 불가
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$categoryType은(는) 최대 10개까지만 추가할 수 있습니다.'),
+        ),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String newCategory = '';
+        return AlertDialog(
+          title: Text('스크랩 그룹 추가'),
+          content: TextField(
+            onChanged: (value) {
+              newCategory = value;
+            },
+            decoration: InputDecoration(hintText: '새로운 그룹 입력'),
+          ),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: Text('추가'),
+              onPressed: () async {
+                if (newCategory.isNotEmpty) {
+                  await _addNewScrapedGroupToFirestore(newCategory);
+                  setState(() {
+                    categories.add(newCategory);
+                  });
+                }
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 선택된 냉장고 삭제 함수
+  void _deleteCategory(
+      String category, List<String> categories, String categoryType) {
+    final fridgeRef = FirebaseFirestore.instance.collection('scraped_group');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('그룹 삭제'),
+          content: Text('스크랩 그룹을 삭제하시겠습니까?'),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+                child: Text('삭제'),
+                onPressed: () async {
+                  try {
+                    // 해당 냉장고 이름과 일치하는 문서를 찾음
+                    final snapshot = await fridgeRef
+                        .where('scrapedGroupName', isEqualTo: category)
+                        .where('userId', isEqualTo: userId)
+                        .get();
+
+                    for (var doc in snapshot.docs) {
+                      // Firestore에서 문서 삭제
+                      await fridgeRef.doc(doc.id).delete();
+                    }
+                    setState(() {
+                      _scraped_groups.remove(category);
+                      if ( _scraped_groups.isNotEmpty) {
+                        selectedFilter =  _scraped_groups.first;
+                      } else {
+                        _createDefaultGroup(); // 모든 냉장고가 삭제되면 기본 냉장고 생성
+                      }
+                    });
+
+                    Navigator.pop(context);
+                  } catch (e) {
+                    print('Error deleting fridge: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('냉장고를 삭제하는 중 오류가 발생했습니다.')),
+                    );
+                    Navigator.pop(context);
+                  }
+                  ;
+                }),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,37 +355,54 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                       fontWeight: FontWeight.bold, // 폰트 굵기 조정 (선택사항)
                     ),
                   ),
-                  Spacer(),
+                  // Spacer(),
                   Expanded(
-                    child: DropdownButton<String>(
-                      value: selectedFilter,
-                      isExpanded: true,
-                      items: [
-                        DropdownMenuItem(
-                          value: '기본함',
-                          child: Text('기본함'),
-                        ),
-                        // 구분선 추가
-                        DropdownMenuItem(
-                          enabled: false,
-                          child: SizedBox(
-                            height: 1, // Divider의 높이 지정
-                            child: Divider(),
-                          ),
-                        ),
-                        ...userFavorites.map((user) {
-                          return DropdownMenuItem(
-                            value: user,
-                            child: Text(user),
-                          );
-                        }).toList(),
-                      ],
-                      onChanged: (String? value) {
+                    child: CustomDropdown(
+                      title: '',
+                      items: _scraped_groups,
+                      selectedItem: selectedFilter, // 리스트에 없으면 기본값 설정
+                      onItemChanged: (value) {
                         setState(() {
-                          selectedFilter = value!;
+                          selectedFilter = value;
                         });
                       },
+                      onItemDeleted: (item) {
+                        _deleteCategory(item, _scraped_groups, '냉장고');
+                      },
+                      onAddNewItem: () {
+                        _addNewGroup(_scraped_groups, '냉장고');
+                      },
                     ),
+                    // DropdownButton<String>(
+                    //   value: selectedFilter,
+                    //   isExpanded: true,
+                    //   items: [
+                    //     DropdownMenuItem(
+                    //       value: '기본함',
+                    //       child: Text('기본함'),
+                    //     ),
+                    //     // 구분선 추가
+                    //     DropdownMenuItem(
+                    //       enabled: false,
+                    //       child: SizedBox(
+                    //         height: 1, // Divider의 높이 지정
+                    //         child: Divider(),
+                    //       ),
+                    //     ),
+                    //     ...userFavorites.map((user) {
+                    //       return DropdownMenuItem(
+                    //         value: user,
+                    //         child: Text(user),
+                    //       );
+                    //     }).toList(),
+                    //   ],
+                    //   onChanged: (String? value) {
+                    //     setState(() {
+                    //       selectedFilter = value!;
+                    //     });
+                    //   },
+                    // ),
+
                   ),
                 ],
               ),
