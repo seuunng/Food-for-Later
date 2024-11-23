@@ -367,21 +367,24 @@ class _CreateRecordState extends State<CreateRecord> {
                   }),
                 ),
                 SizedBox(width: 30),
-                _buildDropdown(
-                  '',
-                  categoryFieldMap.keys.toList(), // 카테고리 목록을 드롭다운에 전달
-                  selectedCategory,
-                  (value) {
-                    setState(() {
-                      selectedCategory = value;
-                      // 분류 변경 시 구분을 첫 번째 값으로 초기화
-                      selectedField =
-                          categoryFieldMap[selectedCategory]!['fields'].first;
-                      selectedColor =
-                          categoryFieldMap[selectedCategory]!['color'];
-                      // fieldController.text = selectedField;
-                    });
-                  },
+                Padding(
+                  padding: const EdgeInsets.only(top: 28.0),
+                  child: _buildDropdown(
+                    '',
+                    categoryFieldMap.keys.toList(), // 카테고리 목록을 드롭다운에 전달
+                    selectedCategory,
+                    (value) {
+                      setState(() {
+                        selectedCategory = value;
+                        // 분류 변경 시 구분을 첫 번째 값으로 초기화
+                        selectedField =
+                            categoryFieldMap[selectedCategory]!['fields'].first;
+                        selectedColor =
+                            categoryFieldMap[selectedCategory]!['color'];
+                        // fieldController.text = selectedField;
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
@@ -536,12 +539,15 @@ class _CreateRecordState extends State<CreateRecord> {
         SizedBox(height: 16.0),
         Row(
           children: [
-            _buildDropdown('', categoryFieldMap[selectedCategory]!['fields'],
-                selectedField, (value) {
-              setState(() {
-                selectedField = value;
-              });
-            }),
+            Padding(
+              padding: const EdgeInsets.only(top: 28.0),
+              child: _buildDropdown('', categoryFieldMap[selectedCategory]!['fields'],
+                  selectedField, (value) {
+                setState(() {
+                  selectedField = value;
+                });
+              }),
+            ),
             SizedBox(width: 5.0),
             Expanded(
               child: _buildTextField('기록 내용 입력', contentsController),

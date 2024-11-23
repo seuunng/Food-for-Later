@@ -29,6 +29,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
     super.initState();
     _loadCategoryFromFirestore();
     _loadSearchSettingsFromLocal();
+    endDate = DateTime.now();
   }
 
   void _loadCategoryFromFirestore() async {
