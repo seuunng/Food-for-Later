@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/record_category_model.dart';
@@ -13,6 +14,7 @@ class RecordSearchSettings extends StatefulWidget {
 
 class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   List<String> selectedCategories = ['모두'];
   String? selectedPeriod = '1년';
   DateTime? startDate;
@@ -31,7 +33,9 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
   void _loadCategoryFromFirestore() async {
     try {
-      final snapshot = await _db.collection('record_categories').get();
+      final snapshot = await _db.collection('record_categories')
+          .where('userId', isEqualTo: userId)
+          .get();
       final categories = snapshot.docs.map((doc) {
         return RecordCategoryModel.fromFirestore(doc);
       }).toList();
@@ -42,7 +46,10 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           for (var category in categories)
             category.zone: selectedCategories.contains(category.zone),
         };
+        //     .toList();
       });
+
+      print('selectedCategories: $selectedCategories');
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,8 +61,9 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   Future<void> _loadSearchSettingsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
+      selectedCategories = prefs.getStringList('selectedCategories') ?? [];
 
+      print('_loadSearchSettingsFromLocal() selectedCategories: $selectedCategories');
       final startDateString = prefs.getString('startDate');
       startDate = startDateString != null && startDateString.isNotEmpty
           ? DateTime.parse(startDateString)
@@ -67,19 +75,18 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           : DateTime.now();
       selectedPeriod = prefs.getString('selectedPeriod') ?? '1년';
 
-      categoryOptions.updateAll((key, value) {
-        return selectedCategories.contains(key); // 선택된 카테고리를 반영
-      });
+      categoryOptions = {
+        for (var key in categoryOptions.keys)
+          key: selectedCategories.isEmpty ||
+              selectedCategories.contains(key),
+      };
 
-      // '모두'가 아닌 카테고리가 저장된 경우 '모두' 선택 해제
-      if (!selectedCategories.contains('모두')) {
-        categoryOptions['모두'] = false;
-      } else {
-        categoryOptions.updateAll((key, value) => false);
+      // 모든 카테고리가 선택된 경우 "모두" 선택
+      if (selectedCategories.length == categoryOptions.length - 1) {
         categoryOptions['모두'] = true;
+      } else {
+        categoryOptions['모두'] = false;
       }
-
-      print('Updated categoryOptions: $categoryOptions');
     });
   }
 
@@ -100,46 +107,38 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
   void _onCategoryChanged(String category, bool? isSelected) {
     setState(() {
       if (category == '모두') {
-        _toggleSelectAll(isSelected ?? false); // '모두' 카테고리 선택 시 모든 카테고리 선택/해제
+        if (isSelected == true) {
+          // "모두"를 선택하면 모든 카테고리 선택
+          categoryOptions.updateAll((key, value) => true);
+          selectedCategories = categoryOptions.keys.toList(); // 모든 카테고리를 추가
+        }
+        return; // "모두"를 해제할 수 없음
       } else {
-        categoryOptions[category] =
-            isSelected ?? false; // 다른 카테고리 선택 시 해당 카테고리의 상태를 업데이트
+        // 개별 카테고리 선택 처리
+        categoryOptions[category] = isSelected ?? false;
 
-        if (isSelected == false ) {
-          // '모두'가 선택된 상태에서 다른 카테고리가 선택해제되면 '모두'를 해제
+        if (isSelected == true) {
+          selectedCategories.add(category); // 선택된 카테고리 추가
+
+          // 모든 카테고리가 선택되었는지 확인
+          if (categoryOptions.values.where((v) => v).length == categoryOptions.length - 1) {
+            categoryOptions['모두'] = true; // "모두"도 선택
+          }
+        } else {
           if (selectedCategories.length <= 1) {
-            // 선택된 카테고리가 1개 이하일 때 선택 해제를 막음
+            print('(categoryOptions $categoryOptions');
+            // 최소 하나의 카테고리가 선택되어야 함
             print('카테고리는 하나 이상 선택해야 합니다.');
-            categoryOptions[category] = true;  // 선택 해제를 방지
+            categoryOptions[category] = true; // 해제 방지
             return;
           }
-          categoryOptions['모두'] = false;
-          selectedCategories.remove(category); // 선택된 카테고리를 추가
-          print('1selectedCategories ${category} ${selectedCategories}');
-        } else {
-          if (category != '모두') {
-            selectedCategories.add(category); // 선택 해제 시 리스트에서 제거
-          }
-          print('2selectedCategories ${category}  ${selectedCategories}');
-        }
 
-        if (selectedCategories.length == categoryOptions.length - 1) {
-          // '모두'를 제외한 카테고리 갯수 비교
-          categoryOptions['모두'] = true;
-        } else {
-          categoryOptions['모두'] = false;
+          // 선택 해제 시 처리
+          selectedCategories.remove(category);
+          categoryOptions['모두'] = false; // "모두"는 선택 해제
         }
-
-        if (selectedCategories.isEmpty) {
-          categoryOptions['모두'] = false;
-        }
-
-        // if (selectedCategories == null || selectedCategories!.isEmpty) {
-        //   selectedCategories = ['모두'];
-        // }
       }
     });
-    print('3selectedCategories ${selectedCategories}');
   }
 
   // 날짜 선택 다이얼로그
@@ -165,7 +164,10 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
   Future<void> _saveSearchSettingsToLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('selectedCategories', selectedCategories ?? ['']);
+    // "모두" 제외한 선택된 카테고리만 저장
+    final categoriesToSave = selectedCategories.toSet()
+      ..remove('모두'); // "모두" 제거
+    await prefs.setStringList('selectedCategories', categoriesToSave.toList());
     await prefs.setString(
         'startDate', startDate != null ? startDate!.toIso8601String() : '');
     await prefs.setString(
@@ -240,54 +242,82 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
               '기간 선택',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: periods.map((String period) {
-                return Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(period),
-                    value: period,
-                    groupValue: selectedPeriod,
-                    onChanged: (String? value) {
-                      setState(() {
-                        selectedPeriod = value;
-                        // 선택된 기간에 따라 시작 날짜와 끝 날짜 설정
-                        DateTime now = DateTime.now();
-                        switch (value) {
-                          case '사용자 지정':
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: Text('사용자 지정'),
+                        value: '사용자 지정',
+                        groupValue: selectedPeriod,
+                        onChanged: (String? value) {
+                          setState(() {
+                            selectedPeriod = value;
+                            // 사용자 지정의 경우 초기값 설정
+                            DateTime now = DateTime.now();
                             startDate = now;
                             endDate = now;
-                            break;
-                          case '1주':
-                            startDate = now.subtract(Duration(days: 7));
-                            endDate = now;
-                            break;
-                          case '1달':
-                            startDate =
-                                DateTime(now.year, now.month - 1, now.day);
-                            endDate = now;
-                            break;
-                          case '3달':
-                            startDate =
-                                DateTime(now.year, now.month - 3, now.day);
-                            endDate = now;
-                            break;
-                          case '1년':
-                            startDate =
-                                DateTime(now.year - 1, now.month, now.day);
-                            endDate = now;
-                            break;
-                          default:
-                            startDate = null;
-                            endDate = null;
-                        }
-                      });
-                    },
-                    visualDensity: VisualDensity(horizontal: -3.0), // 수평 간격 줄이기
-                    contentPadding: EdgeInsets.zero, // 패딩을 제거하여 간격 최소화
-                  ),
-                );
-              }).toList(),
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero, // 패딩 제거
+                      ),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 8.0, // 수평 간격
+                  // runSpacing: 4.0,
+                  children:  ['1주', '1달', '3달', '1년'].map((String period) {
+                    return SizedBox(
+                      width: 80.0,
+                      child: RadioListTile<String>(
+                        title: Text(period),
+                        value: period,
+                        groupValue: selectedPeriod,
+                        onChanged: (String? value) {
+                          setState(() {
+                            selectedPeriod = value;
+                            // 선택된 기간에 따라 시작 날짜와 끝 날짜 설정
+                            DateTime now = DateTime.now();
+                            switch (value) {
+                              case '사용자 지정':
+                                startDate = now;
+                                endDate = now;
+                                break;
+                              case '1주':
+                                startDate = now.subtract(Duration(days: 7));
+                                endDate = now;
+                                break;
+                              case '1달':
+                                startDate =
+                                    DateTime(now.year, now.month - 1, now.day);
+                                endDate = now;
+                                break;
+                              case '3달':
+                                startDate =
+                                    DateTime(now.year, now.month - 3, now.day);
+                                endDate = now;
+                                break;
+                              case '1년':
+                                startDate =
+                                    DateTime(now.year - 1, now.month, now.day);
+                                endDate = now;
+                                break;
+                              default:
+                                startDate = null;
+                                endDate = null;
+                            }
+                          });
+                        },
+                        visualDensity: VisualDensity(horizontal: -3.0), // 수평 간격 줄이기
+                        contentPadding: EdgeInsets.zero, // 패딩을 제거하여 간격 최소화
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
 // 시작 날짜 선택
             Row(

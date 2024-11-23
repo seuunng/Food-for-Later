@@ -153,12 +153,12 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
 
             // 제외 검색어 선택
             Text(
-              '제외 검색어 선택',
+              '검색에서 제외하고 싶은 식재료를 선택',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextField(
               controller: excludeKeywordController,
-              decoration: InputDecoration(hintText: '제외할 검색어를 입력하세요'),
+              decoration: InputDecoration(hintText: '제외할 재료를 입력하세요'),
               onSubmitted: (value) {
                 _addExcludeKeyword();
               },
@@ -167,26 +167,39 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             Wrap(
               spacing: 8.0,
               children: excludeKeywords?.map((keyword) {
-                    return Chip(
-                      label: Text(
-                        keyword,
-                        style: TextStyle(
-                          color: theme.chipTheme.selectedColor,
-                          fontWeight: FontWeight.bold, // 강조를 위해 굵게 설정
-                        ),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        side: BorderSide(
-                          color: theme.chipTheme.labelStyle?.color ?? Colors.red, // 테두리 색상 빨간색으로 변경
-                          width: 1, // 테두리 두께 조절
-                        ),
-                      ),
-                      onDeleted: () {
+                    return GestureDetector(
+                      onDoubleTap: () {
                         setState(() {
                           excludeKeywords?.remove(keyword);
                         });
                       },
+                      child: Chip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.remove_circle, // '-' 아이콘
+                              color: theme.chipTheme.labelStyle?.color ?? Colors.red, // 아이콘 색상
+                              size: 16, // 아이콘 크기
+                            ),
+                            SizedBox(width:6),
+                            Text(
+                              keyword,
+                              style: TextStyle(
+                                color: theme.chipTheme.selectedColor,
+                                fontWeight: FontWeight.bold, // 강조를 위해 굵게 설정
+                              ),
+                            ),
+                          ],
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                          side: BorderSide(
+                            color: theme.chipTheme.labelStyle?.color ?? Colors.red, // 테두리 색상 빨간색으로 변경
+                            width: 1, // 테두리 두께 조절
+                          ),
+                        ),
+                      ),
                     );
                   }).toList() ??
                   [],

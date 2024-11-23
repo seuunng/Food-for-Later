@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/custom_dropdown.dart';
+import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,6 +24,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   // 사용자별 즐겨찾기
   List<String> _scraped_groups = [];
+  Set<String> selectedRecipes = {};
 
   // 냉장고에 있는 재료 리스트
   List<String> fridgeIngredients = [];
@@ -32,6 +34,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   @override
   void initState() {
     super.initState();
+    selectedRecipes.clear();
     _loadData();
     _loadScrapedGroups();
   }
@@ -62,10 +65,9 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             .toList();
 
         // 기본값 설정: 첫 번째 그룹 선택
-        if (_scraped_groups.isNotEmpty) {
-          selectedFilter = _scraped_groups[0];
+        if (_scraped_groups.contains('기본함')) {
+          selectedFilter = '기본함';
         } else {
-          // 기본 그룹이 없으면 생성
           _createDefaultGroup();
         }
       });
@@ -84,14 +86,23 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
   Future<List<RecipeModel>> fetchRecipesByScrap() async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
-      // foods, methods, themes에서 각각 키워드를 포함하는 레시피를 검색
-      QuerySnapshot snapshot = await _db
-          .collection('scraped_recipes')
-          .where('userId', isEqualTo: userId)
-          .get();
+      QuerySnapshot snapshot;
+      if (selectedFilter == '기본함') {
+        snapshot = await _db
+            .collection('scraped_recipes')
+            .where('userId', isEqualTo: userId)
+            .get();
+      } else {
+        // 특정 그룹명을 기준으로 필터링
+        snapshot = await _db
+            .collection('scraped_recipes')
+            .where('userId', isEqualTo: userId)
+            .where('scrapedGroupName', isEqualTo: selectedFilter)
+            .get();
+      }
 
       // 각 문서의 recipeId로 레시피 정보를 불러옴
-      // List<RecipeModel> recipes = [];
+      recipeList.clear();
       for (var doc in snapshot.docs) {
         Map<String, dynamic>? data = doc.data()
             as Map<String, dynamic>?; // 데이터를 Map<String, dynamic>으로 캐스팅
@@ -167,6 +178,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
           'userId': userId,
           'recipeId': recipeId,
           'isScraped': true,
+          'scrapedGroupName': '기본함'
         });
 
         setState(() {
@@ -279,7 +291,6 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       },
     );
   }
-
   // 선택된 냉장고 삭제 함수
   void _deleteCategory(
       String category, List<String> categories, String categoryType) {
@@ -336,6 +347,24 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
     );
   }
 
+  Future<void> updateScrapedGroupName(String newGroupName) async {
+    for (String recipeId in selectedRecipes) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('scraped_recipes')
+          .where('userId', isEqualTo: userId)
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+
+      for (var doc in snapshot.docs) {
+        await FirebaseFirestore.instance
+            .collection('scraped_recipes')
+            .doc(doc.id)
+            .update({'scrapedGroupName': newGroupName});
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -361,48 +390,20 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                       title: '',
                       items: _scraped_groups,
                       selectedItem: selectedFilter, // 리스트에 없으면 기본값 설정
-                      onItemChanged: (value) {
+                      onItemChanged: (value) async {
                         setState(() {
                           selectedFilter = value;
                         });
+                        await fetchRecipesByScrap();
+                        setState(() {});
                       },
                       onItemDeleted: (item) {
-                        _deleteCategory(item, _scraped_groups, '냉장고');
+                        _deleteCategory(item, _scraped_groups, '스크랩 그룹');
                       },
                       onAddNewItem: () {
-                        _addNewGroup(_scraped_groups, '냉장고');
+                        _addNewGroup(_scraped_groups, '스크랩 그룹');
                       },
                     ),
-                    // DropdownButton<String>(
-                    //   value: selectedFilter,
-                    //   isExpanded: true,
-                    //   items: [
-                    //     DropdownMenuItem(
-                    //       value: '기본함',
-                    //       child: Text('기본함'),
-                    //     ),
-                    //     // 구분선 추가
-                    //     DropdownMenuItem(
-                    //       enabled: false,
-                    //       child: SizedBox(
-                    //         height: 1, // Divider의 높이 지정
-                    //         child: Divider(),
-                    //       ),
-                    //     ),
-                    //     ...userFavorites.map((user) {
-                    //       return DropdownMenuItem(
-                    //         value: user,
-                    //         child: Text(user),
-                    //       );
-                    //     }).toList(),
-                    //   ],
-                    //   onChanged: (String? value) {
-                    //     setState(() {
-                    //       selectedFilter = value!;
-                    //     });
-                    //   },
-                    // ),
-
                   ),
                 ],
               ),
@@ -414,7 +415,27 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
               ),
             ),
           ],
-        ));
+        ),
+
+    bottomNavigationBar: selectedRecipes.isNotEmpty
+        ? Container(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: SizedBox(
+        width: double.infinity,
+        child: NavbarButton(
+          buttonTitle: '스크랩 그룹 변경',
+          onPressed: () async {
+            // 그룹 변경 팝업 표시
+            String? newGroupName = await _showGroupChangeDialog();
+            if (newGroupName != null) {
+              await updateScrapedGroupName(newGroupName);
+            }
+          },
+        ),
+      ),
+    )
+        : null
+    );
   }
 
   Widget _buildRecipeGrid() {
@@ -442,92 +463,110 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             future: loadScrapedData(recipe.id), // 각 레시피별로 스크랩 상태를 확인
             builder: (context, snapshot) {
               bool isScraped = snapshot.data ?? false;
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => ReadRecipe(
-                                recipeId: recipe.id,
-                                searchKeywords: [],
-                              )));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    // border: Border.all(color: Colors.green, width: 2),
-                    borderRadius: BorderRadius.circular(8.0),
-                  ), // 카테고리 버튼 크기 설정
-                  child: Row(
-                    children: [
-                      // 왼쪽에 정사각형 그림
-                      Container(
-                        width: 60.0,
-                        height: 60.0,
+              return Row(
+                  children: [
+                    Checkbox(
+                      value: selectedRecipes.contains(recipe.id),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            selectedRecipes.add(recipe.id);
+                          } else {
+                            selectedRecipes.remove(recipe.id);
+                          }
+                        });
+                      },
+                    ),
+                    Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ReadRecipe(
+                                      recipeId: recipe.id,
+                                      searchKeywords: [],
+                                    )));
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
                         decoration: BoxDecoration(
-                          color: Colors.grey, // Placeholder color for image
-                          borderRadius: BorderRadius.circular(4.0),
-                        ),
-                        child: hasMainImage
-                            ? Image.network(
-                                recipe.mainImages[0],
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(Icons.error);
-                                },
-                              )
-                            : Icon(
-                                Icons.image, // 이미지가 없을 경우 대체할 아이콘
-                                size: 40,
-                                color: Colors.grey,
-                              ),
-                      ),
-                      SizedBox(width: 10), // 간격 추가
-                      // 요리 이름과 키워드를 포함하는 Column
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          color: Colors.white,
+                          // border: Border.all(color: Colors.green, width: 2),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ), // 카테고리 버튼 크기 설정
+                        child: Row(
                           children: [
-                            // 요리명
-                            Row(
-                              children: [
-                                Container(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.3,
-                                  child: Text(
-                                    recipeName,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
+                            // 왼쪽에 정사각형 그림
+                            Container(
+                              width: 60.0,
+                              height: 60.0,
+                              decoration: BoxDecoration(
+                                color: Colors.grey, // Placeholder color for image
+                                borderRadius: BorderRadius.circular(4.0),
+                              ),
+                              child: hasMainImage
+                                  ? Image.network(
+                                      recipe.mainImages[0],
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Icon(Icons.error);
+                                      },
+                                    )
+                                  : Icon(
+                                      Icons.image, // 이미지가 없을 경우 대체할 아이콘
+                                      size: 40,
+                                      color: Colors.grey,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Spacer(),
-                                _buildRatingStars(recipeRating),
-                                IconButton(
-                                  icon: Icon(
-                                      isScraped
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_border,
-                                      size: 20), // 스크랩 아이콘 크기 조정
-                                  onPressed: () => _toggleScraped(recipe.id),
-                                ),
-                              ],
-                            ), // 간격 추가
-                            // 재료
-                            _buildChips(recipe),
+                            ),
+                            SizedBox(width: 10), // 간격 추가
+                            // 요리 이름과 키워드를 포함하는 Column
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // 요리명
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width:
+                                            MediaQuery.of(context).size.width * 0.3,
+                                        child: Text(
+                                          recipeName,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Spacer(),
+                                      _buildRatingStars(recipeRating),
+                                      IconButton(
+                                        icon: Icon(
+                                            isScraped
+                                                ? Icons.bookmark
+                                                : Icons.bookmark_border,
+                                            size: 20), // 스크랩 아이콘 크기 조정
+                                        onPressed: () => _toggleScraped(recipe.id),
+                                      ),
+                                    ],
+                                  ), // 간격 추가
+                                  // 재료
+                                  _buildChips(recipe),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
+                    ),
+                                  ),
+                  ],
+                );
             });
       },
     );
@@ -604,6 +643,39 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
           );
         }
       }),
+    );
+  }
+  Future<String?> _showGroupChangeDialog() async {
+    String? newGroupName;
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('그룹 변경'),
+          content: DropdownButtonFormField<String>(
+            value: _scraped_groups.isNotEmpty ? _scraped_groups[0] : null,
+            items: _scraped_groups
+                .map((group) => DropdownMenuItem(
+              value: group,
+              child: Text(group),
+            ))
+                .toList(),
+            onChanged: (value) {
+              newGroupName = value;
+            },
+          ),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () => Navigator.pop(context, null),
+            ),
+            TextButton(
+              child: Text('확인'),
+              onPressed: () => Navigator.pop(context, newGroupName),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -185,6 +185,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
           'userId': userId,
           'recipeId': widget.recipeId,
           'isScraped': true,
+          'scrapedGroupName': '기본함'
         });
 
         setState(() {
@@ -199,10 +200,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
         await FirebaseFirestore.instance
             .collection('scraped_recipes')
             .doc(doc.id)
-            .update({'isScraped': !currentIsScraped});
+            .update({
+          'isScraped': !currentIsScraped,
+        });
 
         setState(() {
-          isScraped = !currentIsScraped; // 스크랩 상태 변경
+          isScraped = !currentIsScraped;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

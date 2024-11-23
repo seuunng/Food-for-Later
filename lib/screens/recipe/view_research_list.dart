@@ -488,6 +488,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
           'userId': userId,
           'recipeId': recipeId,
           'isScraped': true,
+          'scrapedGroupName': '기본함'
         });
 
         setState(() {
