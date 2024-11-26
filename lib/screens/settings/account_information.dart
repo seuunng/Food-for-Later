@@ -250,8 +250,7 @@ class _AccountInformationState extends State<AccountInformation> {
   Future<void> _showPasswordSendDialog() async {
     // 랜덤 6자리 비밀번호 생성 함수
     String _generateRandomPassword(int length) {
-      const characters =
-          'abcdefghijklmnopqrstuvwxyz0123456789';
+      const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
       Random random = Random();
       return String.fromCharCodes(Iterable.generate(length,
           (_) => characters.codeUnitAt(random.nextInt(characters.length))));
@@ -411,11 +410,13 @@ class _AccountInformationState extends State<AccountInformation> {
                 Navigator.pop(context);
                 await recordSessionEnd();
                 await FirebaseAuth.instance.signOut(); // 로그아웃 처리
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => LoginPage()), // 로그인 페이지로 이동
-                );
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => LoginPage()), // 로그인 페이지로 이동
+                  );
+                });
               },
             ),
           ],

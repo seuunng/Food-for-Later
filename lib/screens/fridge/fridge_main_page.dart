@@ -174,7 +174,10 @@ class FridgeMainPageState extends State<FridgeMainPage>
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
     setState(() {
-      selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
+      selectedFridge = prefs.getString('selectedFridge');
+      if (selectedFridge == null || !fridgeName.contains(selectedFridge)) {
+        selectedFridge = fridgeName.isNotEmpty ? fridgeName.first : '기본 냉장고';
+      }
       selectedFoodStatusManagement = prefs.getString('selectedFoodStatusManagement') ?? '소비기한 기준';
     });
     _loadFridgeCategoriesFromFirestore(selectedFridge); // 냉장고 데이터 로드
@@ -385,8 +388,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
             SizedBox(width: 20),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value:
-                    fridgeName.contains(selectedFridge) ? selectedFridge : '기본 냉장고',
+                value: fridgeName.contains(selectedFridge) ? selectedFridge : fridgeName.isNotEmpty ? fridgeName.first : null,
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,

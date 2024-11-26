@@ -137,7 +137,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
 
           // Firestore 데이터를 recordsList로 변환
           recordsList = _mapFirestoreToRecordsList(snapshot.data!);
-
+          print(theme.textTheme.bodyMedium);
           return SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.only(left: 5.0, right: 5.0),
@@ -164,7 +164,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                         ),
                         Text(
                           DateFormat.yMMM().format(_focusedDate),
-                          style: TextStyle(
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -194,7 +194,9 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                         .map((day) => Center(
                               child: Text(
                                 day,
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold
+                                ),
                               ),
                             ))
                         .toList(),
@@ -258,7 +260,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                             // 날짜 컨테이너
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.transparent
+                                  ? theme.colorScheme.secondary
                                   : isToday
                                       ? theme.colorScheme.secondary
                                       : Colors.transparent,

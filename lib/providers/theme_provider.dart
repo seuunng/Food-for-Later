@@ -3,19 +3,17 @@ import 'package:food_for_later/themes/custom_theme_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  CustomThemeMode _themeMode = CustomThemeMode.light; // 기본 테마
+  CustomThemeMode _themeMode;
   String _fontType;
   ThemeData _themeData = ThemeData.light();
+
+  ThemeProvider(this._themeMode, this._fontType) {
+    _updateTheme();
+  }
 
   CustomThemeMode get themeMode => _themeMode;
   String get fontType => _fontType;
   ThemeData get themeData => _themeData;
-
-  ThemeProvider(this._fontType) {
-    _loadThemeMode();
-    _updateTheme();
-  }
-
 
   void _loadThemeMode() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -25,14 +23,15 @@ class ThemeProvider extends ChangeNotifier {
       orElse: () => CustomThemeMode.light,
     );
     _fontType = prefs.getString('fontType') ?? 'NanumGothic';
+    _updateTheme(); // 데이터를 로드한 이후 테마를 업데이트
     notifyListeners();
   }
 
   Future<void> toggleTheme(CustomThemeMode mode) async {
     _themeMode = mode;
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        'themeMode', mode == ThemeMode.light ? 'Light' : 'Dark');
+    await prefs.setString('themeMode', mode.toString().split('.').last); // 일관성 있는 저장
+    _updateTheme();
     notifyListeners();
   }
 
@@ -123,7 +122,7 @@ class ThemeProvider extends ChangeNotifier {
     ),
     colorScheme: ColorScheme.light().copyWith(
         primary: Colors.black, // 하단바 아이콘, 탭버튼 제목
-        onPrimary: Colors.black, // 주요 배경위 텍스트나 아이콘색
+        onPrimary: Colors.white, // 주요 배경위 텍스트나 아이콘색
         primaryContainer: Colors.white, //primary와 유사한 색상이지만, 더 연한 버전
         onPrimaryContainer: Colors.white,
         secondary: Colors.grey[300], // 캘린더 오늘,
@@ -170,8 +169,8 @@ class ThemeProvider extends ChangeNotifier {
     ),
     // cardColor: Colors.grey[800], //Card 위젯의 배경색을 설정
     textTheme: TextTheme( //앱의 텍스트 테마
-      bodyMedium: TextStyle(color: Colors.white70),
-      titleLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white),//캘린더제목/ 장바구니글씨
+      titleLarge: TextStyle(color: Colors.white),//드로어 제목
     ),
     colorScheme: ColorScheme.dark().copyWith(
         primary: Colors.white, // 주요 배경색

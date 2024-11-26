@@ -34,6 +34,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       final snapshot =
           await FirebaseFirestore.instance.collection('record_categories')
               .where('userId', isEqualTo: userId)
+              .orderBy('createdAt', descending: true) // 최신순 정렬
               .get();
       final categories = snapshot.docs.map((doc) {
         final data = doc.data();
@@ -256,85 +257,6 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     );
   }
 
-// 색상 선택 다이얼로그
-//   Future<Color?> _showColorPicker(BuildContext context) async {
-//     Color selectedColor = _selectedColor;
-//     return showDialog<Color>(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: Text('색상 선택'),
-//           content: SingleChildScrollView(
-//             //컬러 팔레드
-//             child: Wrap(
-//               spacing: 8.0,
-//               runSpacing: 8.0,
-//               children: [
-//                 GestureDetector(
-//                   onTap: () {
-//                     setState(() {
-//                       _selectedColor = Colors.red;
-//                     });
-//                   },
-//                   child: Container(
-//                     width: 40,
-//                     height: 40,
-//                     decoration: BoxDecoration(
-//                       color: Colors.red,
-//                       shape: BoxShape.circle,
-//                       border: Border.all(
-//                         color: _selectedColor == Colors.red
-//                             ? Colors.black
-//                             : Colors.transparent,
-//                         width: 2,
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//                 GestureDetector(
-//                   onTap: () {
-//                     setState(() {
-//                       _selectedColor = Colors.blue;
-//                     });
-//                   },
-//                   child: Container(
-//                     width: 40,
-//                     height: 40,
-//                     decoration: BoxDecoration(
-//                       color: Colors.blue,
-//                       shape: BoxShape.circle,
-//                       border: Border.all(
-//                         color: _selectedColor == Colors.blue
-//                             ? Colors.black
-//                             : Colors.transparent,
-//                         width: 2,
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//                 // 다른 색상들도 동일한 방식으로 추가 가능
-//               ],
-//             ),
-//           ),
-//           actions: <Widget>[
-//             TextButton(
-//               child: Text('취소'),
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//               },
-//             ),
-//             TextButton(
-//               child: Text('확인'),
-//               onPressed: () {
-//                 Navigator.of(context).pop(selectedColor);
-//               },
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-
   // Firestore에 카테고리를 저장하거나 수정하는 함수
   Future<void> _saveCategory({int? index}) async {
     if (_recordCategoryController.text.isEmpty || units.isEmpty) {
@@ -349,6 +271,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       'units': units,
       'color': '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
       'userId': userId,
+      'createdAt': FieldValue.serverTimestamp(), // 생성 시간 추가
     };
 
     String? previousZone;

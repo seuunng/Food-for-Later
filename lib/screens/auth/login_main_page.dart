@@ -67,17 +67,23 @@ class _LoginPageState extends State<LoginPage> {
       if (result.user != null) {
         await addUserToFirestore(result.user!);
         await recordSessionStart();
-        Navigator.pushReplacementNamed(context, '/home');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } else {
         // 사용자 정보가 없을 경우 오류 메시지 표시
-        setState(() {
-          errorMessage = '로그인 실패: 사용자 정보를 가져올 수 없습니다.';
-        });
+        if (mounted) {
+          setState(() {
+            errorMessage = '로그인 실패: 사용자 정보를 가져올 수 없습니다.';
+          });
+        }
       }
     } on firebase_auth.FirebaseAuthException catch (e) {
-      setState(() {
-        errorMessage = '로그인 실패: ${e.code} - ${e.message}';
-      });
+      if (mounted) {
+        setState(() {
+          errorMessage = '로그인 실패: ${e.code} - ${e.message}';
+        });
+      }
       print('로그인 실패: ${e.code} - ${e.message}');
     } catch (e) {
       setState(() {
