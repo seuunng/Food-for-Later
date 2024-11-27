@@ -34,7 +34,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
   void _loadCategoryFromFirestore() async {
     try {
-      final snapshot = await _db.collection('record_categories')
+      final snapshot = await _db
+          .collection('record_categories')
           .where('userId', isEqualTo: userId)
           .get();
       final categories = snapshot.docs.map((doc) {
@@ -64,7 +65,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
     setState(() {
       selectedCategories = prefs.getStringList('selectedCategories') ?? [];
 
-      print('_loadSearchSettingsFromLocal() selectedCategories: $selectedCategories');
+      print(
+          '_loadSearchSettingsFromLocal() selectedCategories: $selectedCategories');
       final startDateString = prefs.getString('startDate');
       startDate = startDateString != null && startDateString.isNotEmpty
           ? DateTime.parse(startDateString)
@@ -78,8 +80,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
 
       categoryOptions = {
         for (var key in categoryOptions.keys)
-          key: selectedCategories.isEmpty ||
-              selectedCategories.contains(key),
+          key: selectedCategories.isEmpty || selectedCategories.contains(key),
       };
 
       // 모든 카테고리가 선택된 경우 "모두" 선택
@@ -122,7 +123,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
           selectedCategories.add(category); // 선택된 카테고리 추가
 
           // 모든 카테고리가 선택되었는지 확인
-          if (categoryOptions.values.where((v) => v).length == categoryOptions.length - 1) {
+          if (categoryOptions.values.where((v) => v).length ==
+              categoryOptions.length - 1) {
             categoryOptions['모두'] = true; // "모두"도 선택
           }
         } else {
@@ -192,7 +194,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
             // 레시피 출처 선택
             Text(
               '카테고리 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             Wrap(
               spacing: 8.0,
@@ -201,7 +204,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                 final category = entry.key;
                 final isSelected = entry.value;
                 return Theme(
-                  data: Theme.of(context).copyWith( // 민트색으로 반짝하는 효과 없애기, 근데 효과는 없음
+                  data: Theme.of(context).copyWith(
+                    // 민트색으로 반짝하는 효과 없애기, 근데 효과는 없음
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
                     hoverColor: Colors.transparent,
@@ -210,8 +214,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                     label: Text(
                       category,
                       style: TextStyle(
-                        color: isSelected ?
-                        theme.chipTheme.secondaryLabelStyle?.color
+                        color: isSelected
+                            ? theme.chipTheme.secondaryLabelStyle?.color
                             : theme.chipTheme.labelStyle?.color,
                       ),
                     ),
@@ -241,7 +245,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
             // 제외 검색어 선택
             Text(
               '기간 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +275,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                 Wrap(
                   spacing: 8.0, // 수평 간격
                   // runSpacing: 4.0,
-                  children:  ['1주', '1달', '3달', '1년'].map((String period) {
+                  children: ['1주', '1달', '3달', '1년'].map((String period) {
                     return SizedBox(
                       width: 80.0,
                       child: RadioListTile<String>(
@@ -312,7 +317,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                             }
                           });
                         },
-                        visualDensity: VisualDensity(horizontal: -3.0), // 수평 간격 줄이기
+                        visualDensity:
+                            VisualDensity(horizontal: -3.0), // 수평 간격 줄이기
                         contentPadding: EdgeInsets.zero, // 패딩을 제거하여 간격 최소화
                       ),
                     );
@@ -326,13 +332,15 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                 Expanded(
                   child: Text(
                     '시작 날짜',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface),
                   ),
                 ),
                 Expanded(
                   child: Text(
                     '끝 날짜',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface),
                   ),
                 ),
               ],
@@ -344,7 +352,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                     startDate != null
                         ? DateFormat('yyyy-MM-dd').format(startDate!)
                         : '날짜를 선택하세요',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16,
+                        color: theme.colorScheme.onSurface),
                   ),
                 ),
                 Expanded(
@@ -359,7 +368,8 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                     endDate != null
                         ? DateFormat('yyyy-MM-dd').format(endDate!)
                         : '날짜를 선택하세요',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16,
+                        color: theme.colorScheme.onSurface),
                   ),
                 ),
                 Expanded(

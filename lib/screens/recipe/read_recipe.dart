@@ -707,6 +707,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Widget _buildInfoSection(Map<String, dynamic> data) {
+    final theme = Theme.of(context);
     int servings = data['serving'] ?? 0;
     int cookTime = data['time'] ?? 0;
     String difficulty = data['difficulty'] ?? '중';
@@ -719,25 +720,30 @@ class _ReadRecipeState extends State<ReadRecipe> {
           Column(
             children: [
               Icon(Icons.people, size: 25),
-              Text('$servings 인분'),
+              Text('$servings 인분',
+                  style: TextStyle(color: theme.colorScheme.onSurface)
+              ),
             ],
           ),
           Column(
             children: [
               Icon(Icons.timer, size: 25),
-              Text('$cookTime 분'),
+              Text('$cookTime 분',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             ],
           ),
           Column(
             children: [
               Icon(Icons.emoji_events, size: 25),
-              Text(difficulty),
+              Text(difficulty,
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             ],
           ),
           Column(
             children: [
               Icon(Icons.remove_red_eye_sharp, size: 25),
-              Text('$viewCount명 읽음'),  // 조회수 표시
+              Text('$viewCount명 읽음',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),  // 조회수 표시
             ],
           ),
         ],
@@ -746,6 +752,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Widget _buildIngredientsSection(List<String> ingredients) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
@@ -754,9 +761,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
           Row(
             children: [
               Text('재료',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface)),
               Spacer(),
-              Text("냉장고에 없는 재료 장바구니 담기"),
+              Text("냉장고에 없는 재료 장바구니 담기",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface)),
               _buildAddToShoppingListButton(),
             ],
           ),
@@ -783,7 +793,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
                   ),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Text(ingredient),
+                child: Text(ingredient,
+                    style: TextStyle(color: theme.colorScheme.onSurface)),
               );
             }).toList(),
           ),
@@ -800,13 +811,19 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Widget _buildCookingStepsSection(List<String> methods) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('조리방법',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface
+              ),
+          ),
           SizedBox(
             height: 10,
           ),
@@ -827,7 +844,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
                   ),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Text(method),
+                child: Text(method,
+              style: TextStyle(color: theme.colorScheme.onSurface)
+                ),
               );
             }).toList(),
           ),
@@ -837,13 +856,18 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Widget _buildThemesSection(List<String> themes) {
+    final themes1 = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('테마',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: themes1.colorScheme.onSurface
+              )
+          ),
           SizedBox(
             height: 10,
           ),
@@ -864,7 +888,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
                   ),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Text(theme),
+                child: Text(theme,
+                    style: TextStyle(color: themes1.colorScheme.onSurface)),
               );
             }).toList(),
           ),
@@ -874,13 +899,16 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   Widget _buildRecipeSection(List<Map<String, String>> steps) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('레시피',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface)),
           ListView.builder(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
@@ -914,7 +942,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
                       Expanded(
                         child: Center(
                             child: Text(steps[index]['description']!,
-                                textAlign: TextAlign.center)),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: theme.colorScheme.onSurface)),
+                        ),
                       ),
                     ],
                   ),

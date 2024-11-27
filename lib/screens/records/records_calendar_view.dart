@@ -97,7 +97,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Query query = FirebaseFirestore.instance.collection('record')
+    Query query = FirebaseFirestore.instance
+        .collection('record')
         .where('userId', isEqualTo: userId);
 
     // 검색 기간에 맞게 필터링
@@ -153,7 +154,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           icon: Icon(
                             Icons.arrow_back_ios_new,
                             size: 20,
-                            color: theme.textTheme.bodyMedium!.color,
+                            color: theme.colorScheme.onSurface,
                           ),
                           onPressed: () {
                             setState(() {
@@ -167,13 +168,14 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.arrow_forward_ios,
                             size: 20,
-                            color: theme.textTheme.bodyMedium!.color,
+                            color: theme.colorScheme.onSurface,
                           ),
                           onPressed: () {
                             setState(() {
@@ -195,7 +197,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                               child: Text(
                                 day,
                                 style: TextStyle(
-                                    fontWeight: FontWeight.bold
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             ))
@@ -269,7 +272,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                   ? Border.all(
                                       color: theme.colorScheme.secondary,
                                       width: 2.0)
-                                  : null,
+                                  : null
                             ),
                             child: Align(
                               alignment: Alignment.topLeft,
@@ -283,10 +286,10 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                       '$day',
                                       style: TextStyle(
                                         color: isSelected
-                                            ? theme.colorScheme.onPrimary
+                                            ? theme.colorScheme.onSurface
                                             : isToday
-                                                ? theme.colorScheme.onPrimary
-                                                : theme.colorScheme.onSecondary,
+                                                ? theme.colorScheme.onSurface
+                                                : theme.colorScheme.onSurface,
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -327,8 +330,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                                                     (context) =>
                                                                         ReadRecord(
                                                                   recordId:
-                                                                      record
-                                                                          .id!,
+                                                                      record.id!,
                                                                 ),
                                                               ),
                                                             );

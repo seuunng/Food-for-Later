@@ -63,6 +63,7 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('어플 환경 설정'),
@@ -75,7 +76,8 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
               SizedBox(width: 16),
               Text(
                 '테마',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface),
               ),
               Spacer(), // 텍스트와 드롭다운 사이 간격
               Expanded(
@@ -86,7 +88,8 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
                   items: CustomThemeMode.values.map((mode) {
                     return DropdownMenuItem<CustomThemeMode>(
                     value: mode,
-                    child: Text(mode.toString().split('.').last),
+                    child: Text(mode.toString().split('.').last,
+                        style: TextStyle(color: theme.colorScheme.onSurface)),
                     );
                   }).toList(),
                   onChanged: (CustomThemeMode? newValue) {
@@ -103,7 +106,8 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
               SizedBox(width: 16),
               Text(
                 '폰트',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface),
               ),
               Spacer(), // 텍스트와 드롭다운 사이 간격
               Expanded(
@@ -113,7 +117,8 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
                   items: _categories_font.map((String font) {
                     return DropdownMenuItem<String>(
                       value: font,
-                      child: Text(font),
+                      child: Text(font,
+                          style: TextStyle(color: theme.colorScheme.onSurface)),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {

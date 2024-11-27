@@ -62,6 +62,7 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('의견보내기'),
@@ -75,7 +76,8 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
               children: [
                 Text(
                   '구분',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface),
                 ),
                 Spacer(), // 텍스트와 드롭다운 사이 간격
                 Expanded(
@@ -85,7 +87,8 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
                     items: _categories.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
-                        child: Text(category),
+                        child: Text(category,
+                            style: TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -101,7 +104,8 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
             SizedBox(height: 16),
             Text(
               '제목',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             TextField(
               controller: _titleController,
@@ -112,7 +116,8 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
             SizedBox(height: 16),
             Text(
               '내용',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             TextField(
               controller: _contentController,

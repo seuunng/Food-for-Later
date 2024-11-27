@@ -34,7 +34,8 @@ class _CustomDropdownState extends State<CustomDropdown> {
           children: [
             Text(
               widget.title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             Spacer(),
             DropdownButton<String>(
@@ -49,7 +50,8 @@ class _CustomDropdownState extends State<CustomDropdown> {
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(item),
+                          Text(item,
+                              style: TextStyle(color: theme.colorScheme.onSurface)),
                           if (_isDropdownOpen) ...[
                             // 드롭다운이 열렸을 때만 표시
                             Flexible( // Expanded 대신 Flexible을 사용합니다.

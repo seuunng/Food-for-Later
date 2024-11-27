@@ -194,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('이따뭐먹지'),
@@ -217,9 +218,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 '설정',
                 style: TextStyle(
-                  color: Theme.of(context).textTheme.titleLarge?.color,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 24,
-                ),
+                )
               ),
             ),
           ),

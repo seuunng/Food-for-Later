@@ -135,7 +135,7 @@ class ThemeProvider extends ChangeNotifier {
 
   final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark, //전체 앱의 테마 밝기 모드를 설정
-    primaryColor: Colors.black, //앱의 기본 색상을 설정
+    primaryColor: Colors.white, //앱의 기본 색상을 설정
     scaffoldBackgroundColor: Colors.grey[900], //Scaffold 위젯의 배경색
     appBarTheme: AppBarTheme( //AppBar 위젯의 테마를 설정
       color: Colors.grey[900],
@@ -168,16 +168,20 @@ class ThemeProvider extends ChangeNotifier {
       disabledColor: Colors.grey[500],
     ),
     // cardColor: Colors.grey[800], //Card 위젯의 배경색을 설정
-    textTheme: TextTheme( //앱의 텍스트 테마
-      bodyMedium: TextStyle(color: Colors.white),//캘린더제목/ 장바구니글씨
-      titleLarge: TextStyle(color: Colors.white),//드로어 제목
+    textTheme: ThemeData.dark().textTheme.apply(
+      bodyColor: Colors.white,
+      displayColor: Colors.white,
+    ),
+    primaryTextTheme: ThemeData.dark().textTheme.apply(
+      bodyColor: Colors.white,
+      displayColor: Colors.white,
     ),
     colorScheme: ColorScheme.dark().copyWith(
         primary: Colors.white, // 주요 배경색
-        onPrimary: Colors.black, // 주요 배경위 텍스트나 아이콘색
+        onPrimary: Colors.white, // 주요 배경위 텍스트나 아이콘색
         primaryContainer: Colors.white, //primary와 유사한 색상이지만, 더 연한 버전
         onPrimaryContainer: Colors.white,
-        secondary: Colors.grey, // 보조 배경색
+        secondary: Colors.grey, // 캘린더 오늘날짜 배경
         onSecondary: Colors.black, // 캘렌더 컬러박스 글씨
         surface:  Colors.black, //카드와 같은 표면 색상, 하단 네브바
         onSurface: Colors.white, //드롭박스, 사이드바

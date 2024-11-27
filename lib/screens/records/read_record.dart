@@ -64,6 +64,7 @@ class _ReadRecordState extends State<ReadRecord> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('기록 보기'),
@@ -107,7 +108,9 @@ class _ReadRecordState extends State<ReadRecord> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
-              child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
+              child: Text('데이터를 가져오는 중 오류가 발생했습니다.',
+                  style: TextStyle(color: theme.colorScheme.onSurface)
+              ),
             );
           }
           // Firestore 데이터를 RecordModel로 변환
@@ -125,7 +128,8 @@ class _ReadRecordState extends State<ReadRecord> {
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return Center(
-              child: Text('데이터가 없습!니다.'),
+              child: Text('데이터가 없습니다.',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             );
           }
 
@@ -142,15 +146,18 @@ class _ReadRecordState extends State<ReadRecord> {
                   children: [
                     Text(
                       DateFormat('yyyy-MM-dd').format(record.date) ?? 'Unknown Date',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface),
                     ),
                     Text(
                       ' | ',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface),
                     ),
                     Text(
                       '${record.zone} 기록',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface),
                     ),
                   ],
                 ),
@@ -170,7 +177,8 @@ class _ReadRecordState extends State<ReadRecord> {
                             children: [
                               Text(
                                 rec.unit ?? 'Unknown Field',
-                                style: TextStyle(fontSize: 16),
+                                style: TextStyle(fontSize: 16,
+                                    color: theme.colorScheme.onSurface),
                               ),
                               Text(
                                 ' | ',

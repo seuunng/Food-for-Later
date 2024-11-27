@@ -144,6 +144,7 @@ class _RecordsListViewState extends State<RecordsListView> {
   }
 
   Widget _buildRecordsSection() {
+    final theme = Theme.of(context);
     // Firestore 쿼리 필터링
     Query query = FirebaseFirestore.instance.collection('record')
         .where('userId', isEqualTo: userId);
@@ -168,7 +169,8 @@ class _RecordsListViewState extends State<RecordsListView> {
             AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
           if (snapshot.hasError) {
             return Center(
-              child: Text('일정 정보를 가져오지 못했습니다.'),
+              child: Text('일정 정보를 가져오지 못했습니다.',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -179,7 +181,8 @@ class _RecordsListViewState extends State<RecordsListView> {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             // 데이터가 없는 경우
             return Center(
-              child: Text('조건에 맞는 레코드가 없습니다.'),
+              child: Text('조건에 맞는 레코드가 없습니다.',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             );
           }
 
@@ -328,7 +331,8 @@ class _RecordsListViewState extends State<RecordsListView> {
                                       record.zone ?? 'Unknown zone',
                                       style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w600),
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.onSurface),
                                     ),
                                     SizedBox(width: 4),
                                     Text('|'),
@@ -339,7 +343,8 @@ class _RecordsListViewState extends State<RecordsListView> {
                                           'Unknown Date',
                                       style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w600),
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.onSurface),
                                     ),
                                   ],
                                 ),
@@ -347,14 +352,17 @@ class _RecordsListViewState extends State<RecordsListView> {
                                   children: [
                                     Text(
                                       rec.unit ?? 'Unknown Unit',
-                                      style: TextStyle(fontSize: 12),
+                                      style: TextStyle(fontSize: 12,
+                                          color: theme.colorScheme.onSurface),
                                     ),
                                     SizedBox(width: 4),
-                                    Text('|'),
+                                    Text('|',
+                                        style: TextStyle(color: theme.colorScheme.onSurface)),
                                     SizedBox(width: 4),
                                     Text(
                                       rec.contents ?? 'Unknown contents',
-                                      style: TextStyle(fontSize: 12),
+                                      style: TextStyle(fontSize: 12,
+                                          color: theme.colorScheme.onSurface),
                                     ),
                                   ],
                                 ),

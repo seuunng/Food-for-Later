@@ -179,9 +179,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
 
   @override
   Widget build(BuildContext context) {
-    // 날짜를 "YYYY-MM-DD" 형식으로 포맷
-    String formattedDate = DateFormat('yyyy-MM-dd').format(currentDate);
-
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('상세보기'),
@@ -194,7 +192,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
             children: [
               Row(
                 children: [
-                  Text('카테고리명', style: TextStyle(fontSize: 18)),
+                  Text('카테고리명', style: TextStyle(fontSize: 18,
+                      color: theme.colorScheme.onSurface)),
                   Spacer(),
                   DropdownButton<FoodsModel>(
                     value: foodsCategories.contains(selectedFoodsCategory)
@@ -206,6 +205,7 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                         value: value,
                         child: Text(
                           value.defaultCategory,
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       );
                     }).toList(),
@@ -222,7 +222,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                 children: [
                   Text(
                     '식품명',
-                    style: TextStyle(fontSize: 18),
+                    style: TextStyle(fontSize: 18,
+                      color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
                   SizedBox(
@@ -233,11 +234,18 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                         ..text = widget.foodsName ?? '',
                       // textAlign: TextAlign.,
                       focusNode: _focusNode,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface, // 입력 글자의 색상
+                      ),
                       decoration: InputDecoration(
                         border: _focusNode.hasFocus
                             ? OutlineInputBorder() // 포커스가 있을 때만 테두리 표시
                             : InputBorder.none,
                         hintText: '식품명을 입력하세요',
+                        hintStyle: TextStyle(
+                          color: Colors.grey, // 힌트 텍스트 색상
+                          fontStyle: FontStyle.italic, // 힌트 텍스트 스타일 (기울임꼴)
+                        ),
                       ),
                     ),
                   ),
@@ -246,7 +254,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
               SizedBox(height: 20),
               Row(
                 children: [
-                  Text('냉장고 카테고리', style: TextStyle(fontSize: 18)),
+                  Text('냉장고 카테고리', style: TextStyle(fontSize: 18,
+                      color: theme.colorScheme.onSurface)),
                   Spacer(),
                   DropdownButton<FridgeCategory>(
                     value: fridgeCategories.contains(selectedFridgeCategory)
@@ -256,7 +265,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                     items: fridgeCategories.map((FridgeCategory value) {
                       return DropdownMenuItem<FridgeCategory>(
                         value: value,
-                        child: Text(value.categoryName),
+                        child: Text(value.categoryName,
+                            style: TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (FridgeCategory? newValue) {
@@ -271,18 +281,21 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
               SizedBox(height: 20),
               Row(
                 children: [
-                  Text('장보기 카테고리', style: TextStyle(fontSize: 18)),
+                  Text('장보기 카테고리', style: TextStyle(fontSize: 18,
+                      color: theme.colorScheme.onSurface)),
                   Spacer(),
                   DropdownButton<ShoppingCategory>(
                     value: shoppingListCategories
                             .contains(selectedShoppingListCategory)
                         ? selectedShoppingListCategory
                         : null,
-                    hint: Text('카테고리 선택'),
+                    hint: Text('카테고리 선택',
+                        style: TextStyle(color: theme.colorScheme.onSurface)),
                     items: shoppingListCategories.map((ShoppingCategory value) {
                       return DropdownMenuItem<ShoppingCategory>(
                         value: value,
-                        child: Text(value.categoryName),
+                        child: Text(value.categoryName,
+                            style: TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (ShoppingCategory? newValue) {
@@ -294,7 +307,6 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                   SizedBox(width: 20),
                 ],
               ),
-              SizedBox(height: 20),
               // Row(
               //   children: [
               //     Text('유통기한', style: TextStyle(fontSize: 18)),
@@ -326,7 +338,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
               // 소비기한 선택 드롭다운
               Row(
                 children: [
-                  Text('품질유지기한', style: TextStyle(fontSize: 18)),
+                  Text('품질유지기한', style: TextStyle(fontSize: 18,
+                      color: theme.colorScheme.onSurface)),
                   Spacer(),
                   Row(
                     children: [
@@ -339,7 +352,8 @@ class _FridgeItemDetailsState extends State<FridgeItemDetails> {
                         },
                       ),
                       Text('$consumptionDays 일',
-                          style: TextStyle(fontSize: 18)),
+                          style: TextStyle(fontSize: 18,
+                              color: theme.colorScheme.onSurface)),
                       IconButton(
                         icon: Icon(Icons.add),
                         onPressed: () {

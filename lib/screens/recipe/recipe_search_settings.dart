@@ -135,7 +135,8 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           children: [
             Text(
               '조리 방법 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             for (var entry in cookingMethods.entries) // Map의 각 entry를 순회하며 빌드
               _buildMethodCategory(entry.key, entry.value),
@@ -143,7 +144,8 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             // 레시피 출처 선택
             Text(
               '선호 식품 및 조리방법 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
 
             for (var entry
@@ -154,7 +156,8 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             // 제외 검색어 선택
             Text(
               '검색에서 제외하고 싶은 식재료를 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             TextField(
               controller: excludeKeywordController,

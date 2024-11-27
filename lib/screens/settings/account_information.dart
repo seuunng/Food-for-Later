@@ -82,6 +82,7 @@ class _AccountInformationState extends State<AccountInformation> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('계정 정보'),
@@ -94,7 +95,8 @@ class _AccountInformationState extends State<AccountInformation> {
             // 닉네임 정보
             Text(
               '닉네임 ',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
 
             Row(
@@ -102,7 +104,8 @@ class _AccountInformationState extends State<AccountInformation> {
                 Spacer(),
                 Text(
                   _nickname,
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16,
+                      color: theme.colorScheme.onSurface),
                 ),
                 Spacer(),
                 BasicElevatedButton(
@@ -117,7 +120,8 @@ class _AccountInformationState extends State<AccountInformation> {
             // 이메일 정보
             Text(
               '이메일 ',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
 
             Row(
@@ -125,7 +129,8 @@ class _AccountInformationState extends State<AccountInformation> {
                 Spacer(),
                 Text(
                   _email,
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16,
+                      color: theme.colorScheme.onSurface),
                 ),
                 Spacer(),
                 SizedBox(
@@ -136,7 +141,8 @@ class _AccountInformationState extends State<AccountInformation> {
             ),
             Text(
               '비밀번호 ',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             Row(
               children: [
@@ -248,6 +254,7 @@ class _AccountInformationState extends State<AccountInformation> {
 
   // 비밀번호 변경 다이얼로그
   Future<void> _showPasswordSendDialog() async {
+    final theme = Theme.of(context);
     // 랜덤 6자리 비밀번호 생성 함수
     String _generateRandomPassword(int length) {
       const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -264,7 +271,9 @@ class _AccountInformationState extends State<AccountInformation> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('임시 비밀번호 보내기'),
+            title: Text('임시 비밀번호 보내기',
+
+                style: TextStyle(color: theme.colorScheme.onSurface)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -341,6 +350,7 @@ class _AccountInformationState extends State<AccountInformation> {
   }
 
   Future<void> _showNicknameChangeDialog() async {
+    final theme = Theme.of(context);
     TextEditingController _nickNameController = TextEditingController();
     User? user = FirebaseAuth.instance.currentUser;
 
@@ -348,7 +358,8 @@ class _AccountInformationState extends State<AccountInformation> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('닉네임 변경'),
+          title: Text('닉네임 변경',
+              style: TextStyle(color: theme.colorScheme.onSurface)),
           content: TextField(
             controller: _nickNameController,
             // obscureText: true,

@@ -374,6 +374,7 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
         onTap: () {
       if (isDeletedMode) {
@@ -392,7 +393,8 @@ class FridgeMainPageState extends State<FridgeMainPage>
                 items: fridgeName.map((section) {
                   return DropdownMenuItem(
                     value: section,
-                    child: Text(section),
+                    child: Text(section,
+                    style: TextStyle(color: theme.colorScheme.onSurface)),
                   );
                 }).toList(), // 반복문을 통해 DropdownMenuItem 생성
                 onChanged: (value) {
@@ -470,14 +472,15 @@ class FridgeMainPageState extends State<FridgeMainPage>
 
   // 각 섹션의 타이틀 빌드
   Widget _buildSectionTitle(String title) {
-
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
           Text(
             title,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface),
           ),
           SizedBox(width: 10), // 제목과 수평선 사이 간격
           Expanded(

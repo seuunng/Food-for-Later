@@ -221,6 +221,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('어플 사용 설정'),
@@ -250,13 +251,15 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   _addNewCategory(_categories_fridge, '냉장고');
                 },
               ),
-              Text('가장 자주 보는 냉장고를 기본냉장고로 설정하세요'),
+              Text('가장 자주 보는 냉장고를 기본냉장고로 설정하세요',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
               SizedBox(height: 20),
               Row(
                 children: [
                   Text(
                     '식품 상태관리 선택',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
                   DropdownButton<String>(
@@ -267,7 +270,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                     items: _categories_foods.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
-                        child: Text(category),
+                        child: Text(category,
+                            style: TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (String? value) {
@@ -278,14 +282,17 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   ),
                 ],
               ),
-              Text('식품 관리 기준을 선택하세요'),
-              Text('빨리 소진해야할 식품을 알려드려요'),
+              Text('식품 관리 기준을 선택하세요',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
+              Text('빨리 소진해야할 식품을 알려드려요',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
               SizedBox(height: 20),
               Row(
                 children: [
                   Text(
                     '선호 식품 카테고리 수정',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
                   BasicElevatedButton(
@@ -309,13 +316,15 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   ),
                 ],
               ),
-              Text('자주 검색하는 식품을 묶음으로 관리해요'),
+              Text('자주 검색하는 식품을 묶음으로 관리해요',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
               SizedBox(height: 20),
               Row(
                 children: [
                   Text(
                     '대표 기록유형 선택',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
                   DropdownButton<String>(
@@ -326,7 +335,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                     items: _categories_records.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
-                        child: Text(category),
+                        child: Text(category,
+                            style: TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (String? value) {
@@ -337,7 +347,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                   ),
                 ],
               ),
-              Text('가장 자주 보는 기록유형을 대표 유형으로 설정하세요'),
+              Text('가장 자주 보는 기록유형을 대표 유형으로 설정하세요',
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             ],
           ),
         ),
