@@ -185,7 +185,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
           'userId': userId,
           'recipeId': widget.recipeId,
           'isScraped': true,
-          'scrapedGroupName': '기본함'
+          'scrapedGroupName': '기본함',
+          'scrapedAt': FieldValue.serverTimestamp(),
         });
 
         setState(() {
@@ -202,6 +203,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
             .doc(doc.id)
             .update({
           'isScraped': !currentIsScraped,
+          'scrapedAt': !currentIsScraped ? FieldValue.serverTimestamp() : null,
         });
 
         setState(() {
@@ -259,10 +261,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
       showDialog(
         context: context,
         builder: (BuildContext context) {
+          final theme = Theme.of(context);
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return AlertDialog(
-                title: Text('장바구니에 추가할 재료 선택'),
+                title: Text('장바구니에 추가할 재료 선택',
+                  style: TextStyle(color: theme.colorScheme.onSurface),),
                 content: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -336,12 +340,15 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _deleteRecipe() {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('레시피 삭제'),
-          content: Text('정말 이 레시피를 삭제하시겠습니까?'),
+          title: Text('레시피 삭제',
+            style: TextStyle(color: theme.colorScheme.onSurface),),
+          content: Text('정말 이 레시피를 삭제하시겠습니까?',
+            style: TextStyle(color: theme.colorScheme.onSurface),),
           actions: [
             TextButton(
               child: Text('취소'),

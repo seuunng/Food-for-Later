@@ -90,14 +90,19 @@ class _CreateRecordState extends State<CreateRecord> {
           .where('userId', isEqualTo: userId)
           .get();
 
-      if (snapshot.docs.isNotEmpty) {
+      if (snapshot.docs.isEmpty) {
+        // 기본 카테고리 생성
+        await _createDefaultCategories();
+      } else {
+        // Firestore에서 데이터 가져오기
         final categories = snapshot.docs.map((doc) {
           final data = doc.data();
           return {
             'id': doc.id,
             'category': data['zone'] ?? '기록 없음',
-            'fields':
-                data['units'] != null ? List<String>.from(data['units']) : [],
+            'fields': data['units'] != null
+                ? List<String>.from(data['units'])
+                : [],
             'color': data['color'] != null
                 ? Color(int.parse(data['color'].replaceFirst('#', '0xff')))
                 : Colors.grey,
@@ -105,7 +110,6 @@ class _CreateRecordState extends State<CreateRecord> {
         }).toList();
 
         setState(() {
-          // 카테고리와 구분 데이터를 categoryFieldMap에 저장
           categoryFieldMap = {
             for (var category in categories)
               category['category']: {
@@ -113,28 +117,49 @@ class _CreateRecordState extends State<CreateRecord> {
                 'color': category['color'],
               }
           };
-          // 기본값 설정
-          print(categoryFieldMap);
-
-          if (categoryFieldMap.isNotEmpty) {
-            selectedCategory = categoryFieldMap.keys.firstWhere(
-              (key) => key.isNotEmpty,
-              orElse: () => '식단', // 기본값 설정
-            );
-            selectedField =
-                categoryFieldMap[selectedCategory]!['fields'].isNotEmpty
-                    ? categoryFieldMap[selectedCategory]!['fields'].first
-                    : '';
-            selectedColor = categoryFieldMap[selectedCategory]!['color'];
-          }
+          _initializeValues();
         });
-      } else {
-        print('카테고리 데이터가 없습니다.');
       }
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+  Future<void> _createDefaultCategories() async {
+    try {
+      final current = DateTime.now();
+      final defaultCategories = [
+        {
+          'zone': '식사',
+          'units': ['아침', '점심', '저녁'],
+          'color': '#BBDEFB',
+        },
+        {
+          'zone': '간식',
+          'units': ['간식'],
+          'color': '#FFC1CC',
+        },
+      ];
+
+      for (var category in defaultCategories) {
+        await FirebaseFirestore.instance.collection('record_categories').add({
+          'userId': userId,
+          'zone': category['zone'],
+          'units': category['units'],
+          'color': category['color'],
+          'createdAt': current.toIso8601String()
+        });
+      }
+
+      print('기본 카테고리가 생성되었습니다.');
+      _loadCategories(); // 새로 생성한 기본 카테고리 로드
+    } catch (e) {
+      print('기본 카테고리 생성 중 오류 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기본 카테고리 생성 중 오류가 발생했습니다.')),
       );
     }
   }
@@ -328,6 +353,7 @@ class _CreateRecordState extends State<CreateRecord> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // null 체크 추가
     if (categoryFieldMap.isEmpty) {
       return Scaffold(
@@ -409,11 +435,13 @@ class _CreateRecordState extends State<CreateRecord> {
   // 입력필드
   Widget _buildTextField(String label, TextEditingController controller,
       {bool isNumber = false, VoidCallback? onTap}) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        style: TextStyle(color: theme.colorScheme.onSurface),
         decoration: InputDecoration(
           labelText: label,
           // border: OutlineInputBorder(),
@@ -430,6 +458,7 @@ class _CreateRecordState extends State<CreateRecord> {
   // 드롭다운
   Widget _buildDropdown(String label, List<String> options, String currentValue,
       Function(String) onChanged) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -441,7 +470,9 @@ class _CreateRecordState extends State<CreateRecord> {
             items: options.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 value: value,
-                child: Text(value),
+                child: Text(value,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                )
               );
             }).toList(),
             onChanged: (newValue) {
@@ -457,12 +488,15 @@ class _CreateRecordState extends State<CreateRecord> {
 
   //기록과이미지 섹션
   Widget _buildRecordsSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '기록',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface
+          ),
         ),
         // SizedBox(height: 8.0),
         ListView.builder(
@@ -480,12 +514,16 @@ class _CreateRecordState extends State<CreateRecord> {
                     children: [
                       Text(
                         recordsWithImages[index]['field'] ?? '',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface),
                       ),
                       SizedBox(width: 4),
-                      Text(' | '),
+                      Text(' | ',
+                          style: TextStyle(color: theme.colorScheme.onSurface)
+                      ),
                       SizedBox(width: 4),
-                      Text(recordsWithImages[index]['contents'] ?? ''),
+                      Text(recordsWithImages[index]['contents'] ?? '',
+                          style: TextStyle(color: theme.colorScheme.onSurface)),
                     ],
                   ),
                   SizedBox(

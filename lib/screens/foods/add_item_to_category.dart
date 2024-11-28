@@ -136,9 +136,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
 
   @override
   Widget build(BuildContext context) {
-    // 날짜를 "YYYY-MM-DD" 형식으로 포맷
-    String formattedDate = DateFormat('yyyy-MM-dd').format(currentDate);
-
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('기본 식품 카테고리에 추가하기'),
@@ -153,18 +151,29 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
               children: [
                 Row(
                   children: [
-                    Text('카테고리명   ', style: TextStyle(fontSize: 18)),
-
+                    Text('카테고리명   ',
+                        style: TextStyle(
+                            fontSize: 18, color: theme.colorScheme.onSurface)),
                     Spacer(),
                     DropdownButton<FoodsModel>(
                       value: foodsCategories.contains(selectedFoodsCategory)
                           ? selectedFoodsCategory
                           : null,
-                      hint: Text('카테고리 선택'),
+                      hint: Text(
+                        '카테고리 선택',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface, // 레이블 텍스트 스타일
+                        ),
+                      ),
                       items: foodsCategories.map((FoodsModel value) {
                         return DropdownMenuItem<FoodsModel>(
                           value: value,
-                          child: Text(value.defaultCategory),
+                          child: Text(
+                            value.defaultCategory,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface, // 레이블 텍스트 스타일
+                            ),
+                          ),
                         );
                       }).toList(),
                       onChanged: (FoodsModel? newValue) {
@@ -180,7 +189,11 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
             SizedBox(height: 10),
             Row(
               children: [
-                Text('식품명', style: TextStyle(fontSize: 18)),
+                Text('식품명',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: theme.colorScheme.onSurface, // 레이블 텍스트 스타일
+                    )),
                 Spacer(),
                 SizedBox(
                   width: 200, // 원하는 크기로 설정
@@ -189,6 +202,10 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                     decoration: InputDecoration(
                       // border: OutlineInputBorder(),
                       hintText: '식품명을 입력하세요',
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface
+                            .withOpacity(0.6), // 힌트 텍스트 스타일
+                      ),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
                         vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
@@ -201,15 +218,18 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
             SizedBox(height: 20),
             Row(
               children: [
-                Text('냉장고 카테고리', style: TextStyle(fontSize: 18)),
+                Text('냉장고 카테고리', style: TextStyle(fontSize: 18,
+                  color: theme.colorScheme.onSurface)),
                 Spacer(),
                 DropdownButton<FridgeCategory>(
                   value: selectedFridgeCategory,
-                  hint: Text('카테고리 선택'),
+                  hint: Text('카테고리 선택',
+                    style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),),
                   items: fridgeCategories.map((FridgeCategory value) {
                     return DropdownMenuItem<FridgeCategory>(
                       value: value,
-                      child: Text(value.categoryName),
+                      child: Text(value.categoryName,
+                        style: TextStyle(color: theme.colorScheme.onSurface),),
                     );
                   }).toList(),
                   onChanged: (FridgeCategory? newValue) {
@@ -223,15 +243,20 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
             SizedBox(height: 20),
             Row(
               children: [
-                Text('장보기 카테고리', style: TextStyle(fontSize: 18)),
+                Text('장보기 카테고리', style: TextStyle(
+                    fontSize: 18,
+                    color: theme.colorScheme.onSurface)),
                 Spacer(),
                 DropdownButton<ShoppingCategory>(
                   value: selectedShoppingListCategory,
-                  hint: Text('카테고리 선택'),
+                  hint: Text('카테고리 선택', style: TextStyle(
+                      fontSize: 18,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6))),
                   items: shoppingListCategories.map((ShoppingCategory value) {
                     return DropdownMenuItem<ShoppingCategory>(
                       value: value,
-                      child: Text(value.categoryName),
+                      child: Text(value.categoryName,
+                        style: TextStyle(color: theme.colorScheme.onSurface),),
                     );
                   }).toList(),
                   onChanged: (ShoppingCategory? newValue) {
@@ -274,7 +299,8 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
             // 소비기한 선택 드롭다운
             Row(
               children: [
-                Text('품질유지기한', style: TextStyle(fontSize: 18)),
+                Text('품질유지기한', style: TextStyle(fontSize: 18,
+                    color: theme.colorScheme.onSurface)),
                 Spacer(),
                 Row(
                   children: [
@@ -286,7 +312,8 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
                         });
                       },
                     ),
-                    Text('$consumptionDays 일', style: TextStyle(fontSize: 18)),
+                    Text('$consumptionDays 일', style: TextStyle(fontSize: 18,
+                        color: theme.colorScheme.onSurface)),
                     IconButton(
                       icon: Icon(Icons.add),
                       onPressed: () {
@@ -328,9 +355,9 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: SizedBox(
           width: double.infinity,
-          child:  NavbarButton(
-              buttonTitle:'추가하기',
-              onPressed: () async {
+          child: NavbarButton(
+            buttonTitle: '추가하기',
+            onPressed: () async {
               if (foodNameController.text.isNotEmpty &&
                   selectedFoodsCategory != null &&
                   selectedFridgeCategory != null &&

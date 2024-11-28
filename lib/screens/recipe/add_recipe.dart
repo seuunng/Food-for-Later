@@ -200,10 +200,9 @@ class _AddRecipeState extends State<AddRecipe> {
           mainImages: mainImages.isNotEmpty ? mainImages : [],
         );
 
-        await _db
-            .collection('recipe')
-            .doc(newItem.id)
-            .set(newItem.toFirestore());
+        await _db.collection('recipe').doc(newItem.id).set({
+          ...newItem.toFirestore(), // 기존 데이터// 현재 시각 추가
+        });
         Navigator.pop(context);
       } else {
         String? recipeId = widget.recipeData?['id'];
@@ -523,6 +522,7 @@ class _AddRecipeState extends State<AddRecipe> {
     Function(String) onItemSelected,
     String type,
   ) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -530,13 +530,16 @@ class _AddRecipeState extends State<AddRecipe> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface
+              ),
             ),
             Spacer(),
             SizedBox(
               width: 200,
               child: TextField(
                 controller: searchController,
+                style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
                   labelText: '$title 검색',
                   contentPadding:
@@ -628,11 +631,13 @@ class _AddRecipeState extends State<AddRecipe> {
   // 입력필드
   Widget _buildTextField(String label, TextEditingController controller,
       {bool isNumber = false}) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        style: TextStyle(color: theme.colorScheme.onSurface), // 입력 텍스트 스타일
         decoration: InputDecoration(
           labelText: label,
           // border: OutlineInputBorder(),
@@ -664,13 +669,15 @@ class _AddRecipeState extends State<AddRecipe> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface),
             ),
             Spacer(),
             SizedBox(
               width: 200,
               child: TextField(
                 controller: searchController,
+                style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
                   labelText: '$title 검색',
                   contentPadding:
@@ -735,18 +742,22 @@ class _AddRecipeState extends State<AddRecipe> {
   // 난이도 드롭다운
   Widget _buildDropdown(String label, List<String> options, String currentValue,
       Function(String) onChanged) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Text(label),
+          Text(label,
+              style: TextStyle(color: theme.colorScheme.onSurface)
+          ),
           SizedBox(width: 16),
           DropdownButton<String>(
             value: options.contains(currentValue) ? currentValue : options[0],
             items: options.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 value: value,
-                child: Text(value),
+                child: Text(value,
+                    style: TextStyle(color: theme.colorScheme.onSurface)),
               );
             }).toList(),
             onChanged: (newValue) {
@@ -768,7 +779,8 @@ class _AddRecipeState extends State<AddRecipe> {
       children: [
         Text(
           '조리 단계',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface),
         ),
         SizedBox(height: 8.0),
         ListView.builder(

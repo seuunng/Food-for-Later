@@ -118,7 +118,10 @@ class _AppEnvironmentSettingsState extends State<AppEnvironmentSettings> {
                     return DropdownMenuItem<String>(
                       value: font,
                       child: Text(font,
-                          style: TextStyle(color: theme.colorScheme.onSurface)),
+
+                          style: TextStyle(
+                              fontFamily: font,
+                              color: theme.colorScheme.onSurface)),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {

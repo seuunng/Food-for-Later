@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 
@@ -9,7 +10,7 @@ class FeedbackSubmission extends StatefulWidget {
 
 class _FeedbackSubmissionState extends State<FeedbackSubmission> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  String userId = '현재 유저아이디';
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
@@ -109,8 +110,12 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
             ),
             TextField(
               controller: _titleController,
+              style: TextStyle(color: theme.colorScheme.onSurface), // 입력 텍스트 스타일
               decoration: InputDecoration(
                 hintText: '제목을 입력하세요',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6), // 힌트 텍스트 스타일
+                ),
               ),
             ),
             SizedBox(height: 16),
@@ -121,8 +126,12 @@ class _FeedbackSubmissionState extends State<FeedbackSubmission> {
             ),
             TextField(
               controller: _contentController,
+              style: TextStyle(color: theme.colorScheme.onSurface), // 입력 텍스트 스타일
               decoration: InputDecoration(
                 hintText: '내용을 입력하세요',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6), // 힌트 텍스트 스타일
+                ),
               ),
               maxLines: 5, // 여러 줄 입력 가능
             ),

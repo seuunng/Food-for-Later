@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 
@@ -17,7 +18,7 @@ class ReportAnIssue extends StatefulWidget {
 
 class _ReportAnIssueState extends State<ReportAnIssue> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  String userId = '현재 유저아이디';
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
@@ -66,6 +67,7 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('신고하기'),
@@ -79,7 +81,8 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
               children: [
                 Text(
                   '구분',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface),
                 ),
                 Spacer(), // 텍스트와 드롭다운 사이 간격
                 Expanded(
@@ -89,7 +92,8 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
                     items: _categories.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
-                        child: Text(category),
+                        child: Text(category,
+                            style: TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -104,23 +108,33 @@ class _ReportAnIssueState extends State<ReportAnIssue> {
             SizedBox(height: 16),
             Text(
               '제목',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             TextField(
               controller: _titleController,
+              style: TextStyle(color: theme.colorScheme.onSurface), // 입력 텍스트 스타일
               decoration: InputDecoration(
                 hintText: '제목을 입력하세요',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6), // 힌트 텍스트 스타일
+                ),
               ),
             ),
             SizedBox(height: 16),
             Text(
               '내용',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             TextField(
               controller: _contentController,
+              style: TextStyle(color: theme.colorScheme.onSurface), // 입력 텍스트 스타일
               decoration: InputDecoration(
                 hintText: '내용을 입력하세요',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6), // 힌트 텍스트 스타일
+                ),
               ),
               maxLines: 5, // 여러 줄 입력 가능
             ),

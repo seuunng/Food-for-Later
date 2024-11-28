@@ -178,7 +178,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
           'userId': userId,
           'recipeId': recipeId,
           'isScraped': true,
-          'scrapedGroupName': '기본함'
+          'scrapedGroupName': '기본함',
+          'scrapedAt': FieldValue.serverTimestamp(),
         });
 
         setState(() {
@@ -550,7 +551,9 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                                             isScraped
                                                 ? Icons.bookmark
                                                 : Icons.bookmark_border,
-                                            size: 20), // 스크랩 아이콘 크기 조정
+                                            size: 20,
+
+                                      color: Colors.black,), // 스크랩 아이콘 크기 조정
                                         onPressed: () => _toggleScraped(recipe.id),
                                       ),
                                     ],

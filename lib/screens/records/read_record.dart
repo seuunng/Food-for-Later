@@ -76,8 +76,10 @@ class _ReadRecordState extends State<ReadRecord> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('기록 삭제'),
-                  content: Text('이 기록을 삭제하시겠습니까?'),
+                  title: Text('기록 삭제',
+                    style: TextStyle(color: theme.colorScheme.onSurface),),
+                  content: Text('이 기록을 삭제하시겠습니까?',
+                    style: TextStyle(color: theme.colorScheme.onSurface),),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -183,11 +185,13 @@ class _ReadRecordState extends State<ReadRecord> {
                               Text(
                                 ' | ',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
+                                    fontSize: 18, fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface),
                               ),
                               Text(
                                 rec.contents ?? 'No description',
-                                style: TextStyle(fontSize: 16),
+                                style: TextStyle(fontSize: 16,
+                                    color: theme.colorScheme.onSurface),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],

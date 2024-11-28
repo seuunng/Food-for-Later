@@ -36,19 +36,26 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
               .where('userId', isEqualTo: userId)
               .orderBy('createdAt', descending: true) // 최신순 정렬
               .get();
-      final categories = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'id': doc.id, // Firestore 문서 ID 저장
-          '기록 카테고리': data['zone'],
-          '분류': List<String>.from(data['units']),
-          '색상': Color(int.parse(data['color'].replaceFirst('#', '0xff'))),
-        };
-      }).toList();
 
-      setState(() {
-        userData = categories;
-      });
+      if (snapshot.docs.isEmpty) {
+        // 카테고리가 없으면 기본 카테고리 생성
+        await _createDefaultCategories();
+      } else {
+        // Firestore에서 데이터 가져오기
+        final categories = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id, // Firestore 문서 ID 저장
+            '기록 카테고리': data['zone'],
+            '분류': List<String>.from(data['units']),
+            '색상': Color(int.parse(data['color'].replaceFirst('#', '0xff'))),
+          };
+        }).toList();
+
+        setState(() {
+          userData = categories;
+        });
+      }
     } catch (e) {
       print('Error loading categories: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,7 +63,40 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       );
     }
   }
+  Future<void> _createDefaultCategories() async {
+    try {
+      final defaultCategories = [
+        {
+          'zone': '식사',
+          'units': ['아침', '점심', '저녁'],
+          'color': '#BBDEFB', // 스카이 블루
+        },
+        {
+          'zone': '간식',
+          'units': ['간식'],
+          'color': '#FFC1CC', // 핑크 블러쉬
+        },
+      ];
 
+      for (var category in defaultCategories) {
+        await FirebaseFirestore.instance.collection('record_categories').add({
+          'zone': category['zone'],
+          'units': category['units'],
+          'color': category['color'],
+          'userId': userId,
+          'createdAt': FieldValue.serverTimestamp(), // 생성 시간 추가
+        });
+      }
+
+      print('기본 카테고리가 생성되었습니다.');
+      _loadCategories(); // 새로 생성한 기본 카테고리 로드
+    } catch (e) {
+      print('기본 카테고리 생성 중 오류 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기본 카테고리 생성 중 오류가 발생했습니다.')),
+      );
+    }
+  }
   // 데이터 추가 함수
   void _addOrEditCategory({int? index}) {
     if (index != null) {
@@ -80,12 +120,14 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text(index == null ? '카테고리 추가' : '카테고리 수정'),
+              title: Text(index == null ? '카테고리 추가' : '카테고리 수정',
+                style: TextStyle(color: theme.colorScheme.onSurface),),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: _recordCategoryController,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: '기록 카테고리',
                       contentPadding: EdgeInsets.symmetric(
@@ -170,8 +212,10 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                   Container(
                     child: TextField(
                       controller: _unitController,
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: '분류 추가',
+                        labelStyle: TextStyle(color: theme.colorScheme.onSurface),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
                           vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
