@@ -196,18 +196,14 @@ class _ReadRecipeState extends State<ReadRecipe> {
         // 스크랩이 존재하면 업데이트
         DocumentSnapshot<Map<String, dynamic>> doc =
             existingScrapedRecipes.docs.first;
-        bool currentIsScraped = doc.data()?['isScraped'] ?? false;
 
         await FirebaseFirestore.instance
             .collection('scraped_recipes')
-            .doc(doc.id)
-            .update({
-          'isScraped': !currentIsScraped,
-          'scrapedAt': !currentIsScraped ? FieldValue.serverTimestamp() : null,
-        });
+            .doc(doc.id) // 문서 ID로 삭제
+            .delete();
 
         setState(() {
-          isScraped = !currentIsScraped;
+          isScraped = false; // 스크랩 해제 상태로 변경
         });
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

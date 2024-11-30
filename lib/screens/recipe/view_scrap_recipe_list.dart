@@ -91,6 +91,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
         snapshot = await _db
             .collection('scraped_recipes')
             .where('userId', isEqualTo: userId)
+            .orderBy('scrapedAt', descending: true)
             .get();
       } else {
         // 특정 그룹명을 기준으로 필터링
@@ -98,6 +99,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             .collection('scraped_recipes')
             .where('userId', isEqualTo: userId)
             .where('scrapedGroupName', isEqualTo: selectedFilter)
+            .orderBy('scrapedAt', descending: true)
             .get();
       }
 
