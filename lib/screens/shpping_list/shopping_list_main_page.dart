@@ -326,6 +326,7 @@ class ShoppingListMainPageState extends State<ShoppingListMainPage>
                 'FridgeId': fridgeId, // 선택된 냉장고
                 'fridgeCategoryId': fridgeCategoryId,
                 'userId': userId,
+                'registrationDate': Timestamp.fromDate(DateTime.now()),
                 // 'expirationDate': expirationDate,
                 // 'shelfLife': shelfLife,
               });

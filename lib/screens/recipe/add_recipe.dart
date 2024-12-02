@@ -530,9 +530,10 @@ class _AddRecipeState extends State<AddRecipe> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface
-              ),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             Spacer(),
             SizedBox(
@@ -669,8 +670,10 @@ class _AddRecipeState extends State<AddRecipe> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
             ),
             Spacer(),
             SizedBox(
@@ -747,9 +750,7 @@ class _AddRecipeState extends State<AddRecipe> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Text(label,
-              style: TextStyle(color: theme.colorScheme.onSurface)
-          ),
+          Text(label, style: TextStyle(color: theme.colorScheme.onSurface)),
           SizedBox(width: 16),
           DropdownButton<String>(
             value: options.contains(currentValue) ? currentValue : options[0],
@@ -779,7 +780,9 @@ class _AddRecipeState extends State<AddRecipe> {
       children: [
         Text(
           '조리 단계',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface),
         ),
         SizedBox(height: 8.0),

@@ -31,11 +31,12 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   // Firestore에서 카테고리 데이터를 로드하는 함수
   void _loadCategories() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('record_categories')
-              .where('userId', isEqualTo: userId)
-              .orderBy('createdAt', descending: true) // 최신순 정렬
-              .get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('record_categories')
+          .where('userId', isEqualTo: userId)
+          .where('isDeleted', isEqualTo: false)
+          .orderBy('createdAt', descending: true) // 최신순 정렬
+          .get();
 
       if (snapshot.docs.isEmpty) {
         // 카테고리가 없으면 기본 카테고리 생성
@@ -63,6 +64,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       );
     }
   }
+
   Future<void> _createDefaultCategories() async {
     try {
       final defaultCategories = [
@@ -70,11 +72,13 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
           'zone': '식사',
           'units': ['아침', '점심', '저녁'],
           'color': '#BBDEFB', // 스카이 블루
+          'isDeleted': false
         },
         {
           'zone': '간식',
           'units': ['간식'],
           'color': '#FFC1CC', // 핑크 블러쉬
+          'isDeleted': false
         },
       ];
 
@@ -85,10 +89,10 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
           'color': category['color'],
           'userId': userId,
           'createdAt': FieldValue.serverTimestamp(), // 생성 시간 추가
+          'isDeleted':  category['isDeleted'],
         });
       }
 
-      print('기본 카테고리가 생성되었습니다.');
       _loadCategories(); // 새로 생성한 기본 카테고리 로드
     } catch (e) {
       print('기본 카테고리 생성 중 오류 발생: $e');
@@ -97,6 +101,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       );
     }
   }
+
   // 데이터 추가 함수
   void _addOrEditCategory({int? index}) {
     if (index != null) {
@@ -104,8 +109,6 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       _recordCategoryController.text = userData[index]['기록 카테고리'];
       units = List<String>.from(userData[index]['분류']);
       _selectedColor = userData[index]['색상'] ?? Colors.grey[300];
-
-
     } else {
       // 추가 모드 초기화
       _recordCategoryController.clear();
@@ -120,8 +123,10 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text(index == null ? '카테고리 추가' : '카테고리 수정',
-                style: TextStyle(color: theme.colorScheme.onSurface),),
+              title: Text(
+                index == null ? '카테고리 추가' : '카테고리 수정',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -215,7 +220,8 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       style: TextStyle(color: theme.colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: '분류 추가',
-                        labelStyle: TextStyle(color: theme.colorScheme.onSurface),
+                        labelStyle:
+                            TextStyle(color: theme.colorScheme.onSurface),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 8.0, // 텍스트 필드 내부 좌우 여백 조절
                           vertical: 8.0, // 텍스트 필드 내부 상하 여백 조절
@@ -261,11 +267,18 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    _unitController.clear(); // 텍스트 필드 초기화
+                    Navigator.of(context).pop(); // 팝업 닫기
+                  },
                   child: Text('취소'),
                 ),
                 TextButton(
-                  onPressed: () => _saveCategory(index: index),
+                  onPressed: () {
+                    _saveCategory(index: index); // 저장 로직 호출
+                    _unitController.clear(); // 텍스트 필드 초기화
+                    Navigator.of(context).pop(); // 팝업 닫기
+                  },
                   child: Text(index == null ? '추가' : '수정'),
                   // onPressed: () {
                   //   setState(() {
@@ -316,6 +329,7 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
       'color': '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
       'userId': userId,
       'createdAt': FieldValue.serverTimestamp(), // 생성 시간 추가
+      'isDeleted': false
     };
 
     String? previousZone;
@@ -324,7 +338,9 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     try {
       if (index == null) {
         // 새로운 카테고리를 Firestore에 추가
-        await FirebaseFirestore.instance.collection('record_categories').add(category);
+        await FirebaseFirestore.instance
+            .collection('record_categories')
+            .add(category);
       } else {
         // 기존 카테고리를 Firestore에서 수정
         previousZone = userData[index]['기록 카테고리'];
@@ -349,7 +365,8 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
     }
   }
 
-  Future<void> _updateRecordsWithNewCategory(String? previousZone, List<String>? previousUnits) async {
+  Future<void> _updateRecordsWithNewCategory(
+      String? previousZone, List<String>? previousUnits) async {
     if (previousZone == null || previousUnits == null) return;
 
     try {
@@ -359,14 +376,16 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
           .get();
 
       for (var recordDoc in recordsSnapshot.docs) {
-        Map<String, dynamic> recordData = recordDoc.data() as Map<String, dynamic>;
+        Map<String, dynamic> recordData =
+            recordDoc.data() as Map<String, dynamic>;
 
         // 기록의 records 배열에서 이전 unit을 사용하고 있는지 확인
-        List<dynamic> updatedRecords = (recordData['records'] as List<dynamic>).map((record) {
+        List<dynamic> updatedRecords =
+            (recordData['records'] as List<dynamic>).map((record) {
           if (previousUnits.contains(record['unit'])) {
             // unit을 새로운 값으로 변경할 수 있는 로직 필요
             // 예시로 이전 unit을 새로운 값으로 변경
-            record['unit'] = record['unit'];  // 여기에 수정된 unit 로직을 추가할 수 있음
+            record['unit'] = record['unit']; // 여기에 수정된 unit 로직을 추가할 수 있음
           }
           return record;
         }).toList();
@@ -386,49 +405,22 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
   }
 
   // Firestore에서 카테고리를 삭제하는 함수
-  void _deleteCategory(int index) async {
+  Future<void> _deleteCategory(int index) async {
     String deletedZone = userData[index]['기록 카테고리'];
     List<String> deletedUnits = List<String>.from(userData[index]['분류']);
     try {
+      // 로컬 데이터에서 즉시 제거
+      setState(() {
+        userData[index]['isDeleted'] = true; // 삭제 상태로 표시
+      });
+
       await FirebaseFirestore.instance
           .collection('record_categories')
           .doc(userData[index]['id'])
-          .delete();
+          .update({'isDeleted': true});
 
-      // 2. record 컬렉션에서 해당 zone과 unit을 사용하는 항목 업데이트
-      QuerySnapshot recordsSnapshot = await FirebaseFirestore.instance
-          .collection('record')
-          .where('zone', isEqualTo: deletedZone)
-          .get();
-
-      // 3. 검색된 기록들을 업데이트
-      for (var recordDoc in recordsSnapshot.docs) {
-        Map<String, dynamic> recordData = recordDoc.data() as Map<String, dynamic>;
-
-        // 기록의 records 배열에서 삭제된 unit을 사용하고 있는지 확인
-        List<dynamic> updatedRecords = (recordData['records'] as List<dynamic>).map((record) {
-          if (deletedUnits.contains(record['unit'])) {
-            // unit이 삭제된 분류에 해당하면 '삭제된 분류'로 변경
-            record['unit'] = '삭제된 분류';
-          }
-          return record;
-        }).toList();
-
-        // Firestore에 업데이트된 데이터 반영
-        await FirebaseFirestore.instance
-            .collection('record')
-            .doc(recordDoc.id)
-            .update({
-          'zone': '삭제된 카테고리', // 삭제된 카테고리로 변경
-          'records': updatedRecords,
-        });
-      }
-
-      setState(() {
-        userData.removeAt(index);
-      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${userData[index]['기록 카테고리']} 삭제됨')),
+        SnackBar(content: Text('${userData[index]['기록 카테고리']}가 삭제되었습니다.')),
       );
     } catch (e) {
       print('Error deleting category: $e');
@@ -453,6 +445,10 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
               key: Key(record['id']), // 각 항목에 고유한 키를 부여
               direction: DismissDirection.endToStart, // 오른쪽에서 왼쪽으로만 스와이프 가능
               onDismissed: (direction) {
+                setState(() {
+                  userData.removeAt(index);
+                });
+
                 _deleteCategory(index);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('${record['기록 카테고리']} 삭제됨')),
@@ -483,18 +479,20 @@ class _EditRecordCategoriesState extends State<EditRecordCategories> {
                       color: theme.colorScheme.onSecondary,
                     ),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.edit,
-                          color: theme.colorScheme.onSecondary,
+                  trailing: record['isDeleted'] == true
+                      ? null
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit,
+                                color: theme.colorScheme.onSecondary,
+                              ),
+                              onPressed: () => _addOrEditCategory(index: index),
+                            ),
+                          ],
                         ),
-                        onPressed: () => _addOrEditCategory(index: index),
-                      ),
-                    ],
-                  ),
                 ),
               ));
         },

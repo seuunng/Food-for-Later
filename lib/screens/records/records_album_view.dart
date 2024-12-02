@@ -13,6 +13,7 @@ class RecordsAlbumView extends StatefulWidget {
   @override
   _RecordsAlbumViewState createState() => _RecordsAlbumViewState();
 }
+
 class _RecordsAlbumViewState extends State<RecordsAlbumView> {
   DateTime? startDate;
   DateTime? endDate;
@@ -37,18 +38,19 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
       endDate = endDateString != null && endDateString.isNotEmpty
           ? DateTime.parse(endDateString)
           : null;
-       selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
+      selectedCategories = prefs.getStringList('selectedCategories') ?? ['모두'];
       isLoading = false; // 로딩 완료
     });
   }
 
-  Map<String, dynamic>? _findRecordByImage(List<RecordModel> recordsList, String imagePath) {
+  Map<String, dynamic>? _findRecordByImage(
+      List<RecordModel> recordsList, String imagePath) {
     for (var record in recordsList) {
       for (var rec in record.records) {
         if (rec.images.contains(imagePath)) {
           return {
             'record': record, // 상위 레코드
-            'rec': rec        // 해당 이미지가 포함된 개별 레코드
+            'rec': rec // 해당 이미지가 포함된 개별 레코드
           };
         }
       }
@@ -61,7 +63,9 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
     // Firestore 쿼리 필터링
     Query query = FirebaseFirestore.instance.collection('record');
     if (userId != null) {
-      query = query.where('userId', isEqualTo: userId);
+      query = query
+          .where('userId', isEqualTo: userId)
+          .orderBy('date', descending: true);
     }
 
     // 검색 기간에 맞게 필터링
@@ -72,7 +76,9 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
     }
 
     // 카테고리 필터링 (모두가 아닌 경우에만 필터링 적용)
-    if (selectedCategories != null && selectedCategories!.isNotEmpty && !selectedCategories!.contains('모두')) {
+    if (selectedCategories != null &&
+        selectedCategories!.isNotEmpty &&
+        !selectedCategories!.contains('모두')) {
       query = query.where('zone', whereIn: selectedCategories);
     }
 
@@ -131,22 +137,20 @@ class _RecordsAlbumViewState extends State<RecordsAlbumView> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ReadRecord(
-                    recordId:  record.id ?? 'default_record_id',
+                    recordId: record.id ?? 'default_record_id',
                   ),
                 ),
               );
             }
           },
-          child:  _buildImageWidget(imageUrl),
+          child: _buildImageWidget(imageUrl),
         );
       },
     );
   }
 
   Widget _buildImageWidget(String imageUrl) {
-    if (Uri
-        .parse(imageUrl)
-        .isAbsolute) {
+    if (Uri.parse(imageUrl).isAbsolute) {
       // 네트워크 URL인 경우
       return Image.network(
         imageUrl,

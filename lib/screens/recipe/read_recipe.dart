@@ -24,7 +24,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   List<String> ingredients = []; // 재료 목록
   String recipeName = '';
-  int views=0;
+  int views = 0;
   // int serving = 0;
   // int time = 0;
   // String difficuty = '';
@@ -41,11 +41,13 @@ class _ReadRecipeState extends State<ReadRecipe> {
   PageController _pageController = PageController();
   int _currentPage = 0;
 
-
-
+  bool isAdmin = false;
+  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  
   @override
   void initState() {
     super.initState();
+    _checkAdminRole();
     searchKeywords = widget.searchKeywords;
     selectedIngredients = List.generate(ingredients.length, (index) {
       return !fridgeIngredients.contains(ingredients[index]);
@@ -62,6 +64,25 @@ class _ReadRecipeState extends State<ReadRecipe> {
     _pageController.dispose(); // 페이지 컨트롤러 해제
     super.dispose();
   }
+
+  Future<void> _checkAdminRole() async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
+          .instance
+          .collection('users')
+          .doc(currentUserId)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          isAdmin = userDoc.data()?['role'] == 'admin'; // 관리자 역할 확인
+        });
+      }
+    } catch (e) {
+      print("Error checking admin role: $e");
+    }
+  }
+  
   Future<Map<String, dynamic>> _fetchRecipeData() async {
     return await fetchRecipeData(widget.recipeId); // Firestore에서 데이터 가져오기
   }
@@ -80,11 +101,13 @@ class _ReadRecipeState extends State<ReadRecipe> {
       return {};
     }
   }
+
   Future<void> _fetchInitialRecipeName() async {
     var data = await fetchRecipeData(widget.recipeId);
     setState(() {
       recipeName = data['recipeName'] ?? 'Unnamed Recipe';
-      mainImages = List<String>.from(data['mainImages'] ?? []); // mainImages 업데이트
+      mainImages =
+          List<String>.from(data['mainImages'] ?? []); // mainImages 업데이트
     });
   }
 
@@ -170,7 +193,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
   }
 
   void _toggleScraped() async {
-
     try {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
           await FirebaseFirestore.instance
@@ -261,8 +283,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return AlertDialog(
-                title: Text('장바구니에 추가할 재료 선택',
-                  style: TextStyle(color: theme.colorScheme.onSurface),),
+                title: Text(
+                  '장바구니에 추가할 재료 선택',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
                 content: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -341,10 +365,14 @@ class _ReadRecipeState extends State<ReadRecipe> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('레시피 삭제',
-            style: TextStyle(color: theme.colorScheme.onSurface),),
-          content: Text('정말 이 레시피를 삭제하시겠습니까?',
-            style: TextStyle(color: theme.colorScheme.onSurface),),
+          title: Text(
+            '레시피 삭제',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          content: Text(
+            '정말 이 레시피를 삭제하시겠습니까?',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
           actions: [
             TextButton(
               child: Text('취소'),
@@ -366,10 +394,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
 
                   // 관련된 스크랩된 데이터 삭제
                   QuerySnapshot<Map<String, dynamic>> scrapedRecipesSnapshot =
-                  await FirebaseFirestore.instance
-                      .collection('scraped_recipes')
-                      .where('recipeId', isEqualTo: widget.recipeId)
-                      .get();
+                      await FirebaseFirestore.instance
+                          .collection('scraped_recipes')
+                          .where('recipeId', isEqualTo: widget.recipeId)
+                          .get();
 
                   for (var doc in scrapedRecipesSnapshot.docs) {
                     await FirebaseFirestore.instance
@@ -380,10 +408,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
 
                   // 관련된 좋아요 데이터 삭제
                   QuerySnapshot<Map<String, dynamic>> likedRecipesSnapshot =
-                  await FirebaseFirestore.instance
-                      .collection('liked_recipes')
-                      .where('recipeId', isEqualTo: widget.recipeId)
-                      .get();
+                      await FirebaseFirestore.instance
+                          .collection('liked_recipes')
+                          .where('recipeId', isEqualTo: widget.recipeId)
+                          .get();
 
                   for (var doc in likedRecipesSnapshot.docs) {
                     await FirebaseFirestore.instance
@@ -391,7 +419,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
                         .doc(doc.id)
                         .delete();
                   }
-
 
                   Navigator.of(context).pop();
                 } catch (e) {
@@ -411,7 +438,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
   Future<void> _increaseViewCount(String recipeId) async {
     try {
       DocumentReference recipeDoc =
-      FirebaseFirestore.instance.collection('recipe').doc(recipeId);
+          FirebaseFirestore.instance.collection('recipe').doc(recipeId);
 
       FirebaseFirestore.instance.runTransaction((transaction) async {
         DocumentSnapshot snapshot = await transaction.get(recipeDoc);
@@ -442,7 +469,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
       });
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -508,6 +534,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
             List<String> mainImages =
                 List<String>.from(data['mainImages'] ?? []);
 
+           final bool isOwner = currentUserId == data['userID'];
+           final bool showAdminOptions = isAdmin || isOwner;
+
             return SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,70 +581,73 @@ class _ReadRecipeState extends State<ReadRecipe> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      ReportAnIssue(
-                                          postNo: widget.recipeId,
-                                          postType: '레시피',
+                                  builder: (context) => ReportAnIssue(
+                                        postNo: widget.recipeId,
+                                        postType: '레시피',
                                       )));
                         },
                       ),
                       SizedBox(width: 4),
-                      Text('|'),
-                      SizedBox(width: 4),
-                      Container(
-                        child: TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        AddRecipe(recipeData: {
-                                          'id': widget.recipeId,
-                                          'recipeName': recipeName,
-                                          'mainImages': List<String>.from(
-                                              data['mainImages'] ?? []),
-                                          'ingredients': ingredients,
-                                          'themes': themes,
-                                          'methods': methods,
-                                          'serving': data['serving'],
-                                          'cookTime': data['time'],
-                                          'difficulty': data['difficulty'],
-                                          'steps': steps
-                                              .map((step) => {
-                                                    'description':
-                                                        step['description'] ??
+                      if (isAdmin || isOwner)
+                        Row(
+                          children: [
+                          Text('|'),
+                          SizedBox(width: 4),
+                          Container(
+                            child: TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            AddRecipe(recipeData: {
+                                              'id': widget.recipeId,
+                                              'recipeName': recipeName,
+                                              'mainImages': List<String>.from(
+                                                  data['mainImages'] ?? []),
+                                              'ingredients': ingredients,
+                                              'themes': themes,
+                                              'methods': methods,
+                                              'serving': data['serving'],
+                                              'cookTime': data['time'],
+                                              'difficulty': data['difficulty'],
+                                              'steps': steps
+                                                  .map((step) => {
+                                                        'description': step[
+                                                                'description'] ??
                                                             '',
-                                                    'image':
-                                                        step['image'] ?? '',
-                                                  })
-                                              .toList(),
-                                        })),
-                              ).then((result) {
-                                if (result == true) {
-                                  // 레시피 목록을 다시 불러오거나 화면을 새로고침
-                                  _refreshRecipeData(); // 레시피 데이터를 새로고침하는 메서드
-                                }
-                              });
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero, // 버튼 패딩을 없앰
-                              minimumSize: Size(40, 30), // 최소 크기 설정
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap, // 터치 영역 최소화
-                            ),
-                            child: Text('수정')),
-                      ),
-                      Container(
-                        child: TextButton(
-                            onPressed: _deleteRecipe,
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero, // 버튼 패딩을 없앰
-                              minimumSize: Size(40, 30), // 최소 크기 설정
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap, // 터치 영역 최소화
-                            ),
-                            child: Text('삭제')),
-                      ),
+                                                        'image':
+                                                            step['image'] ?? '',
+                                                      })
+                                                  .toList(),
+                                            })),
+                                  ).then((result) {
+                                    if (result == true) {
+                                      // 레시피 목록을 다시 불러오거나 화면을 새로고침
+                                      _refreshRecipeData(); // 레시피 데이터를 새로고침하는 메서드
+                                    }
+                                  });
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero, // 버튼 패딩을 없앰
+                                  minimumSize: Size(40, 30), // 최소 크기 설정
+                                  tapTargetSize: MaterialTapTargetSize
+                                      .shrinkWrap, // 터치 영역 최소화
+                                ),
+                                child: Text('수정')),
+                          ),
+                          Container(
+                            child: TextButton(
+                                onPressed: _deleteRecipe,
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero, // 버튼 패딩을 없앰
+                                  minimumSize: Size(40, 30), // 최소 크기 설정
+                                  tapTargetSize: MaterialTapTargetSize
+                                      .shrinkWrap, // 터치 영역 최소화
+                                ),
+                                child: Text('삭제')),
+                          ),
+                        ]),
                     ],
                   ),
                   RecipeReview(
@@ -687,7 +719,9 @@ class _ReadRecipeState extends State<ReadRecipe> {
             },
           ),
         ),
-        SizedBox(height: 10,),
+        SizedBox(
+          height: 10,
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(mainImages.length, (index) {
@@ -697,9 +731,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
               width: _currentPage == index ? 12 : 8,
               height: _currentPage == index ? 12 : 8,
               decoration: BoxDecoration(
-                color: _currentPage == index
-                    ? Colors.black
-                    : Colors.grey,
+                color: _currentPage == index ? Colors.black : Colors.grey,
                 shape: BoxShape.circle,
               ),
             );
@@ -724,8 +756,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
             children: [
               Icon(Icons.people, size: 25),
               Text('$servings 인분',
-                  style: TextStyle(color: theme.colorScheme.onSurface)
-              ),
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
             ],
           ),
           Column(
@@ -746,7 +777,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
             children: [
               Icon(Icons.remove_red_eye_sharp, size: 25),
               Text('$viewCount명 읽음',
-                  style: TextStyle(color: theme.colorScheme.onSurface)),  // 조회수 표시
+                  style:
+                      TextStyle(color: theme.colorScheme.onSurface)), // 조회수 표시
             ],
           ),
         ],
@@ -764,12 +796,13 @@ class _ReadRecipeState extends State<ReadRecipe> {
           Row(
             children: [
               Text('재료',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface)),
               Spacer(),
               Text("냉장고에 없는 재료 장바구니 담기",
-                  style: TextStyle(
-                      color: theme.colorScheme.onSurface)),
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
               _buildAddToShoppingListButton(),
             ],
           ),
@@ -820,12 +853,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('조리방법',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface
-              ),
+          Text(
+            '조리방법',
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface),
           ),
           SizedBox(
             height: 10,
@@ -848,8 +881,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Text(method,
-              style: TextStyle(color: theme.colorScheme.onSurface)
-                ),
+                    style: TextStyle(color: theme.colorScheme.onSurface)),
               );
             }).toList(),
           ),
@@ -866,11 +898,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('테마',
-              style: TextStyle(fontSize: 18,
+              style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: themes1.colorScheme.onSurface
-              )
-          ),
+                  color: themes1.colorScheme.onSurface)),
           SizedBox(
             height: 10,
           ),
@@ -909,7 +940,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('레시피',
-              style: TextStyle(fontSize: 18,
+              style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface)),
           ListView.builder(
@@ -944,9 +976,10 @@ class _ReadRecipeState extends State<ReadRecipe> {
                             ),
                       Expanded(
                         child: Center(
-                            child: Text(steps[index]['description']!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: theme.colorScheme.onSurface)),
+                          child: Text(steps[index]['description']!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: theme.colorScheme.onSurface)),
                         ),
                       ),
                     ],

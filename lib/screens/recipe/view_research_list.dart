@@ -2,10 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/models/recipe_model.dart';
 import 'package:food_for_later/screens/recipe/read_recipe.dart';
-import 'package:food_for_later/screens/recipe/view_recipe_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../models/preferred_food_model.dart';
 
 class ViewResearchList extends StatefulWidget {
   final List<String> category;
@@ -23,22 +21,20 @@ class ViewResearchList extends StatefulWidget {
 class _ViewResearchListState extends State<ViewResearchList> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
   String? selectedCategory;
   List<String> keywords = [];
   List<RecipeModel> matchingRecipes = [];
-
-  String searchKeyword = '';
-
   List<String> filteredItems = [];
-
-  double rating = 0.0;
-  bool isScraped = false;
   List<String> fridgeIngredients = [];
-
   List<String>? selectedCookingMethods = [];
   List<String>? selectedPreferredFoodCategories = [];
   List<String>? selectedPreferredFoods = [];
   List<String>? excludeKeywords = [];
+
+  String searchKeyword = '';
+  double rating = 0.0;
+  bool isScraped = false;
 
   Map<String, int> categoryPriority = {
     "육류": 10,
@@ -65,7 +61,9 @@ class _ViewResearchListState extends State<ViewResearchList> {
           selectedPreferredFoodCategories!.isNotEmpty) {
         // 모든 카테고리에 대해 선호 식품 불러오기
         for (String category in selectedPreferredFoodCategories!) {
-          _loadPreferredFoodsByCategory(widget.category.isNotEmpty ? widget.category[0] : '').then((_) {
+          _loadPreferredFoodsByCategory(
+                  widget.category.isNotEmpty ? widget.category[0] : '')
+              .then((_) {
             if (itemsByCategory.isNotEmpty) {
               loadRecipesByPreferredFoodsCategory(); // 재료들로 레시피 검색
             } else {
@@ -105,15 +103,21 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   Future<void> loadRecipes() async {
     try {
-      Query query = _db.collection('recipe').orderBy('date', descending: true);
-
+      Query query = _db
+          .collection('recipe')
+          .orderBy('date', descending: true);
       // 선택한 조리 방법을 포함한 레시피만 필터링
-      if (selectedCookingMethods != null &&
-          selectedCookingMethods!.isNotEmpty) {
+      if (selectedCookingMethods != null && selectedCookingMethods!.isNotEmpty) {
+        selectedCookingMethods = selectedCookingMethods!
+            .where((method) => method.trim().isNotEmpty)
+            .toList();
         for (String method in selectedCookingMethods!) {
           query = query.where('methods', arrayContains: method);
         }
+      } else {
+        print('selectedCookingMethods is null or empty');
       }
+
 
       QuerySnapshot querySnapshot = await query.get();
       List<DocumentSnapshot> filteredDocs = querySnapshot.docs;
@@ -124,11 +128,21 @@ class _ViewResearchListState extends State<ViewResearchList> {
       //   }
       // }
 
+      print('Total Docs Count from Firestore: ${querySnapshot.docs.length}');
+      // querySnapshot.docs.forEach((doc) {
+      //   print('Doc Data: ${doc.data()}');
+      // });
+
       if (keywords.isNotEmpty) {
         filteredDocs = filteredDocs.where((doc) {
           List<String> foods = List<String>.from(doc['foods'] ?? []);
           List<String> methods = List<String>.from(doc['methods'] ?? []);
           List<String> themes = List<String>.from(doc['themes'] ?? []);
+
+          // print('Doc Foods: $foods');
+          // print('Doc Methods: $methods');
+          // print('Doc Themes: $themes');
+          print('Keywords: $keywords');
 
           return keywords.any((keyword) {
             String lowerCaseKeyword = keyword.trim().toLowerCase();
@@ -143,9 +157,17 @@ class _ViewResearchListState extends State<ViewResearchList> {
             bool matchesThemes = themes
                 .map((theme) => theme.trim().toLowerCase())
                 .contains(lowerCaseKeyword);
+
+            // print('Keyword "$lowerCaseKeyword" matches: '
+            //     'Foods=$matchesFoods, Methods=$matchesMethods, Themes=$matchesThemes');
+
             return matchesFoods || matchesMethods || matchesThemes;
           });
         }).toList();
+        print('Filtered Docs Count: ${filteredDocs.length}');
+        // filteredDocs.forEach((doc) {
+        //   print('Doc Keywords: foods=${doc['foods']}, methods=${doc['methods']}, themes=${doc['themes']}');
+        // });
       }
 
       if (selectedPreferredFoods != null &&
@@ -156,6 +178,9 @@ class _ViewResearchListState extends State<ViewResearchList> {
           return selectedPreferredFoods!.any((food) => foods.contains(food));
         }).toList();
       }
+
+      print('selectedPreferredFoods ${selectedPreferredFoods}');
+
       List<String> prioritizedIngredients =
           await _applyCategoryPriority(fridgeIngredients);
 
@@ -170,27 +195,47 @@ class _ViewResearchListState extends State<ViewResearchList> {
         }).toList();
       }
 
-// print('prioritizedIngredients $prioritizedIngredients');
+      print('prioritizedIngredients ${prioritizedIngredients}');
 
       // 제외할 키워드를 포함하지 않는 레시피 필터링
       if (excludeKeywords != null && excludeKeywords!.isNotEmpty) {
         filteredDocs = filteredDocs.where((doc) {
           List<String> foods = List<String>.from(doc['foods']);
-          List<String> methods = List<String>.from(doc[
-              'methods']); // excludeKeywords에 해당하는 항목이 foods에 포함되지 않은 경우만 필터링
+          List<String> methods = List<String>.from(doc['methods']);
+          // excludeKeywords에 해당하는 항목이 foods에 포함되지 않은 경우만 필터링
           List<String> items = [...foods, ...methods];
           return !excludeKeywords!.any((exclude) => items.contains(exclude));
         }).toList();
       }
 
+      print('excludeKeywords ${excludeKeywords}');
+
       // 불러온 레시피들 matchingRecipes 리스트에 저장
-      setState(() {
-        matchingRecipes = filteredDocs.map((doc) {
-          return RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>);
-        }).toList();
-        keywords = widget.category;
-      });
-      // print('matchingRecipes $matchingRecipes');
+      try {
+        setState(() {
+          matchingRecipes = filteredDocs.map((doc) {
+            try {
+              print('Mapping doc to RecipeModel: ${doc.data()}');
+              return RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>);
+            } catch (e) {
+              print('Error converting doc to RecipeModel: $e');
+              return null;
+            }
+          }).whereType<RecipeModel>().toList();
+        });
+        print('Matching Recipes After Mapping: $matchingRecipes');
+      } catch (e) {
+        print('Error during setState for matchingRecipes: $e');
+      }
+
+      print('Matching Recipes Count: ${matchingRecipes.length}');
+      // filteredDocs.forEach((doc) {
+      //   final data = doc.data() as Map<String, dynamic>;
+      //   print('Doc Foods: ${data['foods']}');
+      //   print('Doc Methods: ${data['methods']}');
+      //   print('Doc Themes: ${data['themes']}');
+      // });
+
     } catch (e) {
       print('Error loading recipes: $e');
     }
@@ -227,7 +272,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
   Future<void> _loadFridgeItemsFromFirestore() async {
     try {
       final snapshot =
-          await FirebaseFirestore.instance.collection('fridge_items').get();
+          await FirebaseFirestore.instance
+              .collection('fridge_items')
+              .where('userId', isEqualTo: userId)
+              .get();
 
       setState(() {
         fridgeIngredients =
@@ -266,6 +314,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       selectedPreferredFoodCategories =
           prefs.getStringList('selectedPreferredFoodCategories');
       excludeKeywords = prefs.getStringList('excludeKeywords');
+      print('Loaded selectedCookingMethods: $selectedCookingMethods');
     });
   }
 
@@ -281,8 +330,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        final Map<String, dynamic>? categoryMap = data['category'] as Map<String, dynamic>?;
-        final List<dynamic>? items = categoryMap?[categoryKey] as List<dynamic>?;  // 비건 키로 배열 접근
+        final Map<String, dynamic>? categoryMap =
+            data['category'] as Map<String, dynamic>?;
+        final List<dynamic>? items =
+            categoryMap?[categoryKey] as List<dynamic>?; // 비건 키로 배열 접근
 
         if (categoryKey != null && items != null) {
           allFoods[categoryKey] = items.map((item) => item.toString()).toList();
@@ -292,14 +343,12 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         this.itemsByCategory = allFoods; // 불러온 식품 목록 저장
       });
-
     } catch (e) {
       print('Error loading preferred foods by category: $e');
     }
   }
 
   Future<void> loadRecipesByPreferredFoodsCategory() async {
-
     if (itemsByCategory.isEmpty) {
       return; // 카테고리 재료가 없으면 검색하지 않음
     }
@@ -322,7 +371,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         matchingRecipes = filteredDocs
             .map((doc) =>
-            RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>))
+                RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>))
             .toList();
       });
     } catch (e) {
@@ -342,11 +391,9 @@ class _ViewResearchListState extends State<ViewResearchList> {
       for (var doc in snapshot.docs) {
         String foodsName = doc['foodsName'];
         String defaultCategory = doc['defaultCategory'];
-
         // 재료 이름을 key, 카테고리를 value로 설정
         ingredientToCategory[foodsName] = defaultCategory;
       }
-
       return ingredientToCategory; // 재료-카테고리 맵 반환
     } catch (e) {
       print("Error loading ingredient categories: $e");
@@ -404,7 +451,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         matchingRecipes = filteredRecipes;
       });
-      print('matchingRecipes $matchingRecipes');
     } else {
       loadRecipes();
     }
@@ -417,8 +463,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         matchingRecipes = filteredRecipes;
       });
-      // print('_searchByCategoryKeywords $keywords');
-      // print('_searchByCategoryKeywords $filteredRecipes');
     }
   }
 
@@ -444,6 +488,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       print('검색어 저장 중 오류 발생: $e');
     }
   }
+
   Future<List<String>> _applyCategoryPriority(
       List<String> fridgeIngredients) async {
     // Firestore에서 재료-카테고리 데이터를 불러옴
@@ -467,7 +512,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
     // 최종적으로 상위 10개의 재료를 선택
     List<String> topIngredients =
         prioritizedIngredients.map((entry) => entry.key).take(10).toList();
-// print('topIngredients $topIngredients');
+
     return topIngredients;
   }
 
@@ -476,11 +521,11 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
     try {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
-      await FirebaseFirestore.instance
-          .collection('scraped_recipes')
-          .where('recipeId', isEqualTo: recipeId)
-          .where('userId', isEqualTo: userId)
-          .get();
+          await FirebaseFirestore.instance
+              .collection('scraped_recipes')
+              .where('recipeId', isEqualTo: recipeId)
+              .where('userId', isEqualTo: userId)
+              .get();
 
       if (existingScrapedRecipes.docs.isEmpty) {
         // 스크랩이 존재하지 않으면 새로 추가
@@ -489,7 +534,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
           'recipeId': recipeId,
           'isScraped': true,
           'scrapedGroupName': '기본함',
-        'scrapedAt': FieldValue.serverTimestamp(),
+          'scrapedAt': FieldValue.serverTimestamp(),
         });
 
         setState(() {
@@ -521,7 +566,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
     }
   }
 
-
   void _refreshRecipeData() {
     loadRecipes(); // 레시피 목록을 다시 불러오는 메서드
   }
@@ -549,7 +593,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
                           decoration: InputDecoration(
                             hintText: '검색어 입력',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
+                            contentPadding: EdgeInsets.symmetric(
+                                vertical: 8.0, horizontal: 10.0),
                           ),
                           onSubmitted: (value) {
                             _searchItems(value);
@@ -573,6 +618,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       ),
     );
   }
+
   Widget _buildChips() {
     final theme = Theme.of(context);
     return Wrap(
@@ -581,7 +627,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
       children: [
         _buildFridgeIngredientsChip(), // 냉장고 재료 Chip 먼저 렌더링
         ...keywords
-            .where((keyword) => !(useFridgeIngredientsState && fridgeIngredients.contains(keyword)))
+            .where((keyword) => !(useFridgeIngredientsState &&
+                fridgeIngredients.contains(keyword)))
             .map((keyword) {
           return Chip(
             // backgroundColor: theme.scaffoldBackgroundColor,
@@ -757,10 +804,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                 _buildRatingStars(recipeRating),
                                 IconButton(
                                   icon: Icon(
-                                      isScraped
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_border,
-                                      size: 20,
+                                    isScraped
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                    size: 20,
                                     color: Colors.black,
                                   ), // 스크랩 아이콘 크기 조정
                                   onPressed: () => _toggleScraped(recipe.id),
@@ -781,12 +828,15 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                             .contains(ingredient);
                                         bool isKeyword =
                                             keywords.contains(ingredient);
-                                        bool isFromPreferredFoods = itemsByCategory.values.any((list) => list.contains(ingredient));
+                                        bool isFromPreferredFoods =
+                                            itemsByCategory.values.any((list) =>
+                                                list.contains(ingredient));
                                         return Container(
                                           padding: EdgeInsets.symmetric(
                                               vertical: 2.0, horizontal: 4.0),
                                           decoration: BoxDecoration(
-                                            color: isKeyword || isFromPreferredFoods
+                                            color: isKeyword ||
+                                                    isFromPreferredFoods
                                                 ? Colors.lightGreen
                                                 : inFridge
                                                     ? Colors.grey
@@ -802,7 +852,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                             ingredient,
                                             style: TextStyle(
                                               fontSize: 12.0,
-                                              color: isKeyword || isFromPreferredFoods
+                                              color: isKeyword ||
+                                                      isFromPreferredFoods
                                                   ? Colors.white
                                                   : inFridge
                                                       ? Colors.white

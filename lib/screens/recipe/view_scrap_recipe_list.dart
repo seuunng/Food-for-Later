@@ -51,6 +51,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       isLoading = false; // 로딩 상태 종료
     });
   }
+
   Future<void> _loadScrapedGroups() async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
@@ -75,6 +76,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       print('Error loading scraped groups: $e');
     }
   }
+
   // 레시피 목록 필터링 함수
   List<RecipeModel> getFilteredRecipes() {
     if (selectedFilter == '기본함') {
@@ -235,7 +237,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
     }
   }
 
-  Future<void> _addNewScrapedGroupToFirestore(String newScrapedGroupName) async {
+  Future<void> _addNewScrapedGroupToFirestore(
+      String newScrapedGroupName) async {
     final ref = FirebaseFirestore.instance.collection('scraped_group');
     try {
       await ref.add({
@@ -294,6 +297,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       },
     );
   }
+
   // 선택된 냉장고 삭제 함수
   void _deleteCategory(
       String category, List<String> categories, String categoryType) {
@@ -327,8 +331,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                     }
                     setState(() {
                       _scraped_groups.remove(category);
-                      if ( _scraped_groups.isNotEmpty) {
-                        selectedFilter =  _scraped_groups.first;
+                      if (_scraped_groups.isNotEmpty) {
+                        selectedFilter = _scraped_groups.first;
                       } else {
                         _createDefaultGroup(); // 모든 냉장고가 삭제되면 기본 냉장고 생성
                       }
@@ -366,7 +370,6 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -419,26 +422,24 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             ),
           ],
         ),
-
-    bottomNavigationBar: selectedRecipes.isNotEmpty
-        ? Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: NavbarButton(
-          buttonTitle: '스크랩 그룹 변경',
-          onPressed: () async {
-            // 그룹 변경 팝업 표시
-            String? newGroupName = await _showGroupChangeDialog();
-            if (newGroupName != null) {
-              await updateScrapedGroupName(newGroupName);
-            }
-          },
-        ),
-      ),
-    )
-        : null
-    );
+        bottomNavigationBar: selectedRecipes.isNotEmpty
+            ? Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: NavbarButton(
+                    buttonTitle: '스크랩 그룹 변경',
+                    onPressed: () async {
+                      // 그룹 변경 팝업 표시
+                      String? newGroupName = await _showGroupChangeDialog();
+                      if (newGroupName != null) {
+                        await updateScrapedGroupName(newGroupName);
+                      }
+                    },
+                  ),
+                ),
+              )
+            : null);
   }
 
   Widget _buildRecipeGrid() {
@@ -467,20 +468,20 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             builder: (context, snapshot) {
               bool isScraped = snapshot.data ?? false;
               return Row(
-                  children: [
-                    Checkbox(
-                      value: selectedRecipes.contains(recipe.id),
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            selectedRecipes.add(recipe.id);
-                          } else {
-                            selectedRecipes.remove(recipe.id);
-                          }
-                        });
-                      },
-                    ),
-                    Expanded(
+                children: [
+                  Checkbox(
+                    value: selectedRecipes.contains(recipe.id),
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          selectedRecipes.add(recipe.id);
+                        } else {
+                          selectedRecipes.remove(recipe.id);
+                        }
+                      });
+                    },
+                  ),
+                  Expanded(
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -492,7 +493,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                                     )));
                       },
                       child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 8.0),
+                        padding: EdgeInsets.symmetric(
+                            vertical: 1.0, horizontal: 8.0),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           // border: Border.all(color: Colors.green, width: 2),
@@ -505,7 +507,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                               width: 60.0,
                               height: 60.0,
                               decoration: BoxDecoration(
-                                color: Colors.grey, // Placeholder color for image
+                                color:
+                                    Colors.grey, // Placeholder color for image
                                 borderRadius: BorderRadius.circular(4.0),
                               ),
                               child: hasMainImage
@@ -514,7 +517,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                                       width: 50,
                                       height: 50,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
                                         return Icon(Icons.error);
                                       },
                                     )
@@ -535,7 +539,8 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                                     children: [
                                       Container(
                                         width:
-                                            MediaQuery.of(context).size.width * 0.3,
+                                            MediaQuery.of(context).size.width *
+                                                0.3,
                                         child: Text(
                                           recipeName,
                                           style: TextStyle(
@@ -550,13 +555,14 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                                       _buildRatingStars(recipeRating),
                                       IconButton(
                                         icon: Icon(
-                                            isScraped
-                                                ? Icons.bookmark
-                                                : Icons.bookmark_border,
-                                            size: 20,
-
-                                      color: Colors.black,), // 스크랩 아이콘 크기 조정
-                                        onPressed: () => _toggleScraped(recipe.id),
+                                          isScraped
+                                              ? Icons.bookmark
+                                              : Icons.bookmark_border,
+                                          size: 20,
+                                          color: Colors.black,
+                                        ), // 스크랩 아이콘 크기 조정
+                                        onPressed: () =>
+                                            _toggleScraped(recipe.id),
                                       ),
                                     ],
                                   ), // 간격 추가
@@ -569,9 +575,9 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
                         ),
                       ),
                     ),
-                                  ),
-                  ],
-                );
+                  ),
+                ],
+              );
             });
       },
     );
@@ -650,6 +656,7 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
       }),
     );
   }
+
   Future<String?> _showGroupChangeDialog() async {
     String? newGroupName;
     return showDialog<String>(
@@ -661,9 +668,9 @@ class _ViewScrapRecipeListState extends State<ViewScrapRecipeList> {
             value: _scraped_groups.isNotEmpty ? _scraped_groups[0] : null,
             items: _scraped_groups
                 .map((group) => DropdownMenuItem(
-              value: group,
-              child: Text(group),
-            ))
+                      value: group,
+                      child: Text(group),
+                    ))
                 .toList(),
             onChanged: (value) {
               newGroupName = value;

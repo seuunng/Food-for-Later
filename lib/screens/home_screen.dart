@@ -184,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return null;
     }
   }
+
   Future<void> _checkAdminRole() async {
     String? role = await _getUserRole();
     if (role == 'admin') {
@@ -318,3 +319,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

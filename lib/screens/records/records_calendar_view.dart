@@ -99,7 +99,9 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
     final theme = Theme.of(context);
     Query query = FirebaseFirestore.instance
         .collection('record')
-        .where('userId', isEqualTo: userId);
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true);
+    ;
 
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {
@@ -262,18 +264,17 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                           child: Container(
                             // 날짜 컨테이너
                             decoration: BoxDecoration(
-                              color: isSelected
-                                  ? theme.colorScheme.secondary
-                                  : isToday
-                                      ? theme.colorScheme.secondary
-                                      : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: isSelected
-                                  ? Border.all(
-                                      color: theme.colorScheme.secondary,
-                                      width: 2.0)
-                                  : null
-                            ),
+                                color: isSelected
+                                    ? theme.colorScheme.secondary
+                                    : isToday
+                                        ? theme.colorScheme.secondary
+                                        : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8.0),
+                                border: isSelected
+                                    ? Border.all(
+                                        color: theme.colorScheme.secondary,
+                                        width: 2.0)
+                                    : null),
                             child: Align(
                               alignment: Alignment.topLeft,
                               child: Padding(
@@ -330,7 +331,8 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                                                     (context) =>
                                                                         ReadRecord(
                                                                   recordId:
-                                                                      record.id!,
+                                                                      record
+                                                                          .id!,
                                                                 ),
                                                               ),
                                                             );

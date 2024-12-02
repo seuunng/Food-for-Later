@@ -146,8 +146,10 @@ class _RecordsListViewState extends State<RecordsListView> {
   Widget _buildRecordsSection() {
     final theme = Theme.of(context);
     // Firestore 쿼리 필터링
-    Query query = FirebaseFirestore.instance.collection('record')
-        .where('userId', isEqualTo: userId);
+    Query query = FirebaseFirestore.instance
+        .collection('record')
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true);
 
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {
@@ -157,7 +159,9 @@ class _RecordsListViewState extends State<RecordsListView> {
     }
 
     // 카테고리 필터링 (모두가 아닌 경우에만 필터링 적용)
-    if (selectedCategories != null && selectedCategories!.isNotEmpty && !selectedCategories!.contains('모두')) {
+    if (selectedCategories != null &&
+        selectedCategories!.isNotEmpty &&
+        !selectedCategories!.contains('모두')) {
       query = query.where('zone', whereIn: selectedCategories);
     }
 
@@ -352,16 +356,20 @@ class _RecordsListViewState extends State<RecordsListView> {
                                   children: [
                                     Text(
                                       rec.unit ?? 'Unknown Unit',
-                                      style: TextStyle(fontSize: 12,
+                                      style: TextStyle(
+                                          fontSize: 12,
                                           color: theme.colorScheme.onSurface),
                                     ),
                                     SizedBox(width: 4),
                                     Text('|',
-                                        style: TextStyle(color: theme.colorScheme.onSurface)),
+                                        style: TextStyle(
+                                            color:
+                                                theme.colorScheme.onSurface)),
                                     SizedBox(width: 4),
                                     Text(
                                       rec.contents ?? 'Unknown contents',
-                                      style: TextStyle(fontSize: 12,
+                                      style: TextStyle(
+                                          fontSize: 12,
                                           color: theme.colorScheme.onSurface),
                                     ),
                                   ],

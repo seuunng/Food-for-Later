@@ -37,21 +37,45 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
       final snapshot = await _db
           .collection('record_categories')
           .where('userId', isEqualTo: userId)
+          .where('isDeleted', isEqualTo: false)// 최신순 정렬
           .get();
-      final categories = snapshot.docs.map((doc) {
-        return RecordCategoryModel.fromFirestore(doc);
-      }).toList();
 
-      setState(() {
-        categoryOptions = {
-          '모두': selectedCategories.contains('모두'),
-          for (var category in categories)
-            category.zone: selectedCategories.contains(category.zone),
-        };
-        //     .toList();
-      });
+      if (snapshot.docs.isEmpty) {
+        // 기본 카테고리 생성
+        await _createDefaultCategories();
+      } else {
+        // Firestore에서 데이터 가져오기
+        final categories = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'category': data['zone'] ?? '기록 없음',
+            'fields': data['units'] != null
+                ? List<String>.from(data['units'])
+                : [],
+            'color': data['color'] != null
+                ? Color(int.parse(data['color'].replaceFirst('#', '0xff')))
+                : Colors.grey,
+          };
+        }).toList();
 
-      print('selectedCategories: $selectedCategories');
+        final prefs = await SharedPreferences.getInstance();
+        final localSelectedCategories = prefs.getStringList('selectedCategories') ?? [];
+
+        // 카테고리를 categoryOptions에 반영
+        setState(() {
+          categoryOptions = {
+            for (var category in categories)
+              category['category']: localSelectedCategories.contains(category['category']),
+          };
+
+          categoryOptions['모두'] = localSelectedCategories.length == categories.length;
+
+          // "모두" 옵션 추가
+          selectedCategories = localSelectedCategories.isEmpty
+              ? ['모두']
+              : localSelectedCategories;
+        });
+      }
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,14 +83,51 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
       );
     }
   }
+  Future<void> _createDefaultCategories() async {
+    try {
+      final defaultCategories = [
+        {
+          'zone': '식사',
+          'units': ['아침', '점심', '저녁'],
+          'color': '#BBDEFB', // 스카이 블루
+          'isDeleted': false
+        },
+        {
+          'zone': '간식',
+          'units': ['간식'],
+          'color': '#FFC1CC', // 핑크 블러쉬
+          'isDeleted': false
+        },
+      ];
+
+      for (var category in defaultCategories) {
+        await FirebaseFirestore.instance.collection('record_categories').add({
+          'zone': category['zone'],
+          'units': category['units'],
+          'color': category['color'],
+          'userId': userId,
+          'createdAt': FieldValue.serverTimestamp(), // 생성 시간 추가
+          'isDeleted':  category['isDeleted'],
+        });
+      }
+
+      _loadCategoryFromFirestore(); // 새로 생성한 기본 카테고리 로드
+    } catch (e) {
+      print('기본 카테고리 생성 중 오류 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기본 카테고리 생성 중 오류가 발생했습니다.')),
+      );
+    }
+  }
 
   Future<void> _loadSearchSettingsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      selectedCategories = prefs.getStringList('selectedCategories') ?? [];
+    final localSelectedCategories = prefs.getStringList('selectedCategories') ?? [];
 
-      print(
-          '_loadSearchSettingsFromLocal() selectedCategories: $selectedCategories');
+    setState(() {
+      selectedCategories = localSelectedCategories;
+      selectedPeriod = prefs.getString('selectedPeriod') ?? '1년';
+
       final startDateString = prefs.getString('startDate');
       startDate = startDateString != null && startDateString.isNotEmpty
           ? DateTime.parse(startDateString)
@@ -76,19 +137,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
       endDate = endDateString != null && endDateString.isNotEmpty
           ? DateTime.parse(endDateString)
           : DateTime.now();
-      selectedPeriod = prefs.getString('selectedPeriod') ?? '1년';
 
-      categoryOptions = {
-        for (var key in categoryOptions.keys)
-          key: selectedCategories.isEmpty || selectedCategories.contains(key),
-      };
-
-      // 모든 카테고리가 선택된 경우 "모두" 선택
-      if (selectedCategories.length == categoryOptions.length - 1) {
-        categoryOptions['모두'] = true;
-      } else {
-        categoryOptions['모두'] = false;
-      }
     });
   }
 
@@ -191,7 +240,6 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 레시피 출처 선택
             Text(
               '카테고리 선택',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
@@ -229,19 +277,7 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
                 );
               }).toList(),
             ),
-            // Column(
-            //   children: categoryOptions.keys.map((String category) {
-            //     return CheckboxListTile(
-            //       title: Text(category),
-            //       value: categoryOptions[category],
-            //       onChanged: (bool? isSelected) {
-            //         _onCategoryChanged(category, isSelected);
-            //       },
-            //     );
-            //   }).toList(),
-            // ),
             SizedBox(height: 16),
-
             // 제외 검색어 선택
             Text(
               '기간 선택',

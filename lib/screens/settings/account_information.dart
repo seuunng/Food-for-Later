@@ -123,7 +123,6 @@ class _AccountInformationState extends State<AccountInformation> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface),
             ),
-
             Row(
               children: [
                 Spacer(),
@@ -418,14 +417,12 @@ class _AccountInformationState extends State<AccountInformation> {
             TextButton(
               child: Text('로그아웃'),
               onPressed: () async {
-                Navigator.pop(context);
-                await recordSessionEnd();
-                await FirebaseAuth.instance.signOut(); // 로그아웃 처리
+                await recordSessionEnd(); // 세션 종료 기록
+                await FirebaseAuth.instance.signOut(); // Firebase 로그아웃
+
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => LoginPage()), // 로그인 페이지로 이동
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => LoginPage()), // 로그인 페이지로 이동
                   );
                 });
               },

@@ -88,6 +88,8 @@ class _CreateRecordState extends State<CreateRecord> {
       final snapshot = await FirebaseFirestore.instance
           .collection('record_categories')
           .where('userId', isEqualTo: userId)
+          .where('isDeleted', isEqualTo: false)
+          .orderBy('createdAt', descending: true) // 최신순 정렬
           .get();
 
       if (snapshot.docs.isEmpty) {
@@ -136,11 +138,13 @@ class _CreateRecordState extends State<CreateRecord> {
           'zone': '식사',
           'units': ['아침', '점심', '저녁'],
           'color': '#BBDEFB',
+          'isDeleted': false
         },
         {
           'zone': '간식',
           'units': ['간식'],
           'color': '#FFC1CC',
+          'isDeleted': false
         },
       ];
 
@@ -150,7 +154,8 @@ class _CreateRecordState extends State<CreateRecord> {
           'zone': category['zone'],
           'units': category['units'],
           'color': category['color'],
-          'createdAt': current.toIso8601String()
+          'createdAt': current.toIso8601String(),
+          'isDeleted':  category['isDeleted'],
         });
       }
 
