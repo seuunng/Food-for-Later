@@ -428,7 +428,11 @@ class _RecordSearchSettingsState extends State<RecordSearchSettings> {
             buttonTitle: '저장',
             onPressed: () async {
               await _saveSearchSettingsToLocal(); // 설정을 로컬에 저장
-              Navigator.pop(context);
+              Navigator.pop(context, {
+                'selectedCategories': selectedCategories,
+                'startDate': startDate,
+                'endDate': endDate,
+              });
             },
           ),
         ),

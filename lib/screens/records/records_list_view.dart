@@ -172,32 +172,39 @@ class _RecordsListViewState extends State<RecordsListView> {
         builder: (BuildContext context,
             AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
           if (snapshot.hasError) {
+            print('StreamBuilder Error: ${snapshot.error}');
             return Center(
               child: Text('일정 정보를 가져오지 못했습니다.',
                   style: TextStyle(color: theme.colorScheme.onSurface)),
             );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
+            print('StreamBuilder: No data found');
             return Center(
               child: CircularProgressIndicator(), // 로딩 상태
             );
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            // 데이터가 없는 경우
+            print('StreamBuilder: No data found');
             return Center(
               child: Text('조건에 맞는 레코드가 없습니다.',
                   style: TextStyle(color: theme.colorScheme.onSurface)),
             );
           }
 
-          final recordsList = snapshot.data!.docs
-              .map(
-                (QueryDocumentSnapshot e) => RecordModel.fromJson(
+          final recordsList = snapshot.data!.docs.map(
+                (QueryDocumentSnapshot e) {
+              try {
+                return RecordModel.fromJson(
                   e.data() as Map<String, dynamic>,
                   id: e.id,
-                ),
-              )
-              .toList();
+                );
+              } catch (e) {
+                print('Error parsing record: $e');
+                return null; // 오류 발생 시 null 반환
+              }
+            },
+          ).where((record) => record != null).toList();
 
           return ListView.builder(
             shrinkWrap: true,
@@ -209,10 +216,10 @@ class _RecordsListViewState extends State<RecordsListView> {
               // print('Record Type: ${record.runtimeType}');
 
               return Column(
-                  children: List.generate(record.records.length, (recIndex) {
-                final rec = record.records[recIndex];
+                  children: List.generate(record?.records.length ?? 0, (recIndex) {
+                final rec = record?.records[recIndex];
                 return Dismissible(
-                  key: Key('${record.id}_$recIndex'),
+                  key: Key('${record?.id}_$recIndex'),
                   // 고유한 키
                   direction: DismissDirection.horizontal,
                   // 좌우 스와이프 가능
@@ -242,7 +249,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                   confirmDismiss: (direction) async {
                     if (direction == DismissDirection.startToEnd) {
                       // 왼쪽 스와이프 시 수정 확인 창
-                      _editRecord(record.id, rec);
+                      _editRecord(record?.id ?? 'default_record_id', rec!);
                       return false; // true로 설정하면 수정 기능 후에도 항목이 사라짐
                     } else if (direction == DismissDirection.endToStart) {
                       // 오른쪽 스와이프 시 삭제 확인 창
@@ -276,21 +283,21 @@ class _RecordsListViewState extends State<RecordsListView> {
                   onDismissed: (direction) {
                     if (direction == DismissDirection.endToStart) {
                       // 레코드가 2개 이상일 때, 해당 레코드만 삭제
-                      if (record.records.length > 1) {
-                        _deleteIndividualRecord(record, rec);
+                      if ((record?.records.length ?? 0) > 1) {
+                        _deleteIndividualRecord(record!, rec!);
                       } else {
                         // 레코드가 1개일 때, 전체 레코드 삭제
-                        _deleteRecord(record.id, rec);
+                        _deleteRecord(record?.id ?? 'default_record_id', rec!);
                       }
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('레코드가 삭제되었습니다.')),
                       );
                       setState(() {
                         // 리스트에서 레코드를 제거
-                        record.records.removeAt(recIndex);
+                        record?.records.removeAt(recIndex);
 
                         // recordsList에서 항목이 비어 있는 경우 제거
-                        if (record.records.isEmpty) {
+                        if (record?.records.isEmpty ?? false) {
                           recordsList.removeAt(index);
                         }
                       });
@@ -298,16 +305,11 @@ class _RecordsListViewState extends State<RecordsListView> {
                   },
                   child: InkWell(
                     onTap: () {
-                      // 개별 rec 데이터 전달
-                      // Map<String, dynamic> record = {
-                      //   'record': recordsList[index], // 상위 레코드
-                      //   'rec': rec, // 개별 레코드
-                      // };
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ReadRecord(
-                            recordId: record.id ?? 'default_record_id',
+                            recordId: record?.id ?? 'unknown',
                           ),
                         ),
                       );
@@ -321,7 +323,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                           Container(
                             width: 4,
                             height: 50, // 컬러 바의 높이 설정
-                            color: _convertColor(record.color),
+                            color: _convertColor(record?.color ?? '#FFFFFF'),
                           ),
                           SizedBox(width: 8), // 컬러 바와 텍스트 사이 간격
 
@@ -332,7 +334,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                 Row(
                                   children: [
                                     Text(
-                                      record.zone ?? 'Unknown zone',
+                                      record?.zone ?? 'Unknown zone',
                                       style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -343,7 +345,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                     SizedBox(width: 4),
                                     Text(
                                       DateFormat('yyyy-MM-dd')
-                                              .format(record.date) ??
+                                              .format(record!.date!) ??
                                           'Unknown Date',
                                       style: TextStyle(
                                           fontSize: 12,
@@ -355,7 +357,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                 Row(
                                   children: [
                                     Text(
-                                      rec.unit ?? 'Unknown Unit',
+                                      rec?.unit ?? 'Unknown Unit',
                                       style: TextStyle(
                                           fontSize: 12,
                                           color: theme.colorScheme.onSurface),
@@ -367,7 +369,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                                 theme.colorScheme.onSurface)),
                                     SizedBox(width: 4),
                                     Text(
-                                      rec.contents ?? 'Unknown contents',
+                                      rec?.contents ?? 'Unknown contents',
                                       style: TextStyle(
                                           fontSize: 12,
                                           color: theme.colorScheme.onSurface),
@@ -378,8 +380,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                 Wrap(
                                   spacing: 8.0,
                                   runSpacing: 4.0,
-                                  children: rec.images != null
-                                      ? rec.images.map((imageUrl) {
+                                  children:  rec?.images?.map((imageUrl) {
                                           if (imageUrl.startsWith('https://') ||
                                               imageUrl.startsWith('http://')) {
                                             // Firebase Storage URL이면 NetworkImage 사용
@@ -408,8 +409,7 @@ class _RecordsListViewState extends State<RecordsListView> {
                                               },
                                             );
                                           }
-                                        }).toList()
-                                      : <Widget>[], //s가 null일 경우 빈 컨테이너를 표시
+                                        }).toList() ?? [], //s가 null일 경우 빈 컨테이너를 표시
                                 ),
                               ],
                             ),

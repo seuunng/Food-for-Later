@@ -69,9 +69,6 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         date.subtract(Duration(days: currentWeekday % 7)); // 일요일 계산
     List<DateTime> weekDates = List.generate(
         7, (index) => sunday.add(Duration(days: index))); // 일주일 생성
-
-    print('$currentWeekday $sunday $weekDates');
-
     return weekDates;
   }
 
@@ -101,7 +98,6 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         .collection('record')
         .where('userId', isEqualTo: userId)
         .orderBy('date', descending: true);
-    ;
 
     // 검색 기간에 맞게 필터링
     if (startDate != null && endDate != null) {
@@ -116,6 +112,7 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
         !selectedCategories!.contains('모두')) {
       query = query.where('zone', whereIn: selectedCategories);
     }
+
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
         stream: query.snapshots(),
@@ -125,22 +122,18 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
               child: Text('데이터를 가져오는 중 오류가 발생했습니다.'),
             );
           }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(),
             );
           }
-
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Text('데이터가 없습니다.'),
             );
           }
-
           // Firestore 데이터를 recordsList로 변환
           recordsList = _mapFirestoreToRecordsList(snapshot.data!);
-          print(theme.textTheme.bodyMedium);
           return SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.only(left: 5.0, right: 5.0),
@@ -299,74 +292,89 @@ class _RecordsCalendarViewState extends State<RecordsCalendarView> {
                                     if (recordsForDate != null &&
                                         recordsForDate.isNotEmpty)
                                       Flexible(
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: backgroundColor,
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          child: LimitedBox(
-                                            maxHeight: 100.0,
-                                            child: Scrollbar(
-                                              child: ListView.builder(
-                                                  shrinkWrap: true,
-                                                  physics:
-                                                      ClampingScrollPhysics(),
-                                                  itemCount:
-                                                      recordsForDate.length,
-                                                  itemBuilder:
-                                                      (context, recordIndex) {
-                                                    final record =
-                                                        recordsForDate[
-                                                            recordIndex];
-                                                    return Column(
-                                                      children: record.records
-                                                          .map<Widget>((rec) {
-                                                        return GestureDetector(
-                                                          onTap: () {
-                                                            Navigator.push(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                builder:
-                                                                    (context) =>
-                                                                        ReadRecord(
-                                                                  recordId:
-                                                                      record
-                                                                          .id!,
+                                        child: LimitedBox(
+                                          maxHeight: 100.0,
+                                          child: Scrollbar(
+                                            child: ListView.builder(
+                                                shrinkWrap: true,
+                                                physics:
+                                                    ClampingScrollPhysics(),
+                                                itemCount:
+                                                    recordsForDate.length,
+                                                itemBuilder:
+                                                    (context, recordIndex) {
+                                                  final record = recordsForDate[
+                                                      recordIndex];
+                                                  final recordColor = Color(
+                                                    int.parse(record.color
+                                                        .replaceFirst(
+                                                            '#', '0xff')),
+                                                  );
+                                                  return Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: record.records
+                                                        .map<Widget>((rec) {
+                                                      return GestureDetector(
+                                                        onTap: () {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder:
+                                                                  (context) =>
+                                                                      ReadRecord(
+                                                                recordId:
+                                                                    record.id!,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          // margin: EdgeInsets
+                                                          //     .symmetric(
+                                                          //         vertical:
+                                                          //             2.0),
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      4.0,
+                                                                  // vertical: 2.0
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color:
+                                                                recordColor, // 개별 record의 색상 적용
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4.0),
+                                                          ),
+                                                          child: Row(
+                                                            children: [
+                                                              Expanded(
+                                                                child: Text(
+                                                                  rec.contents ??
+                                                                      '내용이 없습니다',
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          8,
+                                                                      color: theme
+                                                                          .colorScheme
+                                                                          .onSecondary),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                  maxLines: 1,
                                                                 ),
                                                               ),
-                                                            );
-                                                          },
-                                                          child: Container(
-                                                            padding:
-                                                                EdgeInsets.only(
-                                                                    left: 4.0),
-                                                            child: Row(
-                                                              children: [
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    rec.contents ??
-                                                                        '내용이 없습니다',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            8,
-                                                                        color: theme
-                                                                            .colorScheme
-                                                                            .onSecondary),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                    maxLines: 1,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
+                                                            ],
                                                           ),
-                                                        );
-                                                      }).toList(),
-                                                    );
-                                                  }),
-                                            ),
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                                  );
+                                                }),
                                           ),
                                         ),
                                       ),
