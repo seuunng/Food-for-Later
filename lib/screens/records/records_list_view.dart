@@ -284,7 +284,11 @@ class _RecordsListViewState extends State<RecordsListView> {
                     if (direction == DismissDirection.endToStart) {
                       // 레코드가 2개 이상일 때, 해당 레코드만 삭제
                       if ((record?.records.length ?? 0) > 1) {
-                        _deleteIndividualRecord(record!, rec!);
+                        _deleteIndividualRecord(record!, rec!).then((_) {
+                          setState(() {
+                            record.records.remove(rec); // 삭제 후 로컬 데이터 즉시 갱신
+                          });
+                        });
                       } else {
                         // 레코드가 1개일 때, 전체 레코드 삭제
                         _deleteRecord(record?.id ?? 'default_record_id', rec!);
@@ -298,6 +302,7 @@ class _RecordsListViewState extends State<RecordsListView> {
 
                         // recordsList에서 항목이 비어 있는 경우 제거
                         if (record?.records.isEmpty ?? false) {
+                          FirebaseFirestore.instance.collection('record').doc(record.id).delete();
                           recordsList.removeAt(index);
                         }
                       });
