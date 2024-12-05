@@ -258,7 +258,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                 children: [
                   Text(
                     '식품 상태관리 선택',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
@@ -271,7 +273,8 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                       return DropdownMenuItem<String>(
                         value: category,
                         child: Text(category,
-                            style: TextStyle(color: theme.colorScheme.onSurface)),
+                            style:
+                                TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (String? value) {
@@ -291,7 +294,9 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                 children: [
                   Text(
                     '선호 식품 카테고리 수정',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
@@ -323,26 +328,32 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                 children: [
                   Text(
                     '대표 기록유형 선택',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface),
                   ),
                   Spacer(),
                   DropdownButton<String>(
                     value: _selectedCategory_records,
-                    // _categories_records.contains(_selectedCategory_records)
-                    //     ? _selectedCategory_records
-                    //     : null,
                     items: _categories_records.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
                         child: Text(category,
-                            style: TextStyle(color: theme.colorScheme.onSurface)),
+                            style:
+                                TextStyle(color: theme.colorScheme.onSurface)),
                       );
                     }).toList(),
-                    onChanged: (String? value) {
-                      setState(() {
-                        _selectedCategory_records = value!;
-                      });
+                    onChanged: (String? value) async {
+                      if (value != null) {
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        await prefs.setString(
+                            'selectedCategory_records', value); // 값 저장
+                        setState(() {
+                          _selectedCategory_records = value;
+                        });
+                      }
                     },
                   ),
                 ],

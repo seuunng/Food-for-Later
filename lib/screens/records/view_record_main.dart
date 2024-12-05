@@ -19,6 +19,7 @@ class ViewRecordMain extends StatefulWidget {
 class _ViewRecordMainState extends State<ViewRecordMain> with RouteAware {
   PageController _pageController = PageController();
   String selectedRecordListType = '앨범형';
+  String selectedCategory = '모두'; // 필드 추가
   int _currentPage = 0; // 현재 페이지 상태
   final int _totalPages = 3; // 총 페이지 수
   bool isTruth = true;
@@ -26,6 +27,7 @@ class _ViewRecordMainState extends State<ViewRecordMain> with RouteAware {
   @override
   void initState() {
     super.initState();
+    _loadSelectedCategory();
     _loadSelectedRecordListType(); // 초기화 시 Firestore에서 데이터를 불러옴
   }
   @override
@@ -44,7 +46,14 @@ class _ViewRecordMainState extends State<ViewRecordMain> with RouteAware {
     _loadSelectedRecordListType();
     super.dispose();
   }
-
+  void _loadSelectedCategory() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인
+    setState(() {
+      // 저장된 카테고리를 로드하여 필요한 변수에 반영
+      selectedCategory = prefs.getString('selectedCategory_records') ?? '모두';
+    });
+  }
   void _loadSelectedRecordListType() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return; // 위젯이 여전히 트리에 있는지 확인

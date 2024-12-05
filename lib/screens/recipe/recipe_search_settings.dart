@@ -31,8 +31,8 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
   void initState() {
     super.initState();
     _loadMethodFromFirestore();
-    _loadPreferredFoodsCategoriesFromFirestore();
     _loadSearchSettingsFromLocal();
+    _loadPreferredFoodsCategoriesFromFirestore();
   }
 
   void _loadMethodFromFirestore() async {
@@ -56,7 +56,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
     }
   }
 
-  void _loadPreferredFoodsCategoriesFromFirestore() async {
+  Future<void> _loadPreferredFoodsCategoriesFromFirestore() async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
@@ -82,7 +82,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           });
         }
       });
-      print(itemsByPreferredCategory);
+      // print(itemsByPreferredCategory);
     } catch (e) {
       print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,17 +141,6 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
             for (var entry in cookingMethods.entries) // Map의 각 entry를 순회하며 빌드
               _buildMethodCategory(entry.key, entry.value),
             SizedBox(height: 16),
-            // 레시피 출처 선택
-            Text(
-              '선호 식품 및 조리방법 선택',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface),
-            ),
-
-            for (var entry
-                in itemsByPreferredCategory.entries) // Map의 각 entry를 순회하며 빌드
-              _buildPreferredCategory(entry.key, entry.value),
-            SizedBox(height: 16),
 
             // 제외 검색어 선택
             Text(
@@ -207,6 +196,17 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
                   }).toList() ??
                   [],
             ),
+            SizedBox(height: 16),
+            // 레시피 출처 선택
+            Text(
+              '선호 식품 및 조리방법 선택',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface),
+            ),
+
+            // for (var entry
+            // in itemsByPreferredCategory.entries) // Map의 각 entry를 순회하며 빌드
+              _buildPreferredCategory(),
             SizedBox(height: 16),
           ],
         ),
@@ -267,22 +267,25 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
     );
   }
 
-  Widget _buildPreferredCategory(
-      String category, List<PreferredFoodModel> models) {
+  Widget _buildPreferredCategory() {
     final theme = Theme.of(context);
+
+    final uniqueCategories = itemsByPreferredCategory.values
+        .expand((models) => models.expand((model) => model.category.keys))
+        .toSet()
+        .toList();
+
     return Wrap(
       spacing: 8.0,
       runSpacing: 4.0,
       alignment: WrapAlignment.start, // 왼쪽 정렬
-      children: models.expand((model) => model.category.keys.map((categoryName) {
-        if (renderedCategories.contains(categoryName)) {
-          return SizedBox.shrink(); // 아무것도 렌더링하지 않음
-        }
+      children: uniqueCategories.map((categoryName) {
         final isSelected =
             selectedPreferredFoodCategories?.contains(categoryName) ?? false;
-        renderedCategories.add(categoryName);
+
         return ChoiceChip(
-          label: Text(categoryName,
+          label: Text(
+            categoryName,
             style: TextStyle(
               color: isSelected ?
               theme.chipTheme.secondaryLabelStyle?.color
@@ -293,16 +296,16 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           onSelected: (selected) {
             setState(() {
               if (selected) {
-                selectedPreferredFoodCategories?.add(category);
+                selectedPreferredFoodCategories?.add(categoryName);
               } else {
-                selectedPreferredFoodCategories?.remove(category);
+                selectedPreferredFoodCategories?.remove(categoryName);
               }
             });
           },
           // selectedColor: Colors.deepPurple[100],
           // backgroundColor: Colors.grey[200],
         );
-      })).toList(),
+      }).toList(),
     );
   }
 }

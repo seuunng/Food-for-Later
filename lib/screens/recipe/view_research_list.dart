@@ -59,6 +59,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       // 검색 설정을 로드한 후, 각 카테고리에 대해 선호 식품을 불러옴
       if (selectedPreferredFoodCategories != null &&
           selectedPreferredFoodCategories!.isNotEmpty) {
+        print('_loadSearchSettingsFromLocal() ${selectedPreferredFoodCategories}');
         // 모든 카테고리에 대해 선호 식품 불러오기
         for (String category in selectedPreferredFoodCategories!) {
           _loadPreferredFoodsByCategory(
@@ -121,28 +122,14 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
       QuerySnapshot querySnapshot = await query.get();
       List<DocumentSnapshot> filteredDocs = querySnapshot.docs;
-      // if (keywords.isNotEmpty) {
-      //   for (String keyword in keywords) {
-      //     query = query.where('foods', arrayContainsAny: keywords);
-      //     // query = query.where('foods', arrayContains: keyword);
-      //   }
-      // }
 
       print('Total Docs Count from Firestore: ${querySnapshot.docs.length}');
-      // querySnapshot.docs.forEach((doc) {
-      //   print('Doc Data: ${doc.data()}');
-      // });
 
       if (keywords.isNotEmpty) {
         filteredDocs = filteredDocs.where((doc) {
           List<String> foods = List<String>.from(doc['foods'] ?? []);
           List<String> methods = List<String>.from(doc['methods'] ?? []);
           List<String> themes = List<String>.from(doc['themes'] ?? []);
-
-          // print('Doc Foods: $foods');
-          // print('Doc Methods: $methods');
-          // print('Doc Themes: $themes');
-          print('Keywords: $keywords');
 
           return keywords.any((keyword) {
             String lowerCaseKeyword = keyword.trim().toLowerCase();
@@ -157,17 +144,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
             bool matchesThemes = themes
                 .map((theme) => theme.trim().toLowerCase())
                 .contains(lowerCaseKeyword);
-
-            // print('Keyword "$lowerCaseKeyword" matches: '
-            //     'Foods=$matchesFoods, Methods=$matchesMethods, Themes=$matchesThemes');
-
             return matchesFoods || matchesMethods || matchesThemes;
           });
         }).toList();
-        print('Filtered Docs Count: ${filteredDocs.length}');
-        // filteredDocs.forEach((doc) {
-        //   print('Doc Keywords: foods=${doc['foods']}, methods=${doc['methods']}, themes=${doc['themes']}');
-        // });
+
       }
 
       if (selectedPreferredFoods != null &&
@@ -179,23 +159,19 @@ class _ViewResearchListState extends State<ViewResearchList> {
         }).toList();
       }
 
-      print('selectedPreferredFoods ${selectedPreferredFoods}');
+      // List<String> prioritizedIngredients =
+      //     await _applyCategoryPriority(fridgeIngredients);
 
-      List<String> prioritizedIngredients =
-          await _applyCategoryPriority(fridgeIngredients);
-
-      if (prioritizedIngredients.isNotEmpty) {
-        filteredDocs = filteredDocs.where((doc) {
-          List<String> foods = List<String>.from(doc['foods']);
-
-          // 냉장고 재료 중 하나라도 포함된 레시피 필터링
-          return prioritizedIngredients.any((ingredient) => foods
-              .map((e) => e.trim().toLowerCase())
-              .contains(ingredient.trim().toLowerCase()));
-        }).toList();
-      }
-
-      print('prioritizedIngredients ${prioritizedIngredients}');
+      // if (prioritizedIngredients.isNotEmpty) {
+      //   filteredDocs = filteredDocs.where((doc) {
+      //     List<String> foods = List<String>.from(doc['foods']);
+      //
+      //     // 냉장고 재료 중 하나라도 포함된 레시피 필터링
+      //     return prioritizedIngredients.any((ingredient) => foods
+      //         .map((e) => e.trim().toLowerCase())
+      //         .contains(ingredient.trim().toLowerCase()));
+      //   }).toList();
+      // }
 
       // 제외할 키워드를 포함하지 않는 레시피 필터링
       if (excludeKeywords != null && excludeKeywords!.isNotEmpty) {
@@ -209,13 +185,13 @@ class _ViewResearchListState extends State<ViewResearchList> {
       }
 
       print('excludeKeywords ${excludeKeywords}');
+      print('4 Filtered Docs Count: ${filteredDocs.length}');
 
       // 불러온 레시피들 matchingRecipes 리스트에 저장
       try {
         setState(() {
           matchingRecipes = filteredDocs.map((doc) {
             try {
-              print('Mapping doc to RecipeModel: ${doc.data()}');
               return RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>);
             } catch (e) {
               print('Error converting doc to RecipeModel: $e');
@@ -224,18 +200,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
           }).whereType<RecipeModel>().toList();
         });
         print('Matching Recipes After Mapping: $matchingRecipes');
+        print('5 Filtered Docs Count: ${filteredDocs.length}');
       } catch (e) {
         print('Error during setState for matchingRecipes: $e');
       }
-
-      print('Matching Recipes Count: ${matchingRecipes.length}');
-      // filteredDocs.forEach((doc) {
-      //   final data = doc.data() as Map<String, dynamic>;
-      //   print('Doc Foods: ${data['foods']}');
-      //   print('Doc Methods: ${data['methods']}');
-      //   print('Doc Themes: ${data['themes']}');
-      // });
-
     } catch (e) {
       print('Error loading recipes: $e');
     }
