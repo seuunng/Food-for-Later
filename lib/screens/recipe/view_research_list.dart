@@ -28,8 +28,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
   List<String> filteredItems = [];
   List<String> fridgeIngredients = [];
   List<String>? selectedCookingMethods = [];
+  List<String>? selectedPreferredFoodCategory = [];
   List<String>? selectedPreferredFoodCategories = [];
   List<String>? selectedPreferredFoods = [];
+  Map<String, List<String>> itemsByCategory = {};
   List<String>? excludeKeywords = [];
 
   String searchKeyword = '';
@@ -46,84 +48,274 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   TextEditingController _searchController = TextEditingController();
   bool useFridgeIngredientsState = false;
-  Map<String, List<String>> itemsByCategory = {};
   // String? category = widget.category.isNotEmpty ? widget.category[0] : null;
 
   @override
   void initState() {
     super.initState();
-    useFridgeIngredientsState = widget.useFridgeIngredients;
-    keywords.addAll(widget.category);
+    // useFridgeIngredientsState = widget.useFridgeIngredients;
+    // keywords.addAll(widget.category);
+    _initializeSearch();
     _loadFridgeItemsFromFirestore();
-    _loadSearchSettingsFromLocal().then((_) {
-      // 검색 설정을 로드한 후, 각 카테고리에 대해 선호 식품을 불러옴
-      if (selectedPreferredFoodCategories != null &&
-          selectedPreferredFoodCategories!.isNotEmpty) {
-        print('_loadSearchSettingsFromLocal() ${selectedPreferredFoodCategories}');
-        // 모든 카테고리에 대해 선호 식품 불러오기
-        for (String category in selectedPreferredFoodCategories!) {
-          _loadPreferredFoodsByCategory(
-                  widget.category.isNotEmpty ? widget.category[0] : '')
-              .then((_) {
-            if (itemsByCategory.isNotEmpty) {
-              loadRecipesByPreferredFoodsCategory(); // 재료들로 레시피 검색
-            } else {
-              _applyCategoryPriority(fridgeIngredients).then((_) {
-                loadRecipes().then((_) {
-                  setState(() {
-                    // 레시피 데이터가 로드되면 상태 업데이트
-                    _searchByCategoryKeywords();
-                    loadRecipes();
-                  });
-                });
-              });
-            }
-          });
-        }
-      } else {
-        // 카테고리가 없을 경우 바로 레시피 불러오기
-        loadRecipes().then((_) {
-          _searchByCategoryKeywords();
-        });
-      }
-    });
-    if (widget.category.isNotEmpty) {
-      setState(() {
-        for (var category in widget.category) {
-          if (!keywords.contains(category)) {
-            keywords.add(category);
-          }
-        }
-      });
-    }
+    _loadPreferredFoodsByCategory();
+    _loadSearchSettingsFromLocal();
+    //     .then((_) {
+    //   // 검색 설정을 로드한 후, 각 카테고리에 대해 선호 식품을 불러옴
+    //   if (selectedPreferredFoodCategory != null &&
+    //       selectedPreferredFoodCategory!.isNotEmpty) {
+    //     for (String category in selectedPreferredFoodCategory!) {
+    //       _loadPreferredFoodsByCategory(category).then((_) {
+    //         if (itemsByCategory.isNotEmpty) {
+    //           loadRecipesByPreferredFoodsCategory();
+    //         } else {
+    //           _applyCategoryPriority(fridgeIngredients).then((_) {
+    //             loadRecipes().then((_) {
+    //               setState(() {
+    //                 _searchByCategoryKeywords();
+    //                 loadRecipes();
+    //               });
+    //             });
+    //           });
+    //         }
+    //       });
+    //     }
+    //   } else {
+    //     loadRecipes().then((_) {
+    //       _searchByCategoryKeywords();
+    //     });
+    //   }
+    // });
+    // if (widget.category.isNotEmpty) {
+    //   setState(() {
+    //     for (var category in widget.category) {
+    //       if (!keywords.contains(category)) {
+    //         keywords.add(category);
+    //       }
+    //     }
+    //   });
+    // }
+    // if (widget.useFridgeIngredients) {
+    //   _loadFridgeItemsFromFirestore(); // 냉장고 재료 불러오기
+    // }
+  }
 
-    if (widget.useFridgeIngredients) {
-      _loadFridgeItemsFromFirestore(); // 냉장고 재료 불러오기
+  // 검색 상세설정 값 불러오기
+  Future<void> _loadSearchSettingsFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCookingMethods = prefs.getStringList('selectedCookingMethods') ?? [];
+      selectedPreferredFoodCategory =
+          prefs.getStringList('selectedPreferredFoodCategories') ?? [];
+      excludeKeywords = prefs.getStringList('excludeKeywords') ?? [];
+      keywords.addAll(selectedCookingMethods!); // 조리 방법 키워드 추가
+    });
+  }
+
+  // 냉장고 재료 불러오기
+  Future<void> _loadFridgeItemsFromFirestore() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('fridge_items')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      setState(() {
+        fridgeIngredients =
+            snapshot.docs.map((doc) => doc['items'] as String).toList();
+      });
+    } catch (e) {
+      print('Error loading fridge items: $e');
     }
   }
 
-  Future<void> loadRecipes() async {
+  // 냉장고 재료 우선순위에 따라 10개 추리기
+  Future<List<String>> _applyCategoryPriority(List<String> fridgeIngredients) async {
+    // Firestore에서 재료-카테고리 데이터를 불러옴
+    Map<String, String> ingredientToCategory =
+    await _loadIngredientCategoriesFromFirestore();
+
+    // 냉장고 재료에 대해 우선순위 계산
+    List<MapEntry<String, int>> prioritizedIngredients =
+    fridgeIngredients.map((ingredient) {
+      // 재료에 대한 카테고리를 찾음
+      String category = ingredientToCategory[ingredient] ?? "";
+      // 해당 카테고리의 우선순위를 찾음
+      int priority = categoryPriority[category] ?? 0;
+
+      return MapEntry(ingredient, priority);
+    }).toList();
+
+    // 우선순위에 따라 재료 정렬
+    prioritizedIngredients.sort((a, b) => b.value.compareTo(a.value));
+
+    // 최종적으로 상위 10개의 재료를 선택
+    List<String> topIngredients =
+    prioritizedIngredients.map((entry) => entry.key).take(10).toList();
+
+    return topIngredients;
+  }
+
+  // 선호카테고리 불러오기
+  Future<void> _loadPreferredFoodsByCategory() async {
     try {
-      Query query = _db
-          .collection('recipe')
-          .orderBy('date', descending: true);
+      final snapshot = await FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print('No data found in preferred_foods_categories.');
+        return;
+      }
+
+      // 데이터 매핑
+      final Map<String, List<String>> categoryData = {};
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final Map<String, dynamic>? categories =
+        data['category'] as Map<String, dynamic>?;
+
+        if (categories != null) {
+          categories.forEach((categoryName, items) {
+            if (items is List<dynamic>) {
+              // 카테고리와 해당 항목 리스트를 저장
+              categoryData[categoryName] =
+                  items.map((item) => item.toString()).toList();
+            }
+          });
+        }
+      }
+      // selectedPreferredFoodCategory와 일치하는 카테고리만 필터링
+      final Map<String, List<String>> filteredCategoryData = {};
+      selectedPreferredFoodCategory?.forEach((category) {
+        if (categoryData.containsKey(category)) {
+          filteredCategoryData[category] = categoryData[category]!;
+        }
+      });
+      // 상태 업데이트
+      setState(() {
+        itemsByCategory = filteredCategoryData;
+      });
+
+    } catch (e) {
+      print('Error loading preferred foods by category: $e');
+    }
+  }
+
+  Future<void> loadRecipesByPreferredFoodsCategory() async {
+    try {
+      List<String> allPreferredItems = [];
+      for (String category in selectedPreferredFoodCategory!) {
+        if (itemsByCategory.containsKey(category)) {
+          allPreferredItems.addAll(itemsByCategory[category]!);
+        }
+      }
+
+      // 제외 키워드에 추가
+      setState(() {
+        excludeKeywords = [...?excludeKeywords, ...allPreferredItems];
+      });
+
+      // 레시피 검색
+      await _searchRecipes();
+    } catch (e) {
+      print('Error loading recipes by preferred foods category: $e');
+    }
+  }
+
+  Future<void> _initializeSearch() async {
+    await _loadSearchSettingsFromLocal();
+
+    if (widget.useFridgeIngredients) {
+      await _loadFridgeItemsFromFirestore();
+      fridgeIngredients = await _applyCategoryPriority(fridgeIngredients);
+      keywords.addAll(fridgeIngredients);
+    }
+
+    if (widget.category.isNotEmpty) {
+      setState(() {
+        keywords.addAll(widget.category.where((c) => !keywords.contains(c)));
+      });
+    }
+
+    // selectedPreferredFoodCategory 처리
+    if (selectedPreferredFoodCategory != null &&
+        selectedPreferredFoodCategory!.isNotEmpty) {
+      await loadRecipesByPreferredFoodsCategory();
+    }
+
+    // 검색 수행
+    await _searchRecipes();
+  }
+
+  Future<void> _searchRecipes() async {
+    List<DocumentSnapshot> results = [];
+
+    // 키워드 검색
+    for (String keyword in keywords) {
+      List<QuerySnapshot> queries = await Future.wait([
+        _db.collection('recipe').where('foods', arrayContains: keyword).get(),
+        _db.collection('recipe').where('methods', arrayContains: keyword).get(),
+        _db.collection('recipe').where('themes', arrayContains: keyword).get(),
+      ]);
+      for (var query in queries) {
+        results.addAll(query.docs);
+      }
+    }
+
+    // 중복 제거
+    List<DocumentSnapshot> uniqueResults = results.toSet().toList();
+
+    // 제외 키워드 필터링
+    if (excludeKeywords != null && excludeKeywords!.isNotEmpty) {
+      uniqueResults = _filterExcludedItems(
+        docs: uniqueResults,
+        excludeKeywords: excludeKeywords!,
+      );
+    }
+
+    // 결과 상태 업데이트
+    setState(() {
+      matchingRecipes = uniqueResults
+          .map((doc) => RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  List<DocumentSnapshot> _filterExcludedItems({
+    required List<DocumentSnapshot> docs,
+    required List<String> excludeKeywords,
+  }) {
+    return docs.where((doc) {
+      List<String> foods = List<String>.from(doc['foods'] ?? []);
+      List<String> methods = List<String>.from(doc['methods'] ?? []);
+      List<String> themes = List<String>.from(doc['themes'] ?? []);
+
+      return !excludeKeywords.any((exclude) =>
+      foods.contains(exclude) ||
+          methods.contains(exclude) ||
+          themes.contains(exclude));
+    }).toList();
+  }
+
+  Future<void> loadRecipes() async {
+    List<RecipeModel> tempRecipes = [];
+    try {
+      Query query = _db.collection('recipe').orderBy('date', descending: true);
       // 선택한 조리 방법을 포함한 레시피만 필터링
       if (selectedCookingMethods != null && selectedCookingMethods!.isNotEmpty) {
         selectedCookingMethods = selectedCookingMethods!
             .where((method) => method.trim().isNotEmpty)
             .toList();
-        for (String method in selectedCookingMethods!) {
-          query = query.where('methods', arrayContains: method);
+        if (selectedCookingMethods!.isNotEmpty) {
+          query =
+              query.where('methods', arrayContainsAny: selectedCookingMethods!);
         }
       } else {
         print('selectedCookingMethods is null or empty');
       }
 
-
       QuerySnapshot querySnapshot = await query.get();
       List<DocumentSnapshot> filteredDocs = querySnapshot.docs;
-
-      print('Total Docs Count from Firestore: ${querySnapshot.docs.length}');
 
       if (keywords.isNotEmpty) {
         filteredDocs = filteredDocs.where((doc) {
@@ -133,83 +325,133 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
           return keywords.any((keyword) {
             String lowerCaseKeyword = keyword.trim().toLowerCase();
-
-            // 재료(foods), 조리 방법(methods), 테마(themes)에서 일치하는 키워드 검색
-            bool matchesFoods = foods
-                .map((food) => food.trim().toLowerCase())
-                .contains(lowerCaseKeyword);
-            bool matchesMethods = methods
-                .map((method) => method.trim().toLowerCase())
-                .contains(lowerCaseKeyword);
-            bool matchesThemes = themes
-                .map((theme) => theme.trim().toLowerCase())
-                .contains(lowerCaseKeyword);
-            return matchesFoods || matchesMethods || matchesThemes;
+            return foods
+                    .map((food) => food.trim().toLowerCase())
+                    .contains(lowerCaseKeyword) ||
+                methods
+                    .map((method) => method.trim().toLowerCase())
+                    .contains(lowerCaseKeyword) ||
+                themes
+                    .map((theme) => theme.trim().toLowerCase())
+                    .contains(lowerCaseKeyword);
           });
         }).toList();
-
       }
 
-      if (selectedPreferredFoods != null &&
-          selectedPreferredFoods!.isNotEmpty) {
-        filteredDocs = querySnapshot.docs.where((doc) {
-          List<String> foods = List<String>.from(doc['foods']);
-          // 선호 식품이 있는지 확인
-          return selectedPreferredFoods!.any((food) => foods.contains(food));
-        }).toList();
-      }
+      List<String> excludedItems = [
+        ...?excludeKeywords?.map((e) => e.trim().toLowerCase()), // 제외 키워드
+        ...itemsByCategory.values.expand((items) =>
+            items.map((item) => item.trim().toLowerCase())), // 카테고리 값
+      ];
 
-      // List<String> prioritizedIngredients =
-      //     await _applyCategoryPriority(fridgeIngredients);
+      print('Excluded Items: $excludedItems');
 
-      // if (prioritizedIngredients.isNotEmpty) {
-      //   filteredDocs = filteredDocs.where((doc) {
-      //     List<String> foods = List<String>.from(doc['foods']);
-      //
-      //     // 냉장고 재료 중 하나라도 포함된 레시피 필터링
-      //     return prioritizedIngredients.any((ingredient) => foods
-      //         .map((e) => e.trim().toLowerCase())
-      //         .contains(ingredient.trim().toLowerCase()));
-      //   }).toList();
-      // }
+      filteredDocs = filteredDocs.where((doc) {
+        List<String> foods = List<String>.from(doc['foods'] ?? []).map((food) => food.trim().toLowerCase()).toList();
+        return !excludedItems.any((exclude) => foods.contains(exclude));
+      }).toList();
 
-      // 제외할 키워드를 포함하지 않는 레시피 필터링
-      if (excludeKeywords != null && excludeKeywords!.isNotEmpty) {
-        filteredDocs = filteredDocs.where((doc) {
-          List<String> foods = List<String>.from(doc['foods']);
-          List<String> methods = List<String>.from(doc['methods']);
-          // excludeKeywords에 해당하는 항목이 foods에 포함되지 않은 경우만 필터링
-          List<String> items = [...foods, ...methods];
-          return !excludeKeywords!.any((exclude) => items.contains(exclude));
-        }).toList();
-      }
-
-      print('excludeKeywords ${excludeKeywords}');
-      print('4 Filtered Docs Count: ${filteredDocs.length}');
-
-      // 불러온 레시피들 matchingRecipes 리스트에 저장
-      try {
-        setState(() {
-          matchingRecipes = filteredDocs.map((doc) {
+      tempRecipes = filteredDocs
+          .map((doc) {
             try {
-              return RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>);
+              return RecipeModel.fromFirestore(
+                  doc.data() as Map<String, dynamic>);
             } catch (e) {
               print('Error converting doc to RecipeModel: $e');
               return null;
             }
-          }).whereType<RecipeModel>().toList();
-        });
-        print('Matching Recipes After Mapping: $matchingRecipes');
-        print('5 Filtered Docs Count: ${filteredDocs.length}');
-      } catch (e) {
-        print('Error during setState for matchingRecipes: $e');
-      }
+          })
+          .whereType<RecipeModel>()
+          .toList();
+
+      // 결과를 상태에 반영
+      setState(() {
+        matchingRecipes = tempRecipes.toSet().toList();
+      });
+
+      print('Filtered Recipes: $matchingRecipes');
     } catch (e) {
-      print('Error loading recipes: $e');
+      print('Error during setState for matchingRecipes: $e');
     }
   }
 
-  Future<List<RecipeModel>> fetchRecipesByKeywords(String searchKeyword) async {
+  Future<Map<String, String>> _loadIngredientCategoriesFromFirestore() async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('foods')
+          .get(); // foods 컬렉션에서 데이터 불러오기
+
+      // Firestore 데이터에서 재료 이름과 카테고리 매핑
+      Map<String, String> ingredientToCategory = {};
+
+      for (var doc in snapshot.docs) {
+        String foodsName = doc['foodsName'];
+        String defaultCategory = doc['defaultCategory'];
+        // 재료 이름을 key, 카테고리를 value로 설정
+        ingredientToCategory[foodsName] = defaultCategory;
+      }
+      return ingredientToCategory; // 재료-카테고리 맵 반환
+    } catch (e) {
+      print("Error loading ingredient categories: $e");
+      return {};
+    }
+  }
+
+  // void _searchItems(String keyword) async {
+  //   keyword = keyword.trim().toLowerCase();
+  //   List<String> searchResults = [];
+  //
+  //   await _loadPreferredFoodsByCategory().then((_) {
+  //     if (itemsByCategory.isNotEmpty) {
+  //       loadRecipesByPreferredFoodsCategory(); // 재료들로 레시피 검색
+  //     }
+  //   });
+  //
+  //   // 1. 카테고리 이름과 일치하는지 먼저 확인
+  //   bool categoryMatched = false;
+  //
+  //   if (itemsByCategory.isNotEmpty) {
+  //     itemsByCategory.forEach((category, items) {
+  //       if (category.toLowerCase() == keyword) {
+  //         // 카테고리 이름이 키워드와 일치하는 경우
+  //         searchResults.addAll(items); // 해당 카테고리의 모든 아이템 추가
+  //         categoryMatched = true; // 카테고리 일치 확인
+  //       }
+  //     });
+  //   }
+  //
+  //   // 2. 카테고리가 일치하지 않으면 일반 아이템 검색 수행
+  //   if (!categoryMatched) {
+  //     itemsByCategory.forEach((category, items) {
+  //       // 각 아이템이 키워드와 일치하는지 확인
+  //       items.forEach((item) {
+  //         if (item.toLowerCase().contains(keyword)) {
+  //           searchResults.add(item);
+  //         }
+  //       });
+  //     });
+  //   }
+  //
+  //   setState(() {
+  //     searchKeyword = keyword.trim().toLowerCase();
+  //     if (searchKeyword.isNotEmpty && !keywords.contains(searchKeyword)) {
+  //       keywords.add(searchKeyword); // 중복 방지를 위해 검색어를 추가
+  //     }
+  //     _searchController.clear();
+  //   });
+  //
+  //   if (searchKeyword.isNotEmpty) {
+  //     List<RecipeModel> filteredRecipes =
+  //         await fetchRecipesByKeyword(searchKeyword);
+  //     setState(() {
+  //       matchingRecipes = filteredRecipes;
+  //     });
+  //   } else {
+  //     loadRecipes();
+  //   }
+  // }
+
+  Future<List<RecipeModel>> fetchRecipesByKeyword(String searchKeyword) async {
     try {
       // 검색어가 비어있지 않을 때만 필터링 적용
       if (searchKeyword.isNotEmpty) {
@@ -237,24 +479,17 @@ class _ViewResearchListState extends State<ViewResearchList> {
     }
   }
 
-  Future<void> _loadFridgeItemsFromFirestore() async {
-    try {
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('fridge_items')
-              .where('userId', isEqualTo: userId)
-              .get();
+  // Future<void> _searchByCategoryKeywords() async {
+  //   if (keywords.isNotEmpty) {
+  //     List<RecipeModel> filteredRecipes =
+  //         await fetchRecipesByKeyword(keywords.join(' '));
+  //     setState(() {
+  //       matchingRecipes = filteredRecipes;
+  //     });
+  //   }
+  // }
 
-      setState(() {
-        fridgeIngredients =
-            snapshot.docs.map((doc) => doc['items'] as String).toList();
-      });
-    } catch (e) {
-      print('Error loading fridge items: $e');
-    }
-  }
-
-  Future<bool> loadScrapedData(String recipeId) async {
+  Future<bool> loadScrapedData(recipeId) async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
@@ -275,225 +510,16 @@ class _ViewResearchListState extends State<ViewResearchList> {
     }
   }
 
-  Future<void> _loadSearchSettingsFromLocal() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      selectedCookingMethods = prefs.getStringList('selectedCookingMethods');
-      selectedPreferredFoodCategories =
-          prefs.getStringList('selectedPreferredFoodCategories');
-      excludeKeywords = prefs.getStringList('excludeKeywords');
-      print('Loaded selectedCookingMethods: $selectedCookingMethods');
-    });
-  }
-
-  Future<void> _loadPreferredFoodsByCategory(String categoryKey) async {
-    try {
-      // Firestore에서 데이터를 불러옴
-      final snapshot = await FirebaseFirestore.instance
-          .collection('preferred_foods_categories')
-          .where('userId', isEqualTo: userId)
-          .get(); // 특정 category 필드 안에 있는 데이터를 가져오기 위해 전체 문서를 가져옵니다
-
-      final Map<String, List<String>> allFoods = {};
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final Map<String, dynamic>? categoryMap =
-            data['category'] as Map<String, dynamic>?;
-        final List<dynamic>? items =
-            categoryMap?[categoryKey] as List<dynamic>?; // 비건 키로 배열 접근
-
-        if (categoryKey != null && items != null) {
-          allFoods[categoryKey] = items.map((item) => item.toString()).toList();
-        }
-      }
-
-      setState(() {
-        this.itemsByCategory = allFoods; // 불러온 식품 목록 저장
-      });
-    } catch (e) {
-      print('Error loading preferred foods by category: $e');
-    }
-  }
-
-  Future<void> loadRecipesByPreferredFoodsCategory() async {
-    if (itemsByCategory.isEmpty) {
-      return; // 카테고리 재료가 없으면 검색하지 않음
-    }
-
-    try {
-      List<String> allIngredients = [];
-      // 모든 카테고리 재료들을 하나의 리스트로 결합
-      itemsByCategory.forEach((category, ingredients) {
-        allIngredients.addAll(ingredients);
-      });
-
-      Query query = _db.collection('recipe');
-
-      // 레시피의 foods 필드가 카테고리 재료들 중 하나라도 포함하는지 확인
-      query = query.where('foods', arrayContainsAny: allIngredients);
-
-      QuerySnapshot querySnapshot = await query.get();
-      List<DocumentSnapshot> filteredDocs = querySnapshot.docs;
-
-      setState(() {
-        matchingRecipes = filteredDocs
-            .map((doc) =>
-                RecipeModel.fromFirestore(doc.data() as Map<String, dynamic>))
-            .toList();
-      });
-    } catch (e) {
-      print('Error loading recipes by ingredients: $e');
-    }
-  }
-
-  Future<Map<String, String>> _loadIngredientCategoriesFromFirestore() async {
-    try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('foods')
-          .get(); // foods 컬렉션에서 데이터 불러오기
-
-      // Firestore 데이터에서 재료 이름과 카테고리 매핑
-      Map<String, String> ingredientToCategory = {};
-
-      for (var doc in snapshot.docs) {
-        String foodsName = doc['foodsName'];
-        String defaultCategory = doc['defaultCategory'];
-        // 재료 이름을 key, 카테고리를 value로 설정
-        ingredientToCategory[foodsName] = defaultCategory;
-      }
-      return ingredientToCategory; // 재료-카테고리 맵 반환
-    } catch (e) {
-      print("Error loading ingredient categories: $e");
-      return {};
-    }
-  }
-
-  void _searchItems(String keyword) async {
-    keyword = keyword.trim().toLowerCase();
-    List<String> searchResults = [];
-
-    await _loadPreferredFoodsByCategory(keyword).then((_) {
-      if (itemsByCategory.isNotEmpty) {
-        loadRecipesByPreferredFoodsCategory(); // 재료들로 레시피 검색
-      }
-    });
-
-    // 1. 카테고리 이름과 일치하는지 먼저 확인
-    bool categoryMatched = false;
-
-    if (itemsByCategory.isNotEmpty) {
-      itemsByCategory.forEach((category, items) {
-        if (category.toLowerCase() == keyword) {
-          // 카테고리 이름이 키워드와 일치하는 경우
-          searchResults.addAll(items); // 해당 카테고리의 모든 아이템 추가
-          categoryMatched = true; // 카테고리 일치 확인
-        }
-      });
-    }
-
-    // 2. 카테고리가 일치하지 않으면 일반 아이템 검색 수행
-    if (!categoryMatched) {
-      itemsByCategory.forEach((category, items) {
-        // 각 아이템이 키워드와 일치하는지 확인
-        items.forEach((item) {
-          if (item.toLowerCase().contains(keyword)) {
-            searchResults.add(item);
-          }
-        });
-      });
-    }
-
-    setState(() {
-      searchKeyword = keyword.trim().toLowerCase();
-      if (searchKeyword.isNotEmpty && !keywords.contains(searchKeyword)) {
-        keywords.add(searchKeyword); // 중복 방지를 위해 검색어를 추가
-      }
-      _searchController.clear();
-    });
-
-    if (searchKeyword.isNotEmpty) {
-      // 검색어가 있을 때 필터링된 레시피를 불러옴
-      List<RecipeModel> filteredRecipes =
-          await fetchRecipesByKeywords(searchKeyword);
-      setState(() {
-        matchingRecipes = filteredRecipes;
-      });
-    } else {
-      loadRecipes();
-    }
-  }
-
-  Future<void> _searchByCategoryKeywords() async {
-    if (keywords.isNotEmpty) {
-      List<RecipeModel> filteredRecipes =
-          await fetchRecipesByKeywords(keywords.join(' '));
-      setState(() {
-        matchingRecipes = filteredRecipes;
-      });
-    }
-  }
-
-  void _saveSearchKeyword(String keyword) async {
-    final searchRef = FirebaseFirestore.instance.collection('search_keywords');
-
-    try {
-      final snapshot = await searchRef.doc(keyword).get();
-      if (snapshot.exists) {
-        // 기존 데이터가 있으면 검색 횟수를 증가
-        await searchRef.doc(keyword).update({
-          'count': FieldValue.increment(1),
-        });
-      } else {
-        // 새로운 검색어를 추가
-        await searchRef.doc(keyword).set({
-          'keyword': keyword,
-          'count': 1,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      print('검색어 저장 중 오류 발생: $e');
-    }
-  }
-
-  Future<List<String>> _applyCategoryPriority(
-      List<String> fridgeIngredients) async {
-    // Firestore에서 재료-카테고리 데이터를 불러옴
-    Map<String, String> ingredientToCategory =
-        await _loadIngredientCategoriesFromFirestore();
-
-    // 냉장고 재료에 대해 우선순위 계산
-    List<MapEntry<String, int>> prioritizedIngredients =
-        fridgeIngredients.map((ingredient) {
-      // 재료에 대한 카테고리를 찾음
-      String category = ingredientToCategory[ingredient] ?? "";
-      // 해당 카테고리의 우선순위를 찾음
-      int priority = categoryPriority[category] ?? 0;
-
-      return MapEntry(ingredient, priority);
-    }).toList();
-
-    // 우선순위에 따라 재료 정렬
-    prioritizedIngredients.sort((a, b) => b.value.compareTo(a.value));
-
-    // 최종적으로 상위 10개의 재료를 선택
-    List<String> topIngredients =
-        prioritizedIngredients.map((entry) => entry.key).take(10).toList();
-
-    return topIngredients;
-  }
-
   void _toggleScraped(String recipeId) async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     try {
       QuerySnapshot<Map<String, dynamic>> existingScrapedRecipes =
-          await FirebaseFirestore.instance
-              .collection('scraped_recipes')
-              .where('recipeId', isEqualTo: recipeId)
-              .where('userId', isEqualTo: userId)
-              .get();
+      await FirebaseFirestore.instance
+          .collection('scraped_recipes')
+          .where('recipeId', isEqualTo: recipeId)
+          .where('userId', isEqualTo: userId)
+          .get();
 
       if (existingScrapedRecipes.docs.isEmpty) {
         // 스크랩이 존재하지 않으면 새로 추가
@@ -534,6 +560,29 @@ class _ViewResearchListState extends State<ViewResearchList> {
     }
   }
 
+  void _saveSearchKeyword(String keyword) async {
+    final searchRef = FirebaseFirestore.instance.collection('search_keywords');
+
+    try {
+      final snapshot = await searchRef.doc(keyword).get();
+      if (snapshot.exists) {
+        // 기존 데이터가 있으면 검색 횟수를 증가
+        await searchRef.doc(keyword).update({
+          'count': FieldValue.increment(1),
+        });
+      } else {
+        // 새로운 검색어를 추가
+        await searchRef.doc(keyword).set({
+          'keyword': keyword,
+          'count': 1,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('검색어 저장 중 오류 발생: $e');
+    }
+  }
+
   void _refreshRecipeData() {
     loadRecipes(); // 레시피 목록을 다시 불러오는 메서드
   }
@@ -565,14 +614,22 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                 vertical: 8.0, horizontal: 10.0),
                           ),
                           onSubmitted: (value) {
-                            _searchItems(value);
-                            _saveSearchKeyword(value);
+                            final trimmedValue = value.trim();
+                            if (trimmedValue.isNotEmpty) {
+                              setState(() {
+                                if (!keywords.contains(trimmedValue)) {
+                                  keywords.add(trimmedValue); // 새로운 키워드 추가
+                                }
+                              });
+                              _saveSearchKeyword(trimmedValue); // 검색어 저장
+                              _initializeSearch(); // 검색 실행
+                              _searchController.clear();
+                            }
                           }),
                     ),
                     SizedBox(width: 10),
                   ]),
             ),
-            // if (widget.useFridgeIngredients) _buildFridgeIngredientsChip(),
             Padding(
               padding: const EdgeInsets.all(1.0),
               child: _buildChips(), // 키워드 목록 위젯
@@ -592,28 +649,23 @@ class _ViewResearchListState extends State<ViewResearchList> {
     return Wrap(
       spacing: 6.0,
       runSpacing: 1.0,
-      children: [
-        _buildFridgeIngredientsChip(), // 냉장고 재료 Chip 먼저 렌더링
-        ...keywords
-            .where((keyword) => !(useFridgeIngredientsState &&
-                fridgeIngredients.contains(keyword)))
-            .map((keyword) {
-          return Chip(
-            // backgroundColor: theme.scaffoldBackgroundColor,
-            label: Text(
-              keyword,
-              style: TextStyle(
-                fontSize: 12.0,
-                color: theme.chipTheme.labelStyle!.color,
-              ),
+      children: keywords
+          .where((keyword) => keyword.trim().isNotEmpty) // 빈 문자열 필터링
+          .map((keyword) {
+        return Chip(
+          label: Text(
+            keyword,
+            style: TextStyle(
+              fontSize: 12.0,
+              color: theme.chipTheme.labelStyle?.color,
             ),
-            deleteIcon: Icon(Icons.close, size: 16.0),
-            onDeleted: () {
-              setState(() {
-                keywords.remove(keyword); // 키워드 삭제
-                loadRecipes();
-              });
-            },
+          ),
+          deleteIcon: Icon(Icons.close, size: 16.0),
+          onDeleted: () {
+            setState(() {
+              keywords.remove(keyword); // 키워드 삭제
+            });
+          },
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
               side: BorderSide(
@@ -623,7 +675,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
             ),
           );
         }).toList(),
-      ],
     );
   }
 
