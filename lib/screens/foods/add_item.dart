@@ -8,8 +8,10 @@ import 'package:food_for_later/models/default_food_model.dart';
 import 'package:food_for_later/models/foods_model.dart';
 import 'package:food_for_later/models/preferred_food_model.dart';
 import 'package:food_for_later/screens/foods/add_item_to_category.dart';
+import 'package:food_for_later/screens/foods/add_preferred_category.dart';
 import 'package:food_for_later/screens/fridge/fridge_item_details.dart';
 import 'package:intl/intl.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddItem extends StatefulWidget {
@@ -82,6 +84,7 @@ class _AddItemState extends State<AddItem> {
     setState(() {
       selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
     });
+    print('selectedFridge $selectedFridge');
   }
 
   void _navigateToAddItemPage() async {
@@ -99,7 +102,21 @@ class _AddItemState extends State<AddItem> {
       _loadCategoriesFromFirestore();
     }
   }
+  void _navigateToAddCategoryPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddItemToCategory(
+          // categoryName: selectedCategory ?? '기타',
+        ),
+        fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
+      ),
+    );
 
+    if (result == true) {
+      _loadCategoriesFromFirestore();
+    }
+  }
   void _loadCategoriesFromFirestore() async {
     try {
       final snapshot =
@@ -160,6 +177,7 @@ class _AddItemState extends State<AddItem> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
           .get();
       final categories = snapshot.docs.map((doc) {
         return PreferredFoodModel.fromFirestore(doc);
@@ -169,14 +187,10 @@ class _AddItemState extends State<AddItem> {
         itemsByPreferredCategory = {};
 
         for (var categoryModel in categories) {
-          // 각 categoryModel의 category 필드(Map<String, List<String>>)에서 키를 추출
           categoryModel.category.forEach((categoryName, itemList) {
-            // 해당 카테고리 이름으로 itemsByPreferredCategory에 데이터를 추가
             if (itemsByPreferredCategory.containsKey(categoryName)) {
-              // 이미 있는 리스트에 categoryModel을 추가
               itemsByPreferredCategory[categoryName]!.add(categoryModel);
             } else {
-              // 새로운 리스트 생성 후 categoryModel 추가
               itemsByPreferredCategory[categoryName] = [categoryModel];
             }
           });
@@ -579,6 +593,10 @@ class _AddItemState extends State<AddItem> {
 
   Widget _buildPreferredCategoryGrid() {
     final theme = Theme.of(context);
+
+    final itemCount = itemsByPreferredCategory.keys.length +
+        (widget.sourcePage == 'preferred_foods_category' ? 1 : 0);
+
     return GridView.builder(
       shrinkWrap: true,
       // GridView의 크기를 콘텐츠에 맞게 줄임
@@ -590,48 +608,79 @@ class _AddItemState extends State<AddItem> {
         mainAxisSpacing: 8.0,
         childAspectRatio: 1,
       ),
-      itemCount: itemsByPreferredCategory.keys.length,
+      itemCount: itemCount,
       itemBuilder: (context, index) {
-        String category = itemsByPreferredCategory.keys.elementAt(index);
-        // 카테고리 그리드 렌더링
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              if (selectedCategory == category) {
-                selectedCategory = null;
-              } else {
-                selectedCategory = category;
-                // filteredItems = widget.itemsByCategory[category] ?? []; // null 확인
-              }
-            });
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: selectedCategory == category
-                  ? theme.chipTheme.selectedColor
-                  : theme.chipTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8.0),
-            ), // 카테고리 버튼 크기 설정
-            height: 60,
-            // margin: EdgeInsets.symmetric(vertical: 8.0),
-            child: Center(
-              child: AutoSizeText(
-                category,
-                style: TextStyle(
-                  color: selectedCategory == category
-                      ? theme.chipTheme.secondaryLabelStyle!.color
-                      : theme.chipTheme.labelStyle!.color,
+        if (widget.sourcePage == 'preferred_foods_category' &&
+            index == itemsByPreferredCategory.keys.length) {
+          //아이템 그리드 마지막에 +아이콘 그리드 렌더링
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddPreferredCategory(),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                minFontSize: 6,
-                // 최소 글자 크기 설정
-                maxFontSize: 16, // 최대 글자 크기 설정
+              ).then((_) {
+                // 새 페이지에서 데이터 추가 후 돌아왔을 때 데이터 새로고침
+                _loadPreferredFoodsCategoriesFromFirestore();
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: selectedItems == items
+                    ? theme.chipTheme.selectedColor
+                    : theme.chipTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              height: 60, // 카
+              child: Center(
+                child: Icon(Icons.add,
+                    color: theme.chipTheme.labelStyle!.color, size: 32),
               ),
             ),
-          ),
-        );
+          );
+        } else {
+          String category = itemsByPreferredCategory.keys.elementAt(index);
+          // 카테고리 그리드 렌더링
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (selectedCategory == category) {
+                  selectedCategory = null;
+                } else {
+                  selectedCategory = category;
+                  // filteredItems = widget.itemsByCategory[category] ?? []; // null 확인
+                }
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: selectedCategory == category
+                    ? theme.chipTheme.selectedColor
+                    : theme.chipTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(8.0),
+              ), // 카테고리 버튼 크기 설정
+              height: 60,
+              // margin: EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(
+                child: AutoSizeText(
+                  category,
+                  style: TextStyle(
+                    color: selectedCategory == category
+                        ? theme.chipTheme.secondaryLabelStyle!.color
+                        : theme.chipTheme.labelStyle!.color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  minFontSize: 6,
+                  // 최소 글자 크기 설정
+                  maxFontSize: 16, // 최대 글자 크기 설정
+                ),
+              ),
+            ),
+          );
+        }
       },
     );
   }
@@ -681,7 +730,21 @@ class _AddItemState extends State<AddItem> {
           //아이템 그리드 마지막에 +아이콘 그리드 렌더링
           return GestureDetector(
             onTap: () {
-              _navigateToAddItemPage();
+              if (widget.sourcePage == 'preferred_foods_category') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddPreferredCategory(
+                      categoryName: selectedCategory ?? '기타', // 선택된 카테고리 전달
+                    ),
+                  ),
+                ).then((_) {
+                  // 돌아왔을 때 데이터 갱신
+                  _loadPreferredFoodsCategoriesFromFirestore();
+                });
+              } else {
+                _navigateToAddItemPage();
+              }
             },
             child: Container(
               decoration: BoxDecoration(

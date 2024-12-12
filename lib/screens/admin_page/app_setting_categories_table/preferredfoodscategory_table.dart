@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/models/preferred_food_model.dart';
@@ -43,9 +44,12 @@ class _PreferredfoodscategoryTableState
   }
 
   Future<void> _loadFoodsData() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
           .get();
 
       if (snapshot.docs.isEmpty) {

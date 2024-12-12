@@ -6,12 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ViewResearchList extends StatefulWidget {
-  final List<String> category;
+  final List<String>? category;
   final bool useFridgeIngredients;
+  final List<String>? initialKeywords;
 
   ViewResearchList({
-    required this.category,
+    this.category,
     required this.useFridgeIngredients,
+    this.initialKeywords,
   });
 
   @override
@@ -55,52 +57,14 @@ class _ViewResearchListState extends State<ViewResearchList> {
   void initState() {
     super.initState();
     useFridgeIngredientsState = widget.useFridgeIngredients;
-    // fetchRecipes(keywords: keywords);
-    // setState(() {
-    //   keywords.addAll(widget.category.where((c) => !keywords.contains(c)));
-    // });
-    _initializeSearch();
+    keywords = widget.initialKeywords ?? [];
+    keywords = widget.category ?? [];
+    _loadPreferredFoodsByCategory().then((_) {
+      _initializeSearch();
+    });
     _initializeTopIngredients();
-    _loadPreferredFoodsByCategory();
     _loadSearchSettingsFromLocal();
-    //     .then((_) {
-    //   // 검색 설정을 로드한 후, 각 카테고리에 대해 선호 식품을 불러옴
-    //   if (selectedPreferredFoodCategory != null &&
-    //       selectedPreferredFoodCategory!.isNotEmpty) {
-    //     for (String category in selectedPreferredFoodCategory!) {
-    //       _loadPreferredFoodsByCategory(category).then((_) {
-    //         if (itemsByCategory.isNotEmpty) {
-    //           loadRecipesByPreferredFoodsCategory();
-    //         } else {
-    //           _applyCategoryPriority(fridgeIngredients).then((_) {
-    //             loadRecipes().then((_) {
-    //               setState(() {
-    //                 _searchByCategoryKeywords();
-    //                 loadRecipes();
-    //               });
-    //             });
-    //           });
-    //         }
-    //       });
-    //     }
-    //   } else {
-    //     loadRecipes().then((_) {
-    //       _searchByCategoryKeywords();
-    //     });
-    //   }
-    // });
-    // if (widget.category.isNotEmpty) {
-    //   setState(() {
-    //     for (var category in widget.category) {
-    //       if (!keywords.contains(category)) {
-    //         keywords.add(category);
-    //       }
-    //     }
-    //   });
-    // }
-    // if (widget.useFridgeIngredients) {
-    //   _loadFridgeItemsFromFirestore(); // 냉장고 재료 불러오기
-    // }
+    _loadFridgeItemsFromFirestore();
   }
 
   // 검색 상세설정 값 불러오기
@@ -132,7 +96,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
         fridgeIngredients =
             snapshot.docs.map((doc) => doc['items'] as String).toList();
       });
-      print('Loaded fridgeIngredients: $fridgeIngredients');
     } catch (e) {
       print('Error loading fridge items: $e');
     }
@@ -162,7 +125,6 @@ class _ViewResearchListState extends State<ViewResearchList> {
       try {
         await _loadFridgeItemsFromFirestore();
         topIngredients = await _applyCategoryPriority(fridgeIngredients);
-        print('Before fetchRecipes - topIngredients: $topIngredients');
       } catch (error) {
         print('Error initializing fridge ingredients: $error');
       }
@@ -171,9 +133,11 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   // 선호카테고리 불러오기
   Future<void> _loadPreferredFoodsByCategory() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
           .get();
 
       if (snapshot.docs.isEmpty) {
@@ -206,6 +170,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       setState(() {
         itemsByCategory = filteredCategoryData;
       });
+      print('itemsByCategory ${itemsByCategory} ');
     } catch (e) {
       print('Error loading preferred foods by category: $e');
     }
@@ -213,15 +178,18 @@ class _ViewResearchListState extends State<ViewResearchList> {
 
   Future<void> loadRecipesByPreferredFoodsCategory() async {
     try {
-      List<String> allPreferredItems = [];
-      for (String category in selectedPreferredFoodCategory!) {
-        if (itemsByCategory.containsKey(category)) {
-          allPreferredItems.addAll(itemsByCategory[category]!);
-        }
-      }
+      List<String> allPreferredItems = itemsByCategory.values
+          .expand((list) => list)
+          .toList();
+
+      print('allPreferredItems ${allPreferredItems} ');
+
       setState(() {
         excludeKeywords = [...?excludeKeywords, ...allPreferredItems];
       });
+
+      print('excludeKeywords ${excludeKeywords} ');
+
       await fetchRecipes(
           keywords: keywords,
           topIngredients: topIngredients,
@@ -257,12 +225,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
     // String? specificKeyword,
     List<String>? cookingMethods,
     bool filterExcluded = true,
-
-
   }) async {
     try {
-      print('fetchRecipes - keywords: $keywords');
-      print('fetchRecipes - topIngredients: $topIngredients');
       if ((keywords == null || keywords.isEmpty) &&
           (topIngredients == null || topIngredients.isEmpty)) {
         setState(() {
@@ -578,7 +542,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
       }
     });
 
-    return keywords
+    return keywordsChips
         .where((keyword) => keyword.trim().isNotEmpty) // 빈 문자열 필터링
         .map((keyword) {
       return Chip(
@@ -596,8 +560,8 @@ class _ViewResearchListState extends State<ViewResearchList> {
           });
           await fetchRecipes(
                   keywords: keywords,
-                  cookingMethods: selectedCookingMethods,
-                  topIngredients: topIngredients
+                  // cookingMethods: selectedCookingMethods,
+                  // topIngredients: topIngredients
           );
         },
         shape: RoundedRectangleBorder(
@@ -623,9 +587,10 @@ class _ViewResearchListState extends State<ViewResearchList> {
         ),
         deleteIcon: Icon(Icons.close, size: 16.0),
         onDeleted: () {
+          print('keywords $keywords');
           setState(() {
             useFridgeIngredientsState = false;
-            fridgeIngredients.clear(); // 냉장고 재료 삭제
+            keywords.remove(fridgeIngredients);
             fetchRecipes(
                 keywords: keywords,
                 topIngredients: null,
@@ -681,6 +646,7 @@ class _ViewResearchListState extends State<ViewResearchList> {
             ...recipe.methods, // 이 레시피의 method 키워드들
             ...recipe.themes // 이 레시피의 theme 키워드들
           ];
+
           return FutureBuilder<bool>(
             future: loadScrapedData(recipe.id), // 각 레시피별로 스크랩 상태를 확인
             builder: (context, snapshot) {
@@ -779,15 +745,11 @@ class _ViewResearchListState extends State<ViewResearchList> {
                                       spacing: 6.0,
                                       runSpacing: 4.0,
                                       children: keywordList.map((ingredient) {
-                                        print('fridgeIngredients $fridgeIngredients');
                                         bool inFridge = fridgeIngredients.contains(ingredient);
-                                        print('$ingredient $inFridge');
-                                        bool isKeyword =
-                                            keywords.contains(ingredient) ||
+                                        bool isKeyword = keywords.contains(ingredient) ||
                                             (useFridgeIngredientsState && topIngredients.contains(ingredient));;
                                         bool isFromPreferredFoods =
-                                            itemsByCategory.values.any((list) =>
-                                                list.contains(ingredient));
+                                            itemsByCategory.values.any((list) => list.contains(ingredient));
                                         return Container(
                                           padding: EdgeInsets.symmetric(
                                               vertical: 2.0, horizontal: 4.0),

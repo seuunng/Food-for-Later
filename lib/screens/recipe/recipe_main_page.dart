@@ -163,64 +163,6 @@ class _RecipeMainPageState extends State<RecipeMainPage>
     }
   }
 
-  // void _loadPreferredFoodsCategories() async {
-  //   try {
-  //     final snapshot = await FirebaseFirestore.instance
-  //         .collection('preferred_foods_categories')
-  //         .get();
-  //
-  //     final Map<String, List<String>> preferredFoodItems = {};
-  //
-  //     for (var doc in snapshot.docs) {
-  //       final data = doc.data();
-  //       final String? category = data['category'] as String?;
-  //       final List<dynamic>? items = data['items'] as List<dynamic>?;
-  //
-  //       if (category != null && items != null) {
-  //         preferredFoodItems[category] = items.map((item) => item.toString()).toList();
-  //       }
-  //     }
-  //
-  //     setState(() {
-  //       this.itemsByCategory = preferredFoodItems; // 카테고리별로 아이템 저장
-  //     });
-  //
-  //   } catch (e) {
-  //     print('카테고리 데이터를 불러오는 데 실패했습니다: $e');
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('카테고리 데이터를 불러오는 데 실패했습니다.')),
-  //     );
-  //   }
-  // }
-
-  // void _searchItems(String keyword) {
-  //   List<String> tempFilteredItems = [];
-  //   setState(() {
-  //     searchKeyword = keyword.trim().toLowerCase();
-  //     Navigator.push(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (context) => ViewResearchList(
-  //           category: [searchKeyword], // 필터링된 결과를 category로 넘김
-  //           useFridgeIngredients: false,
-  //         ),
-  //       ),
-  //     );
-  //   });
-  // }
-
-  // Future<void> _searchByTopIngredients(List<String> topIngredients) async {
-  //   try {
-  //     final querySnapshot = await _db
-  //         .collection('recipe')
-  //         .where('foods', arrayContainsAny: topIngredients)
-  //         .get();
-  //     print('topIngredients $topIngredients');
-  //     // 필요한 추가 로직 (예: 레시피 리스트 저장)
-  //   } catch (e) {
-  //     print('Error searching by top ingredients: $e');
-  //   }
-  // }
   void _saveSearchKeyword(String keyword) async {
     final searchRef = FirebaseFirestore.instance.collection('search_keywords');
 
@@ -305,13 +247,13 @@ class _RecipeMainPageState extends State<RecipeMainPage>
                       });
                       _saveSearchKeyword(searchKeyword);
                       _searchController.clear();
-                      // 엔터 키를 눌렀을 때 ViewResearchList로 이동
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ViewResearchList(
                             category: [searchKeyword], // 필터링된 결과 전달
                             useFridgeIngredients: false,
+                            initialKeywords: [searchKeyword]
                           ),
                         ),
                       );
@@ -370,20 +312,15 @@ class _RecipeMainPageState extends State<RecipeMainPage>
               child: NavbarButton(
                 buttonTitle: '냉장고 재료 레시피 추천',
                 onPressed: () async {
-                  // 1. 우선순위에 따른 상위 재료 추출
                   List<String> topIngredients =
                       _getTopIngredientsByCategoryPriority(
                           itemsByCategory, fridgeIngredients);
 
-                  // 2. 상위 재료를 기반으로 레시피 검색 수행
-                  // await _searchByTopIngredients(topIngredients);
-
-                  // 3. 검색된 결과를 ViewResearchList로 전달하면서 페이지 이동
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ViewResearchList(
-                        category: topIngredients, // 추출된 재료를 전달
+                        // category: topIngredients,
                         useFridgeIngredients: true,
                       ),
                     ),

@@ -11,9 +11,9 @@ import 'package:food_for_later/screens/admin_page/admin_main_page.dart';
 import 'package:intl/intl.dart';
 
 class AddItemToCategory extends StatefulWidget {
-  final String categoryName; // 선택된 카테고리명을 받을 변수
+  final String? categoryName; // 선택된 카테고리명을 받을 변수
 
-  AddItemToCategory({required this.categoryName}); // 생성자에서 카테고리명 받기
+  AddItemToCategory({this.categoryName}); // 생성자에서 카테고리명 받기
 
   @override
   _AddItemToCategoryState createState() => _AddItemToCategoryState();
@@ -68,7 +68,7 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
 
       setState(() {
         foodsCategories = uniqueCategories;
-        if (widget.categoryName.isNotEmpty) {
+        if (widget.categoryName != null && widget.categoryName!.isNotEmpty) {
           selectedFoodsCategory = foodsCategories.firstWhere(
             (category) => category.defaultCategory == widget.categoryName,
             orElse: () => FoodsModel(
@@ -93,7 +93,8 @@ class _AddItemToCategoryState extends State<AddItemToCategory> {
   // 냉장고 카테고리
   Future<void> _loadFridgeCategoriesFromFirestore() async {
     final snapshot =
-        await FirebaseFirestore.instance.collection('fridge_categories').get();
+        await FirebaseFirestore.instance.collection('fridge_categories')
+            .get();
 
     final categories = snapshot.docs.map((doc) {
       return FridgeCategory.fromFirestore(doc);

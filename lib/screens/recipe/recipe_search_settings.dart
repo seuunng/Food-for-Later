@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/models/preferred_food_model.dart';
@@ -57,9 +58,11 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
   }
 
   Future<void> _loadPreferredFoodsCategoriesFromFirestore() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
           .get();
       final categories = snapshot.docs.map((doc) {
         return PreferredFoodModel.fromFirestore(doc);
