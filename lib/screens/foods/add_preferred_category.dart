@@ -27,7 +27,9 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
     if (widget.categoryName != null && widget.categoryName!.isNotEmpty) {
       _loadCategoryItems(); // Firestore에서 데이터 로드
     } else {
-      isLoading = false; // 초기 카테고리가 없을 경우 로딩 상태 해제
+      setState(() {
+        isLoading = false; // 초기 카테고리가 없을 경우 로딩 상태 해제
+      });
     }
   }
 
@@ -36,19 +38,14 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
           .where('userId', isEqualTo: userId)
-          .where('category.${widget.categoryName}', isGreaterThanOrEqualTo: [])
+          .where('categoryName', isEqualTo: widget.categoryName)
           .get();
 
-      if (snapshot.docs.isNotEmpty) {
-        final data = snapshot.docs.first.data();
-        final List<dynamic>? loadedItems = data['category'][widget.categoryName] as List<dynamic>?;
+      setState(() {
+        items = snapshot.docs.map((doc) => doc['item'] as String).toList();
+        isLoading = false; // 로딩 상태 해제
+      });
 
-        if (loadedItems != null) {
-          setState(() {
-            items = List<String>.from(loadedItems);
-          });
-        }
-      }
     } catch (e) {
       print('Error loading items: $e');
     } finally {
@@ -76,23 +73,51 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
     }
 
     try {
-      await FirebaseFirestore.instance.collection('preferred_foods_categories').add({
-        'userId': userId,
-        'category': {
-          categoryController.text.trim(): items,
-        },
-      });
+      final categoryName = categoryController.text.trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('카테고리가 추가되었습니다.')),
-      );
+      // Firestore의 기존 데이터 업데이트
+      final snapshot = await FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
+          .where('category.$categoryName', isNotEqualTo: null)
+          .get();
 
+      if (snapshot.docs.isNotEmpty) {
+        // 문서가 존재하는 경우: 해당 카테고리에 값 추가
+        final docRef = snapshot.docs.first.reference;
+        final existingItems = List<String>.from(
+            snapshot.docs.first.data()['category'][categoryName] ?? []);
+
+        // 중복 항목 제거 후 새로운 아이템 추가
+        final updatedItems = {...existingItems, ...items}.toList();
+
+        await docRef.update({
+          'category.$categoryName': updatedItems, // 해당 카테고리 업데이트
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('카테고리가 업데이트되었습니다.')),
+        );
+      } else {
+        // 문서가 없는 경우: 새 문서 생성
+        await FirebaseFirestore.instance.collection('preferred_foods_categories').add({
+          'userId': userId,
+          'category': {
+            categoryName: items, // 새 카테고리와 아이템 목록 추가
+          },
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('새 카테고리가 추가되었습니다.')),
+        );
+      }
+
+      // 상태 초기화 및 화면 종료
       setState(() {
         categoryController.clear();
         itemController.clear();
-        items.clear(); // 아이템 목록 초기화
+        items.clear();
       });
-
       Navigator.pop(context, true);
     } catch (e) {
       print('Error saving category: $e');
@@ -108,7 +133,9 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
       appBar: AppBar(
         title: Text('카테고리 추가'),
       ),
-      body: Padding(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator()) // 로딩 상태 표시
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

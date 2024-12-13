@@ -1,28 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PreferredFoodModel {
+  final Map<String, List<String>> categoryName;
   final String userId;
-  final Map<String, List<String>> category;
 
   PreferredFoodModel({
-    required this.userId,
-    required this.category,
+    required this.categoryName,
+    required this.userId
   });
 
-  factory PreferredFoodModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-
-    // category를 Map<String, List<String>>으로 변환
-    final category = (data['category'] as Map<String, dynamic>).map(
-          (key, value) => MapEntry(
+  factory PreferredFoodModel.fromFirestore(Map<String, dynamic> data) {
+    // Firestore 데이터에서 category 필드를 안전하게 변환
+    final rawCategory = data['category'] as Map<String, dynamic>? ?? {};
+    final categoryName = rawCategory.map((key, value) {
+      return MapEntry(
         key,
-        List<String>.from(value), // List<String>으로 변환
-      ),
-    );
+        (value as List<dynamic>).map((e) => e.toString()).toList(), // 명시적으로 List<String> 변환
+      );
+    });
+
+    final userId = data['userId'] as String? ?? '';
 
     return PreferredFoodModel(
-      userId: data['userId'] as String,
-      category: category,
+      userId: userId,
+      categoryName: categoryName,
     );
   }
 
@@ -30,7 +31,7 @@ class PreferredFoodModel {
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
-      'category': category,
+      'categoryName': categoryName
     };
   }
 }

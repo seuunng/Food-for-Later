@@ -65,21 +65,17 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
           .where('userId', isEqualTo: userId)
           .get();
       final categories = snapshot.docs.map((doc) {
-        return PreferredFoodModel.fromFirestore(doc);
+        return PreferredFoodModel.fromFirestore(doc.data());
       }).toList();
 
       setState(() {
         itemsByPreferredCategory = {};
 
         for (var categoryModel in categories) {
-          // 각 categoryModel의 category 필드(Map<String, List<String>>)에서 키를 추출
-          categoryModel.category.forEach((categoryName, itemList) {
-            // 해당 카테고리 이름으로 itemsByPreferredCategory에 데이터를 추가
+          categoryModel.categoryName.forEach((categoryName, itemList) {
             if (itemsByPreferredCategory.containsKey(categoryName)) {
-              // 이미 있는 리스트에 categoryModel을 추가
               itemsByPreferredCategory[categoryName]!.add(categoryModel);
             } else {
-              // 새로운 리스트 생성 후 categoryModel 추가
               itemsByPreferredCategory[categoryName] = [categoryModel];
             }
           });
@@ -274,7 +270,7 @@ class _RecipeSearchSettingsState extends State<RecipeSearchSettings> {
     final theme = Theme.of(context);
 
     final uniqueCategories = itemsByPreferredCategory.values
-        .expand((models) => models.expand((model) => model.category.keys))
+        .expand((models) => models.expand((model) => model.categoryName.keys))
         .toSet()
         .toList();
 

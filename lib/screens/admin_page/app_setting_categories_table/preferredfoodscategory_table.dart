@@ -62,10 +62,10 @@ class _PreferredfoodscategoryTableState
 
       // 문서 하나씩 처리
       snapshot.docs.forEach((doc) {
-        final data = PreferredFoodModel.fromFirestore(doc);
+        final data = PreferredFoodModel.fromFirestore(doc.data());
 
         // 카테고리 내 모든 itemsByCategory의 아이템을 순회하면서 각 아이템을 추가
-        data.category.forEach((category, foodList) {
+        data.categoryName.forEach((category, foodList) {
           tempCategories.add(category); // 카테고리 추가
           tempItemsByCategory[category] = foodList;
 
