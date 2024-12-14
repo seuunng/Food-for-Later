@@ -672,7 +672,6 @@ class _AddItemState extends State<AddItem> {
       }
     }
 
-// 아이템 개수 계산
     final itemCount = isPreferredCategory
         ? preferredItems.length
         : regularItems.length;

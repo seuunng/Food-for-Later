@@ -22,6 +22,7 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
 
   List<String> items = [];
   bool isLoading = true;
+  int? editingIndex; // 현재 편집 중인 항목의 인덱스
 
   @override
   void initState() {
@@ -91,7 +92,9 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
   }
 
   void _saveCategory() async {
-    if (categoryController.text.trim().isEmpty || items.isEmpty) {
+    final newCategoryName = categoryController.text.trim();
+
+    if (newCategoryName.isEmpty || items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('카테고리 이름과 아이템을 추가해주세요.')),
       );
@@ -99,40 +102,41 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
     }
 
     try {
-      final categoryName = categoryController.text.trim();
+      // 기존 카테고리 이름 가져오기
+      final oldCategoryName = widget.categoryName ?? "";
 
-      // Firestore의 기존 데이터 가져오기
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
           .where('userId', isEqualTo: userId)
-          .where('category.$categoryName', isNotEqualTo: null)
+          .where('category.$oldCategoryName', isNotEqualTo: null)
           .get();
 
       if (snapshot.docs.isNotEmpty) {
         final docRef = snapshot.docs.first.reference;
-        final existingItems = List<String>.from(
-            snapshot.docs.first.data()['category'][categoryName] ?? []);
 
-        // 기존 데이터와 현재 items를 비교하여 삭제된 아이템 찾기
-        final deletedItems = existingItems.where((item) => !items.contains(item)).toList();
-
-        // Firestore에서 삭제된 아이템 제거
-        if (deletedItems.isNotEmpty) {
-          final updatedItems = List<String>.from(items);
+        // 카테고리 이름 변경 및 아이템 업데이트
+        if (oldCategoryName.isNotEmpty && oldCategoryName != newCategoryName) {
+          // 기존 카테고리 이름 삭제 및 새 이름 추가
           await docRef.update({
-            'category.$categoryName': updatedItems, // 업데이트된 아이템 저장
+            'category.$oldCategoryName': FieldValue.delete(),
+            'category.$newCategoryName': items,
           });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('카테고리가 업데이트되었습니다.')),
-          );
+        } else {
+          // 기존 카테고리 이름이 동일한 경우 아이템만 업데이트
+          await docRef.update({
+            'category.$newCategoryName': items,
+          });
         }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('카테고리가 저장되었습니다.')),
+        );
       } else {
-        // Firestore에 새 카테고리 추가
+        // 새 카테고리 추가
         await FirebaseFirestore.instance.collection('preferred_foods_categories').add({
           'userId': userId,
           'category': {
-            categoryName: items, // 새 카테고리와 아이템 목록 추가
+            newCategoryName: items,
           },
         });
 
@@ -151,7 +155,57 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
     } catch (e) {
       print('Error saving category: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('카테고리 추가 중 오류가 발생했습니다.')),
+        SnackBar(content: Text('카테고리 저장 중 오류가 발생했습니다.')),
+      );
+    }
+  }
+
+  void _deleteCategory() async {
+    final categoryName = categoryController.text.trim();
+
+    if (categoryName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('삭제할 카테고리를 입력해주세요.')),
+      );
+      return;
+    }
+
+    try {
+      // Firestore에서 해당 카테고리 찾기
+      final snapshot = await FirebaseFirestore.instance
+          .collection('preferred_foods_categories')
+          .where('userId', isEqualTo: userId)
+          .where('category.$categoryName', isNotEqualTo: null)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final docRef = snapshot.docs.first.reference;
+
+        // 해당 카테고리를 삭제
+        await docRef.update({
+          'category.$categoryName': FieldValue.delete(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('카테고리가 삭제되었습니다.')),
+        );
+
+        // 상태 업데이트 및 초기화
+        setState(() {
+          categoryController.clear();
+          items.clear();
+        });
+
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('해당 카테고리가 존재하지 않습니다.')),
+        );
+      }
+    } catch (e) {
+      print('Error deleting category: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카테고리 삭제 중 오류가 발생했습니다.')),
       );
     }
   }
@@ -162,6 +216,12 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
     return Scaffold(
       appBar: AppBar(
         title: Text('카테고리 추가'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: _deleteCategory, // 삭제 함수 연결
+          ),
+        ],
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator()) // 로딩 상태 표시
@@ -191,17 +251,56 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
               child: ListView.builder(
                 itemCount: items.length,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(items[index]),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () {
+                  // 편집 모드인지 확인
+                  if (editingIndex == index) {
+                    final TextEditingController editController =
+                    TextEditingController(text: items[index]);
+                    return ListTile(
+                      title: TextField(
+                        controller: editController,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        onSubmitted: (newValue) {
+                          setState(() {
+                            if (newValue.trim().isNotEmpty) {
+                              items[index] = newValue.trim();
+                            }
+                            editingIndex = null; // 편집 모드 해제
+                          });
+                        },
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.check),
+                        onPressed: () {
+                          setState(() {
+                            if (editController.text.trim().isNotEmpty) {
+                              items[index] = editController.text.trim();
+                            }
+                            editingIndex = null; // 편집 모드 해제
+                          });
+                        },
+                      ),
+                    );
+                  } else {
+                    // 보기 모드
+                    return ListTile(
+                      title: Text(items[index]),
+                      onTap: () {
                         setState(() {
-                          items.removeAt(index);
+                          editingIndex = index; // 편집 모드로 전환
                         });
                       },
-                    ),
-                  );
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            items.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  }
                 },
               ),
             ),
@@ -211,12 +310,15 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
       bottomNavigationBar: Container(
         color: Colors.transparent,
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: SizedBox(
-          width: double.infinity,
-          child: NavbarButton(
+        child: Row(
+          children: [
+        Expanded(
+        child: NavbarButton(
             buttonTitle: '선호식품 카테고리에 저장',
             onPressed: _saveCategory,
           ),
+        )
+          ],
         ),
       ),
     );
