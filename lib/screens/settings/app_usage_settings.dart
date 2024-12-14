@@ -308,7 +308,7 @@ class _AppUsageSettingsState extends State<AppUsageSettings> {
                           builder: (context) => AddItem(
                             pageTitle: '선호식품 카테고리에 추가',
                             addButton: '카테고리에 추가',
-                            sourcePage: 'update_foods_category',
+                            sourcePage: 'preferred_foods_category',
                             onItemAdded: () {
                               setState(() {});
                             },

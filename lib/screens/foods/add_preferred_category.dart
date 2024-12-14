@@ -6,7 +6,10 @@ import 'package:food_for_later/components/navbar_button.dart';
 
 class AddPreferredCategory extends StatefulWidget {
   final String? categoryName;
-  AddPreferredCategory({this.categoryName});
+  final String? sourcePage;
+
+  AddPreferredCategory({this.categoryName, this.sourcePage});
+
   @override
   _AddPreferredCategoryState createState() =>
       _AddPreferredCategoryState();
@@ -23,12 +26,22 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
   @override
   void initState() {
     super.initState();
-    categoryController.text = widget.categoryName ?? ""; // 초기값 설정
-    if (widget.categoryName != null && widget.categoryName!.isNotEmpty) {
-      _loadCategoryItems(); // Firestore에서 데이터 로드
-    } else {
+
+    if (widget.sourcePage == 'add_items') {
+      // 특정 페이지에서 호출된 경우
+      categoryController.text = widget.categoryName ?? "";
+      if (widget.categoryName != null && widget.categoryName!.isNotEmpty) {
+        _loadCategoryItems(); // Firestore에서 데이터 로드
+      } else {
+        setState(() {
+          isLoading = false; // 카테고리 이름이 없을 경우 로딩 상태 해제
+        });
+      }
+    } else if (widget.sourcePage == 'add_category') {
+      // 다른 페이지에서 호출된 경우
+      categoryController.text = ""; // 빈값 설정
       setState(() {
-        isLoading = false; // 초기 카테고리가 없을 경우 로딩 상태 해제
+        isLoading = false; // 로딩 상태 해제
       });
     }
   }
@@ -38,14 +51,27 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
           .where('userId', isEqualTo: userId)
-          .where('categoryName', isEqualTo: widget.categoryName)
           .get();
 
+      if (snapshot.docs.isNotEmpty) {
+        final docData = snapshot.docs.first.data();
+
+        // Firestore에서 categoryName에 해당하는 아이템을 가져오기
+        final Map<String, dynamic>? categories = docData['category'] as Map<String, dynamic>?;
+
+        if (categories != null && widget.categoryName != null) {
+          final List<dynamic>? categoryItems = categories[widget.categoryName];
+
+          if (categoryItems != null) {
+            setState(() {
+              items = List<String>.from(categoryItems); // 기존 아이템 로드
+            });
+          }
+        }
+      }
       setState(() {
-        items = snapshot.docs.map((doc) => doc['item'] as String).toList();
         isLoading = false; // 로딩 상태 해제
       });
-
     } catch (e) {
       print('Error loading items: $e');
     } finally {
@@ -75,7 +101,7 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
     try {
       final categoryName = categoryController.text.trim();
 
-      // Firestore의 기존 데이터 업데이트
+      // Firestore의 기존 데이터 가져오기
       final snapshot = await FirebaseFirestore.instance
           .collection('preferred_foods_categories')
           .where('userId', isEqualTo: userId)
@@ -83,23 +109,26 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
           .get();
 
       if (snapshot.docs.isNotEmpty) {
-        // 문서가 존재하는 경우: 해당 카테고리에 값 추가
         final docRef = snapshot.docs.first.reference;
         final existingItems = List<String>.from(
             snapshot.docs.first.data()['category'][categoryName] ?? []);
 
-        // 중복 항목 제거 후 새로운 아이템 추가
-        final updatedItems = {...existingItems, ...items}.toList();
+        // 기존 데이터와 현재 items를 비교하여 삭제된 아이템 찾기
+        final deletedItems = existingItems.where((item) => !items.contains(item)).toList();
 
-        await docRef.update({
-          'category.$categoryName': updatedItems, // 해당 카테고리 업데이트
-        });
+        // Firestore에서 삭제된 아이템 제거
+        if (deletedItems.isNotEmpty) {
+          final updatedItems = List<String>.from(items);
+          await docRef.update({
+            'category.$categoryName': updatedItems, // 업데이트된 아이템 저장
+          });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('카테고리가 업데이트되었습니다.')),
-        );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('카테고리가 업데이트되었습니다.')),
+          );
+        }
       } else {
-        // 문서가 없는 경우: 새 문서 생성
+        // Firestore에 새 카테고리 추가
         await FirebaseFirestore.instance.collection('preferred_foods_categories').add({
           'userId': userId,
           'category': {
@@ -126,6 +155,7 @@ class _AddPreferredCategoryState extends State<AddPreferredCategory> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

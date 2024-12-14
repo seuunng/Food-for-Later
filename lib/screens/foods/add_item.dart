@@ -17,15 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AddItem extends StatefulWidget {
   final String pageTitle;
   final String addButton;
-
-  // final String fridgeFieldIndex;
   final String sourcePage;
   final Function onItemAdded;
 
   AddItem({
     required this.pageTitle,
     required this.addButton,
-    // required this.fridgeFieldIndex,
     required this.sourcePage,
     required this.onItemAdded,
   });
@@ -84,7 +81,6 @@ class _AddItemState extends State<AddItem> {
     setState(() {
       selectedFridge = prefs.getString('selectedFridge') ?? '기본 냉장고';
     });
-    print('selectedFridge $selectedFridge');
   }
 
   void _navigateToAddItemPage() async {
@@ -94,22 +90,6 @@ class _AddItemState extends State<AddItem> {
         builder: (context) => AddItemToCategory(
           categoryName: selectedCategory ?? '기타',
         ),
-        fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
-      ),
-    );
-
-    if (result == true) {
-      _loadCategoriesFromFirestore();
-    }
-  }
-
-  void _navigateToAddCategoryPage() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddItemToCategory(
-            // categoryName: selectedCategory ?? '기타',
-            ),
         fullscreenDialog: true, // 모달 다이얼로그처럼 보이게 설정
       ),
     );
@@ -131,7 +111,6 @@ class _AddItemState extends State<AddItem> {
         itemsByCategory = {};
 
         for (var category in categories) {
-          // 삭제된 아이템이면 건너뛰기
           if (widget.sourcePage != 'update_foods_category') {
             if (deletedItemNames.contains(category.foodsName)) {
               continue;
@@ -188,8 +167,6 @@ class _AddItemState extends State<AddItem> {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final model = PreferredFoodModel.fromFirestore(data);
-
-        print(data);
 
         model.categoryName.forEach((key, value) {
           print('categoryName key: $key, value: $value'); // 디버깅
@@ -363,7 +340,6 @@ class _AddItemState extends State<AddItem> {
       }
       // 결과 저장
       filteredItems = tempFilteredItems;
-      print("Filtered items updated: $filteredItems"); // 디버깅
     });
   }
 
@@ -603,7 +579,7 @@ class _AddItemState extends State<AddItem> {
 
   Widget _buildPreferredCategoryGrid() {
     final theme = Theme.of(context);
-    print('선호식품 itemsByPreferredCategory  ${itemsByPreferredCategory}');
+
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -625,6 +601,7 @@ class _AddItemState extends State<AddItem> {
                 MaterialPageRoute(
                   builder: (context) => AddPreferredCategory(
                     categoryName: selectedCategory ?? '기타',
+                    sourcePage: 'add_category',
                   ),
                 ),
               ).then((_) {
@@ -637,7 +614,7 @@ class _AddItemState extends State<AddItem> {
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: Center(
-                child: Icon(Icons.add, size: 32, color: theme.primaryColor),
+                child: Icon(Icons.add, size: 32, color: theme.chipTheme.labelStyle!.color),
               ),
             ),
           );
@@ -721,6 +698,7 @@ class _AddItemState extends State<AddItem> {
                   MaterialPageRoute(
                     builder: (context) => AddPreferredCategory(
                       categoryName: selectedCategory ?? '기타',
+                      sourcePage: 'add_items',
                     ),
                   ),
                 ).then((_) {
@@ -749,7 +727,6 @@ class _AddItemState extends State<AddItem> {
               ? preferredItems[index] as PreferredFoodModel
               : regularItems[index] as FoodsModel;
 
-          // 아이템 이름 추출
           final itemName = isPreferredCategory
               ? (item as PreferredFoodModel)
               .categoryName[selectedCategory!]
@@ -757,10 +734,11 @@ class _AddItemState extends State<AddItem> {
               : (item as FoodsModel).foodsName;
 
           final isSelected = selectedItems.contains(itemName);
-          final isDeleted = deletedItemNames.contains(itemName);
+          var isDeleted = deletedItemNames.contains(itemName);
 
           return GestureDetector(
-            onTap: widget.sourcePage != 'update_foods_category'
+            onTap: widget.sourcePage != 'update_foods_category' &&
+                widget.sourcePage != 'preferred_foods_category'
                 ? () {
                     setState(() {
                       if (isSelected) {
@@ -839,8 +817,7 @@ class _AddItemState extends State<AddItem> {
                     } else {
                       await FirebaseFirestore.instance
                           .collection('deleted_foods')
-                          .doc(currentItem.id)
-                          .set({
+                          .add({
                         'isDeleted': true,
                         'itemName': itemName,
                         'userId': userId
