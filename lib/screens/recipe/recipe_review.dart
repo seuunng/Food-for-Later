@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_for_later/screens/recipe/add_recipe_review.dart';
+import 'package:food_for_later/screens/recipe/full_screen_image_view.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 import 'package:intl/intl.dart';
 
 class RecipeReview extends StatefulWidget {
   late final String recipeId;
-  final userId = '현재 유저아이디';
 
   RecipeReview({
     required this.recipeId,
@@ -18,6 +19,7 @@ class RecipeReview extends StatefulWidget {
 
 class _RecipeReviewState extends State<RecipeReview> {
   List<Map<String, dynamic>> recipeReviews = [];
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   TextEditingController reviewContentController = TextEditingController();
   // bool isNiced = false; // 이미 좋아요를 눌렀는지 여부
@@ -85,14 +87,14 @@ class _RecipeReviewState extends State<RecipeReview> {
           await FirebaseFirestore.instance
               .collection('niced_reviews')
               .where('recipeId', isEqualTo: widget.recipeId)
-              .where('userId', isEqualTo: widget.userId)
+              .where('userId', isEqualTo: userId)
               .where('reviewId', isEqualTo: reviewId)
               .get();
 
       if (existingScrapedRecipes.docs.isEmpty) {
         // 스크랩이 존재하지 않으면 새로 추가
         await FirebaseFirestore.instance.collection('niced_reviews').add({
-          'userId': widget.userId,
+          'userId': userId,
           'recipeId': widget.recipeId,
           'reviewId': reviewId,
           'isNiced': true,
@@ -140,7 +142,7 @@ class _RecipeReviewState extends State<RecipeReview> {
                 .collection('niced_reviews')
                 .where('recipeId', isEqualTo: widget.recipeId)
                 .where('reviewId', isEqualTo: reviewId)
-                .where('userId', isEqualTo: widget.userId)
+                .where('userId', isEqualTo: userId)
                 .get();
 
         if (nicedReviewSnapshot.docs.isNotEmpty) {
@@ -197,19 +199,6 @@ class _RecipeReviewState extends State<RecipeReview> {
     );
   }
 
-  Widget _buildRatingStars(int rating) {
-    return Row(
-      children: List.generate(
-        rating,
-        (index) => Icon(
-          Icons.star,
-          color: Colors.amber,
-          size: 14,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -232,160 +221,196 @@ class _RecipeReviewState extends State<RecipeReview> {
         children: [
           Text('리뷰',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      SizedBox(height: 16),
-      recipeReviews.isEmpty
-          ? Center( // 리뷰가 없을 때 표시될 메시지
-        child: Column(
-          children: [
-            Icon(Icons.comment, size: 50, color: Colors.grey),
-            SizedBox(height: 10),
-            Text(
-              '아직 리뷰가 없습니다.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            Text(
-              '첫번째 리뷰를 작성해주세요!',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
-        ),
-      )
-          : ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: recipeReviews.length,
-              itemBuilder: (context, index) {
-                final Timestamp timestamp =
-                    recipeReviews[index]['timestamp'] ?? Timestamp.now();
-                final DateTime dateTime = timestamp.toDate();
-                final String formattedDate =
-                    DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
-                bool isNiced = recipeReviews[index]['isNiced'] ?? false;
-                int rating = recipeReviews[index]['rating'];
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+          SizedBox(height: 16),
+          recipeReviews.isEmpty
+              ? Center(
+                  // 리뷰가 없을 때 표시될 메시지
                   child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    children: [
+                      Icon(Icons.comment, size: 50, color: Colors.grey),
+                      SizedBox(height: 10),
+                      Text(
+                        '아직 리뷰가 없습니다.',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                      Text(
+                        '첫번째 리뷰를 작성해주세요!',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: recipeReviews.length,
+                  itemBuilder: (context, index) {
+                    final Timestamp timestamp =
+                        recipeReviews[index]['timestamp'] ?? Timestamp.now();
+                    final DateTime dateTime = timestamp.toDate();
+                    final String formattedDate =
+                        DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
+                    bool isNiced = recipeReviews[index]['isNiced'] ?? false;
+                    int rating = recipeReviews[index]['rating'];
+                    final List<String> images =
+                        List<String>.from(recipeReviews[index]['images'] ?? []);
+                    final bool isAuthor =
+                        recipeReviews[index]['userId'] == userId;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CircleAvatar(child: Icon(Icons.person)),
-                            SizedBox(width: 10),
-                            Column(
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  recipeReviews[index]['userId']!,
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  formattedDate,
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                _buildRatingStars(rating)
-                              ],
-                            ),
-                            Spacer(),
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _toggleNiced(index),
-                                  child: Icon(
-                                      isNiced
-                                          ? Icons.thumb_up
-                                          : Icons.thumb_up_alt_outlined,
-                                      size: 12),
-                                ),
+                                CircleAvatar(child: Icon(Icons.person)),
                                 SizedBox(width: 10),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                ReportAnIssue(
-                                                  postNo: recipeReviews[index]['reviewId'],
-                                                  postType: '리뷰',)));
-                                  },
-
-                                  child:
-                                      Icon(Icons.feedback_outlined, size: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      recipeReviews[index]['userId']!,
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      formattedDate,
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    _buildRatingStars(rating)
+                                  ],
                                 ),
-                                SizedBox(width: 10),
-                                Text('|'),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                AddRecipeReview(
-                                                    recipeId: widget.recipeId,
-                                                  reviewId: recipeReviews[index]['reviewId'],
-                                                )));
-                                  },
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: Size(30, 20),
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
+                                Spacer(),
+                                Row(children: [
+                                  GestureDetector(
+                                    onTap: () => _toggleNiced(index),
+                                    child: Icon(
+                                        isNiced
+                                            ? Icons.thumb_up
+                                            : Icons.thumb_up_alt_outlined,
+                                        size: 12),
                                   ),
-                                  child: Text('수정',
-                                      style: TextStyle(fontSize: 12)),
-                                ),
-                                TextButton(
-                                  onPressed: () => _confirmDeleteReview(index),
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: Size(30, 20),
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text('삭제',
-                                      style: TextStyle(fontSize: 12)),
-                                ),
-                                SizedBox(width: 5),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          recipeReviews[index]['content']!,
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8.0,
-                          runSpacing: 4.0,
-                          children: recipeReviews[index]['images'] != null
-                              ? List.generate(
-                                  recipeReviews[index]['images'].length,
-                                  (imgIndex) => Image.network(
-                                    recipeReviews[index]['images']
-                                        [imgIndex], // 네트워크에서 이미지 불러오기
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(Icons
-                                          .broken_image); // 이미지 로딩 실패 시 대체 아이콘
+                                  SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ReportAnIssue(
+                                                    postNo: recipeReviews[index]
+                                                        ['reviewId'],
+                                                    postType: '리뷰',
+                                                  )));
                                     },
+                                    child:
+                                        Icon(Icons.feedback_outlined, size: 12),
                                   ),
-                                )
-                              : [Container()],
-
-                          /// images가 null일 경우 빈 컨테이너를 표시
-                        ),
-                      ]),
-                );
-              },
-            ),
-
+                                  SizedBox(width: 10),
+                                ]),
+                                if (isAuthor)
+                                  Row(
+                                    children: [
+                                      Text('|'),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      AddRecipeReview(
+                                                        recipeId:
+                                                            widget.recipeId,
+                                                        reviewId:
+                                                            recipeReviews[index]
+                                                                ['reviewId'],
+                                                      )));
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: Size(30, 20),
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Text('수정',
+                                            style: TextStyle(fontSize: 12)),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            _confirmDeleteReview(index),
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: Size(30, 20),
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Text('삭제',
+                                            style: TextStyle(fontSize: 12)),
+                                      ),
+                                      SizedBox(width: 5),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              recipeReviews[index]['content']!,
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 4.0,
+                              children: images.isNotEmpty
+                                  ? images.map((imageUrl) {
+                                      return GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FullScreenImageView(
+                                                images: images,
+                                                initialIndex: images.indexOf(
+                                                    imageUrl), // 현재 클릭한 이미지의 인덱스 전달
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Image.network(
+                                          imageUrl,
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Icon(Icons.broken_image);
+                                          },
+                                        ),
+                                      );
+                                    }).toList()
+                                  : [Container()], // 이미지가 없는 경우 빈 컨테이너
+                            ),
+                          ]),
+                    );
+                  },
+                ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRatingStars(int rating) {
+    return Row(
+      children: List.generate(
+        rating,
+        (index) => Icon(
+          Icons.star,
+          color: Colors.amber,
+          size: 14,
+        ),
       ),
     );
   }

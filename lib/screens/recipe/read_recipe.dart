@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/screens/recipe/add_recipe.dart';
 import 'package:food_for_later/screens/recipe/add_recipe_review.dart';
+import 'package:food_for_later/screens/recipe/full_screen_image_view.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,9 +26,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
   List<String> ingredients = []; // 재료 목록
   String recipeName = '';
   int views = 0;
-  // int serving = 0;
-  // int time = 0;
-  // String difficuty = '';
   List<String> mainImages = [];
   List<bool> selectedIngredients = []; // 선택된 재료 상태 저장
   List<String> shoppingList = []; // 장바구니 목록
@@ -38,12 +36,12 @@ class _ReadRecipeState extends State<ReadRecipe> {
   bool isLiked = false; // 좋아요 상태
   bool isScraped = false; // 스크랩 상태
 
-  PageController _pageController = PageController();
-  int _currentPage = 0;
+  late PageController _pageController;
+  int _currentIndex = 0;
 
   bool isAdmin = false;
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +80,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
       print("Error checking admin role: $e");
     }
   }
-  
+
   Future<Map<String, dynamic>> _fetchRecipeData() async {
     return await fetchRecipeData(widget.recipeId); // Firestore에서 데이터 가져오기
   }
@@ -457,6 +455,18 @@ class _ReadRecipeState extends State<ReadRecipe> {
     }
   }
 
+  List<String> _collectAllImages(
+      List<String> mainImages, List<Map<String, String>> steps) {
+    List<String> allImages = [];
+    allImages.addAll(mainImages); // 메인 이미지 추가
+    for (var step in steps) {
+      if (step['image'] != null && step['image']!.isNotEmpty) {
+        allImages.add(step['image']!); // 조리 과정 이미지 추가
+      }
+    }
+    return allImages;
+  }
+
   void _refreshRecipeData() async {
     var newData = await fetchRecipeData(widget.recipeId);
 
@@ -534,14 +544,14 @@ class _ReadRecipeState extends State<ReadRecipe> {
             List<String> mainImages =
                 List<String>.from(data['mainImages'] ?? []);
 
-           final bool isOwner = currentUserId == data['userID'];
-           final bool showAdminOptions = isAdmin || isOwner;
+            final bool isOwner = currentUserId == data['userID'];
+            final bool showAdminOptions = isAdmin || isOwner;
 
             return SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildMainImageSection(mainImages),
+                  _buildMainImageSection(mainImages, steps),
                   _buildInfoSection(data),
                   _buildIngredientsSection(ingredients),
                   _buildCookingStepsSection(methods),
@@ -589,8 +599,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                       ),
                       SizedBox(width: 4),
                       if (isAdmin || isOwner)
-                        Row(
-                          children: [
+                        Row(children: [
                           Text('|'),
                           SizedBox(width: 4),
                           Container(
@@ -684,60 +693,73 @@ class _ReadRecipeState extends State<ReadRecipe> {
     );
   }
 
-  Widget _buildMainImageSection(List<String> mainImages) {
+  Widget _buildMainImageSection(
+      List<String> mainImages, List<Map<String, String>> steps) {
     if (mainImages.isEmpty) {
       return Container(
         height: 400,
-        color: Colors.grey, // 이미지가 없을 경우 배경색을 회색으로 설정
-        child: Icon(Icons.image, color: Colors.white, size: 100), // 대체 아이콘
+        color: Colors.grey,
+        child: Icon(Icons.image, color: Colors.white, size: 100),
       );
     }
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 400,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: mainImages.length,
-            onPageChanged: (int index) {
-              setState(() {
-                _currentPage = index; // 현재 페이지를 저장
-              });
-            },
-            itemBuilder: (context, index) {
-              return Image.network(
-                mainImages[index], // 현재 페이지의 이미지 URL
-                width: double.infinity,
-                fit: BoxFit.cover, // 이미지를 꽉 채우도록 설정
-                errorBuilder: (context, error, stackTrace) {
-                  return Center(
-                      child: Icon(Icons.error,
-                          color: Colors.red, size: 100)); // 이미지 로딩 실패 시 아이콘 표시
-                },
-              );
-            },
+    final allImages = _collectAllImages(mainImages, steps); // 모든 이미지를 수집
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FullScreenImageView(
+              images: allImages,
+              initialIndex: 0, // 메인 이미지부터 시작
+            ),
           ),
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(mainImages.length, (index) {
-            return AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              margin: EdgeInsets.symmetric(horizontal: 5),
-              width: _currentPage == index ? 12 : 8,
-              height: _currentPage == index ? 12 : 8,
-              decoration: BoxDecoration(
-                color: _currentPage == index ? Colors.black : Colors.grey,
-                shape: BoxShape.circle,
-              ),
-            );
-          }),
-        ),
-      ],
+        );
+      },
+      child: Column(
+        children: [
+          SizedBox(
+            height: 400,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: mainImages.length,
+              onPageChanged: (int index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return Image.network(
+                  mainImages[index],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                        child: Icon(Icons.error, color: Colors.red, size: 100));
+                  },
+                );
+              },
+            ),
+          ),
+          SizedBox(height: 10,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(mainImages.length, (index) {
+              return AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                margin: EdgeInsets.symmetric(horizontal: 5),
+                width:  _currentIndex == index ? 12 : 8,
+                height:  _currentIndex == index ? 12 : 8,
+                decoration: BoxDecoration(
+                  color:  _currentIndex == index ? Colors.black : Colors.grey,
+                  shape: BoxShape.circle,
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 
@@ -934,6 +956,8 @@ class _ReadRecipeState extends State<ReadRecipe> {
 
   Widget _buildRecipeSection(List<Map<String, String>> steps) {
     final theme = Theme.of(context);
+    final allImages = _collectAllImages(mainImages, steps);
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
@@ -951,41 +975,56 @@ class _ReadRecipeState extends State<ReadRecipe> {
             itemBuilder: (context, index) {
               bool hasImage = steps[index]['image'] != null &&
                   steps[index]['image']!.isNotEmpty;
-              return Column(
-                children: [
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    children: [
-                      hasImage
-                          ? Image.network(
-                              steps[index]['image']!,
-                              width: 150,
-                              height: 150,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Text('Error loading image');
-                              },
-                            )
-                          : Container(
-                              width: 150,
-                              height: 150,
-                              color: Colors.grey, // 이미지가 없을 때 회색 배경
-                              child: Icon(Icons.image, color: Colors.white),
-                            ),
-                      Expanded(
-                        child: Center(
-                          child: Text(steps[index]['description']!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: theme.colorScheme.onSurface)),
+              return GestureDetector(
+                  onTap: () {
+                    if (hasImage) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FullScreenImageView(
+                            images: allImages,
+                            initialIndex:
+                                mainImages.length + index, // 조리 과정 이미지의 시작 인덱스
+                          ),
                         ),
+                      );
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Row(
+                        children: [
+                          hasImage
+                              ? Image.network(
+                                  steps[index]['image']!,
+                                  width: 150,
+                                  height: 150,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Text('Error loading image');
+                                  },
+                                )
+                              : Container(
+                                  width: 150,
+                                  height: 150,
+                                  color: Colors.grey, // 이미지가 없을 때 회색 배경
+                                  child: Icon(Icons.image, color: Colors.white),
+                                ),
+                          Expanded(
+                            child: Center(
+                              child: Text(steps[index]['description']!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: theme.colorScheme.onSurface)),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              );
+                  ));
             },
           ),
         ],
