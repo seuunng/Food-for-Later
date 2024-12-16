@@ -31,8 +31,29 @@
 
   <title>food_for_later</title>
   <link rel="manifest" href="manifest.json">
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-analytics.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCVwCjP8Tn1FX7gxVO_IG_lJur8TLsu6Zc",
+      authDomain: "food-for-later.firebaseapp.com",
+      projectId: "food-for-later",
+      storageBucket: "food-for-later.appspot.com",
+      messagingSenderId: "897589496124",
+      appId: "1:897589496124:web:2f55ce54afa252a68eb639",
+      measurementId: "G-BFFCMJR6QT",
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+
 </body>
 </html>

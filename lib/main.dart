@@ -35,7 +35,9 @@ Future<void> main() async {
         (mode) => mode.toString().split('.').last == themeModeStr,
     orElse: () => CustomThemeMode.light,
   );
-  KakaoSdk.init(nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e');
+  KakaoSdk.init(
+    nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e',
+    javaScriptAppKey: '2b8be514fc6d4ca0c50beb374b34b60c',);
   runApp(
     MultiProvider(
       providers: [

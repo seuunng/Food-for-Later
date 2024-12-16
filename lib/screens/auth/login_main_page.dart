@@ -165,41 +165,34 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> signInWithKakao() async {
     try {
-      // Kakao 로그인
-      bool isInstalled = await kakao.isKakaoTalkInstalled();
-      kakao.OAuthToken token = isInstalled
+      // Step 1: 카카오톡 설치 여부 확인 및 로그인 요청
+      bool isKakaoTalkInstalled = await kakao.isKakaoTalkInstalled();
+      kakao.OAuthToken token = isKakaoTalkInstalled
           ? await kakao.UserApi.instance.loginWithKakaoTalk()
           : await kakao.UserApi.instance.loginWithKakaoAccount();
 
-      print('isInstalled $isInstalled');
-
-
-      if (isInstalled) {
-        token = await kakao.UserApi.instance.loginWithKakaoTalk();
-        await recordSessionStart();
-        print('token $token');
-
-      } else {
-        token = await kakao.UserApi.instance.loginWithKakaoAccount();
-      }
-
-      // Kakao Access Token으로 Firebase Custom Token 생성 및 로그인
+      // Step 2: 카카오 Access Token 획득
       final kakaoAccessToken = token.accessToken;
-      print('kakaoAccessToken $kakaoAccessToken');
 
-      // Firebase 서버에서 Kakao Token을 통해 Custom Token을 생성하는 로직 필요
-      final firebaseCustomToken = await createFirebaseToken(kakaoAccessToken);
-      print('firebaseCustomToken $firebaseCustomToken');
-      // Firebase 로그인
-      firebase_auth.UserCredential result = await _auth.signInWithCustomToken(firebaseCustomToken);
+      // Step 3: Firebase Custom Token 생성 요청
+      final response = await http.post(
+        Uri.parse('https://us-central1-food-for-later.cloudfunctions.net/createFirebaseToken'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'kakaoAccessToken': kakaoAccessToken}),
+      );
 
-      if (result.user != null) {
-        await addUserToFirestore(result.user!); // Firestore에 사용자 추가
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+      if (response.statusCode == 200) {
+        // Step 4: Firebase에 Custom Token으로 로그인
+        final data = jsonDecode(response.body);
+        final firebaseCustomToken = data['firebaseCustomToken'];
+
+        final userCredential = await firebase_auth.FirebaseAuth.instance
+            .signInWithCustomToken(firebaseCustomToken);
+
+        print('카카오 로그인 성공: ${userCredential.user}');
+      } else {
+        print('Firebase Custom Token 생성 실패: ${response.body}');
       }
-
     } catch (e) {
       print('카카오 로그인 오류: $e');
       ScaffoldMessenger.of(context).showSnackBar(
