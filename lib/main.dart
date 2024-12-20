@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:food_for_later/firebase_options.dart';
 import 'package:food_for_later/providers/theme_provider.dart';
 import 'package:food_for_later/screens/auth/login_main_page.dart';
@@ -18,6 +21,25 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 //Flutter 앱의 진입점
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+
+  try {
+    await dotenv.load(fileName: "assets/env/.env");
+
+  } catch (e) {
+    print("Failed to load .env file: $e");
+  }
+
+  KakaoSdk.init(
+    nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e',
+    javaScriptAppKey: '2b8be514fc6d4ca0c50beb374b34b60c',
+  );
+  FlutterNaverLogin.initSdk(
+    clientId: dotenv.env['NAVER_CLIENT_ID'] ?? '',
+    clientSecret: dotenv.env['NAVER_CLIENT_SECRET'] ?? '',
+    clientName: dotenv.env['NAVER_CLIENT_NAME'] ?? 'food_for_later',
+  );
+  print(dotenv.env['NAVER_CLIENT_ID']);
   try {
     print("Initializing Firebase...");
     await Firebase.initializeApp(
@@ -35,9 +57,6 @@ Future<void> main() async {
         (mode) => mode.toString().split('.').last == themeModeStr,
     orElse: () => CustomThemeMode.light,
   );
-  KakaoSdk.init(
-    nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e',
-    javaScriptAppKey: '2b8be514fc6d4ca0c50beb374b34b60c',);
   runApp(
     MultiProvider(
       providers: [

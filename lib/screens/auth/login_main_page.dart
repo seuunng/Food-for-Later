@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:food_for_later/firebase_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:webview_flutter/webview_flutter.dart';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:intl/intl.dart';
@@ -11,6 +15,7 @@ import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/login_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -36,21 +41,16 @@ class _LoginPageState extends State<LoginPage> {
     return true;
   }
 
-  Future<void> addUserToFirestore(firebase_auth.User user) async {
+  Future<void> addUserToFirestore(firebase_auth.User user, {String? nickname, String? email}) async {
     final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-    // Firestore에서 총 사용자 수를 가져와 연번 계산
-    final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
 
     final docSnapshot = await userDoc.get();
     if (!docSnapshot.exists) {
       await userDoc.set({
-        'nickname': user.displayName ?? '닉네임 없음',
-        'email': user.email ?? '이메일 없음',
+        'nickname': nickname ?? user.displayName ?? '닉네임 없음',
+        'email': email ?? user.email ?? '이메일 없음',
         'signupdate': formattedDate,
         'role': 'user',
-        // '성별': '', // 기본값
-        // '생년월일': '', // 기본값
       });
     }
   }
@@ -171,10 +171,18 @@ class _LoginPageState extends State<LoginPage> {
           ? await kakao.UserApi.instance.loginWithKakaoTalk()
           : await kakao.UserApi.instance.loginWithKakaoAccount();
 
-      // Step 2: 카카오 Access Token 획득
-      final kakaoAccessToken = token.accessToken;
+      // Step 2: 동의 항목 확인 및 추가 요청
+      final account = await kakao.UserApi.instance.me();
 
-      // Step 3: Firebase Custom Token 생성 요청
+      final kakaoEmail = account.kakaoAccount?.email;
+      if (kakaoEmail == null) {
+        throw Exception('카카오 계정에서 이메일 정보를 가져올 수 없습니다.');
+      }
+
+      final kakaoNickname = account.kakaoAccount?.profile?.nickname ?? '닉네임 없음';
+
+      // Step 4: Firebase Custom Token 생성 요청
+      final kakaoAccessToken = token.accessToken;
       final response = await http.post(
         Uri.parse('https://us-central1-food-for-later.cloudfunctions.net/createFirebaseToken'),
         headers: {'Content-Type': 'application/json'},
@@ -182,14 +190,22 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (response.statusCode == 200) {
-        // Step 4: Firebase에 Custom Token으로 로그인
         final data = jsonDecode(response.body);
         final firebaseCustomToken = data['firebaseCustomToken'];
 
         final userCredential = await firebase_auth.FirebaseAuth.instance
             .signInWithCustomToken(firebaseCustomToken);
 
-        print('카카오 로그인 성공: ${userCredential.user}');
+        if (userCredential.user != null) {
+          print('Firestore에 사용자 추가 시작');
+          await addUserToFirestore(userCredential.user!, nickname: kakaoNickname, email: kakaoEmail);
+          print('Firestore에 사용자 추가 성공');
+        }
+
+        // 화면 전환 추가 (예: 홈 화면으로 이동)
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home'); // '/home'은 실제 홈 화면의 라우트 이름으로 변경
+        }
       } else {
         print('Firebase Custom Token 생성 실패: ${response.body}');
       }
@@ -198,6 +214,53 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('카카오 로그인에 실패했습니다.')),
       );
+    }
+  }
+  Future<void> _naverLogin() async {
+    try {
+      await FlutterNaverLogin.logOut();
+      print("로그아웃 완료");
+      final NaverLoginResult res = await FlutterNaverLogin.logIn();
+      if (res.status == NaverLoginStatus.loggedIn) {
+        NaverAccessToken token = await FlutterNaverLogin.currentAccessToken;
+        final response = await createNaverFirebaseToken(token.accessToken);
+        if (response != null) {
+          final firebaseUser = await _auth.signInWithCustomToken(response);
+
+          if (firebaseUser.user != null) {
+            await addUserToFirestore(
+              firebaseUser.user!,
+              nickname: res.account.nickname,
+              email: res.account.email,
+            );
+
+            // 로그인 성공 후 홈 화면으로 이동
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        }
+      } else {
+        print("네이버 로그인 실패: ${res.status}");
+        if (res.errorMessage != null) {
+          print("Error Message: ${res.errorMessage}");
+        }
+      }
+    } catch (e) {
+      print("네이버 로그인 중 오류 발생: $e");
+    }
+  }
+
+  Future<String?> createNaverFirebaseToken(String accessToken) async {
+    final uri = Uri.parse('https://us-central1-food-for-later.cloudfunctions.net/createNaverFirebaseToken');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'accessToken': accessToken}),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['firebaseCustomToken'];
+    } else {
+      print('Firebase Function Error: ${response.body}');
+      return null;
     }
   }
 
@@ -273,7 +336,7 @@ class _LoginPageState extends State<LoginPage> {
             LoginElevatedButton(
               buttonTitle: 'Naver로 로그인',
               image: 'assets/images/naver_logo.png',
-              onPressed: signInWithGoogle,
+              onPressed: _naverLogin,
             ),
           ],
         ),

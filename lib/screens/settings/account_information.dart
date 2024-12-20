@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:food_for_later/components/basic_elevated_button.dart';
 import 'package:food_for_later/components/navbar_button.dart';
 import 'package:food_for_later/firebase_service.dart';
@@ -26,19 +27,26 @@ class _AccountInformationState extends State<AccountInformation> {
     _loadUserInfo();
   }
 
-  void _loadUserInfo() {
+  void _loadUserInfo() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      setState(() {
-        _email = user.email ?? '이메일 없음';
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get(); // Firestore에서 사용자 문서 가져오기
 
-        // 이메일 주소에서 @ 앞부분을 추출하여 닉네임으로 설정
-        if (_email.contains('@')) {
-          _nickname = _email.split('@')[0];
-        } else {
-          _nickname = '닉네임 없음'; // 기본 닉네임
-        }
-      });
+      if (userDoc.exists) {
+        setState(() {
+          _email = userDoc.data()?['email'] ?? '이메일 없음';
+          _nickname = userDoc.data()?['nickname'] ?? '닉네임 없음';
+        });
+      } else {
+        // Firestore에 사용자 데이터가 없을 경우 기본값 설정
+        setState(() {
+          _email = user.email ?? '이메일 없음';
+          _nickname = user.email?.split('@')[0] ?? '닉네임 없음';
+        });
+      }
     }
   }
 
@@ -418,7 +426,9 @@ class _AccountInformationState extends State<AccountInformation> {
               child: Text('로그아웃'),
               onPressed: () async {
                 await recordSessionEnd(); // 세션 종료 기록
-                await FirebaseAuth.instance.signOut(); // Firebase 로그아웃
+                await FirebaseAuth.instance.signOut();
+                //구글이랑 카카오는?
+                await FlutterNaverLogin.logOut();// Firebase 로그아웃
 
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushReplacement(

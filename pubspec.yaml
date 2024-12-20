@@ -38,10 +38,13 @@ dependencies:
   cloud_firestore: ^5.1.0   # Firestore DB 사용
   firebase_auth: ^5.1.2  # 사용자 인증 (이메일, 소셜 로그인)
   google_sign_in: ^6.2.1
-  flutter_dotenv: ^5.0.2
+  flutter_dotenv: ^5.0.2 # .env 파일로 민감 정보를 관리
   kakao_flutter_sdk: ^1.2.2
+  http: ^1.2.2 # 네이버 OAuth 요청을 위해 필요
+  webview_flutter: ^4.0.1
+  flutter_naver_login: ^1.8.0
   #  firebase_messaging: ^14.5.0  # 푸시 알림
-#  firebase_analytics: ^10.8.0  # 사용자 분석
+  #  firebase_analytics: ^10.8.0  # 사용자 분석
 
   # 권한 관리 관련 패키지
   intl: ^0.19.0  # 다국어 지원 및 날짜 포맷
@@ -94,6 +97,7 @@ flutter:
     - assets/images/kakao_talk_logo.png
     - assets/images/naver_logo.png
     - assets/fonts/
+    - assets/env/.env
 
   fonts:
     - family: 이서윤
