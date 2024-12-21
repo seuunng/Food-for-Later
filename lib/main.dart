@@ -2,15 +2,18 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:food_for_later/firebase_options.dart';
 import 'package:food_for_later/providers/theme_provider.dart';
 import 'package:food_for_later/screens/auth/login_main_page.dart';
 import 'package:food_for_later/screens/fridge/fridge_main_page.dart';
 import 'package:food_for_later/screens/home_screen.dart';
+import 'package:food_for_later/screens/recipe/read_recipe.dart';
 import 'package:food_for_later/themes/custom_theme_mode.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:provider/provider.dart';
@@ -22,10 +25,8 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-
   try {
     await dotenv.load(fileName: "assets/env/.env");
-
   } catch (e) {
     print("Failed to load .env file: $e");
   }
@@ -34,18 +35,19 @@ Future<void> main() async {
     nativeAppKey: 'cae77ccb2159f26f7234f6ccf269605e',
     javaScriptAppKey: '2b8be514fc6d4ca0c50beb374b34b60c',
   );
-  FlutterNaverLogin.initSdk(
-    clientId: dotenv.env['NAVER_CLIENT_ID'] ?? '',
-    clientSecret: dotenv.env['NAVER_CLIENT_SECRET'] ?? '',
-    clientName: dotenv.env['NAVER_CLIENT_NAME'] ?? 'food_for_later',
-  );
-  print(dotenv.env['NAVER_CLIENT_ID']);
+
+  if (!kIsWeb) {
+    FlutterNaverLogin.initSdk(
+      clientId: dotenv.env['NAVER_CLIENT_ID'] ?? '',
+      clientSecret: dotenv.env['NAVER_CLIENT_SECRET'] ?? '',
+      clientName: dotenv.env['NAVER_CLIENT_NAME'] ?? 'food_for_later',
+    );
+  }
+
   try {
-    print("Initializing Firebase...");
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print("Firebase initialized successfully.");
   } catch (e) {
     print("Error during Firebase initialization: $e");
   }
@@ -57,6 +59,7 @@ Future<void> main() async {
         (mode) => mode.toString().split('.').last == themeModeStr,
     orElse: () => CustomThemeMode.light,
   );
+
   runApp(
     MultiProvider(
       providers: [
@@ -69,29 +72,50 @@ Future<void> main() async {
   );
 }
 
-// 앱 전체를 나타내는 루트 위젯
-//StatelessWidget: 상태가 없는 위젯
 class MyApp extends StatelessWidget {
-  // final String themeMode;
-  // MyApp({required this.themeMode});
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
       return MaterialApp(
         title: '이따뭐먹지',
-        // theme: themeProvider.currentTheme,
         theme: themeProvider.themeData,
         home: AuthStateWidget(),
-        // HomeScreen을 메인 화면으로 설정
-        routes: {
-          '/home': (context) => HomeScreen(), // "/home" 경로 추가
-          '/login': (context) => LoginPage(), // Login 경로도 추가 가능
+        onGenerateRoute: (settings) {
+          final Uri uri = Uri.parse(settings.name ?? '');
+
+          print('.....Parsed URI: ${uri.path}');
+          print('.....Path Segments: ${uri.pathSegments}');
+          print('.....Navigating to: ${settings.name}');
+
+          if (uri.pathSegments.isNotEmpty && uri.pathSegments[0] == 'recipe') {
+            final recipeId = uri.pathSegments.length > 1 ? uri.pathSegments[1] : '';
+            print('Recipe ID: $recipeId'); // Recipe ID 확인
+            return MaterialPageRoute(
+              builder: (context) => ReadRecipe(recipeId: recipeId, searchKeywords: []),
+            );
+          }
+
+          switch (settings.name) {
+            case '/home':
+              return MaterialPageRoute(builder: (context) => HomeScreen());
+            case '/login':
+              return MaterialPageRoute(builder: (context) => LoginPage());
+            default:
+              return MaterialPageRoute(builder: (context) => LoginPage());
+          }
         },
         navigatorObservers: [
-          DeleteModeObserver(onPageChange: () {
-
-          }),
+          DeleteModeObserver(onPageChange: () {}),
           routeObserver, // 기존 routeObserver도 유지
+        ],
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          Locale('en', ''), // English
+          Locale('ko', ''), // Korean
         ],
       );
     });
@@ -104,8 +128,18 @@ class AuthStateWidget extends StatelessWidget {
     return StreamBuilder<firebase_auth.User?>(
       stream: firebase_auth.FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        // URI를 가져와서 외부 링크로 접근했는지 확인
+        final Uri uri = Uri.base;
+        if (uri.pathSegments.isNotEmpty && uri.pathSegments[0] == 'recipe') {
+          final recipeId = uri.pathSegments.length > 1 ? uri.pathSegments[1] : '';
+          return ReadRecipe(recipeId: recipeId, searchKeywords: []); // 특정 레시피 페이지로 이동
+        }
+
+        // 인증 상태에 따라 기본 라우팅 처리
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         } else if (snapshot.hasData) {
           return HomeScreen(); // 로그인된 사용자를 위한 홈 페이지
         } else {

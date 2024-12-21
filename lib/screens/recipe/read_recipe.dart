@@ -7,6 +7,8 @@ import 'package:food_for_later/screens/recipe/full_screen_image_view.dart';
 import 'package:food_for_later/screens/recipe/recipe_review.dart';
 import 'package:food_for_later/screens/recipe/report_an_issue.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:food_for_later/screens/recipe/share_options.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
 class ReadRecipe extends StatefulWidget {
   final String recipeId;
@@ -22,7 +24,13 @@ class ReadRecipe extends StatefulWidget {
 }
 
 class _ReadRecipeState extends State<ReadRecipe> {
-  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final firebase_auth.User? currentUser = FirebaseAuth.instance.currentUser;
+  late String userId;
+  late String fromEmail;
+  late String toEmail;
+  late String nickname;
+
+
   List<String> ingredients = []; // 재료 목록
   String recipeName = '';
   int views = 0;
@@ -40,11 +48,19 @@ class _ReadRecipeState extends State<ReadRecipe> {
   int _currentIndex = 0;
 
   bool isAdmin = false;
-  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  late String recipeUrl;
 
   @override
   void initState() {
     super.initState();
+
+    // 유저 정보 초기화
+    userId = currentUser?.uid ?? '';
+    fromEmail = currentUser?.email ?? '이메일 없음';
+    toEmail = currentUser?.email ?? '이메일 없음';
+    nickname = '닉네임 없음'; // 기본값 설정
+
+    loadUserData(); // Firestore에서 닉네임 로드
     _checkAdminRole();
     searchKeywords = widget.searchKeywords;
     selectedIngredients = List.generate(ingredients.length, (index) {
@@ -55,6 +71,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
     loadLikedData(widget.recipeId);
     _increaseViewCount(widget.recipeId);
     _pageController = PageController(initialPage: 0);
+    recipeUrl = 'https://food-for-later.web.app/recipe/${widget.recipeId}';
   }
 
   @override
@@ -63,12 +80,28 @@ class _ReadRecipeState extends State<ReadRecipe> {
     super.dispose();
   }
 
+  void loadUserData() async {
+    if (userId.isNotEmpty) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        setState(() {
+          nickname = userDoc.data()?['nickname'] ?? '닉네임 없음';
+        });
+      } else {
+        setState(() {
+          nickname = '닉네임 없음';
+        });
+      }
+    }
+  }
+
   Future<void> _checkAdminRole() async {
     try {
       DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
           .instance
           .collection('users')
-          .doc(currentUserId)
+          .doc(userId)
           .get();
 
       if (userDoc.exists) {
@@ -200,7 +233,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
               .get();
 
       if (existingScrapedRecipes.docs.isEmpty) {
-        // 스크랩이 존재하지 않으면 새로 추가
         await FirebaseFirestore.instance.collection('scraped_recipes').add({
           'userId': userId,
           'recipeId': widget.recipeId,
@@ -213,7 +245,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
           isScraped = true; // 스크랩 상태로 변경
         });
       } else {
-        // 스크랩이 존재하면 업데이트
         DocumentSnapshot<Map<String, dynamic>> doc =
             existingScrapedRecipes.docs.first;
 
@@ -252,7 +283,6 @@ class _ReadRecipeState extends State<ReadRecipe> {
                 .get();
 
             if (existingItemSnapshot.docs.isEmpty) {
-              // 중복되지 않은 경우에만 추가
               await FirebaseFirestore.instance
                   .collection('shopping_items')
                   .add({
@@ -508,7 +538,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
               visualDensity: const VisualDensity(horizontal: -4),
               icon: Icon(Icons.share, size: 30), // 스크랩 아이콘 크기 조정
               onPressed: () {
-                // 스크랩 아이콘 클릭 시 실행할 동작
+                showShareOptions(context, fromEmail, toEmail, nickname, recipeName, recipeUrl);
               },
             ),
             IconButton(
@@ -544,7 +574,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
             List<String> mainImages =
                 List<String>.from(data['mainImages'] ?? []);
 
-            final bool isOwner = currentUserId == data['userID'];
+            final bool isOwner = userId == data['userID'];
             final bool showAdminOptions = isAdmin || isOwner;
 
             return SingleChildScrollView(
@@ -572,7 +602,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                         visualDensity: const VisualDensity(horizontal: -4),
                         icon: Icon(Icons.share, size: 18), // 스크랩 아이콘 크기 조정
                         onPressed: () {
-                          // 스크랩 아이콘 클릭 시 실행할 동작
+                          showShareOptions(context, fromEmail, toEmail, nickname, recipeName, recipeUrl);
                         },
                       ),
                       IconButton(
@@ -651,8 +681,7 @@ class _ReadRecipeState extends State<ReadRecipe> {
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero, // 버튼 패딩을 없앰
                                   minimumSize: Size(40, 30), // 최소 크기 설정
-                                  tapTargetSize: MaterialTapTargetSize
-                                      .shrinkWrap, // 터치 영역 최소화
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap, // 터치 영역 최소화
                                 ),
                                 child: Text('삭제')),
                           ),

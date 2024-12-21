@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <!--    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />-->
 
     <application
@@ -53,7 +54,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:host="kakaolink" android:scheme="kakaocae77ccb2159f26f7234f6ccf269605e" />
+                <data
+                    android:host="recipe"
+                    android:pathPrefix="/"
+                    android:scheme="kakaocae77ccb2159f26f7234f6ccf269605e" />
             </intent-filter>
 
             <!-- 네이버 로그인 -->

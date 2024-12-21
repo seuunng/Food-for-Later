@@ -165,13 +165,11 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> signInWithKakao() async {
     try {
-      // Step 1: 카카오톡 설치 여부 확인 및 로그인 요청
       bool isKakaoTalkInstalled = await kakao.isKakaoTalkInstalled();
       kakao.OAuthToken token = isKakaoTalkInstalled
           ? await kakao.UserApi.instance.loginWithKakaoTalk()
           : await kakao.UserApi.instance.loginWithKakaoAccount();
 
-      // Step 2: 동의 항목 확인 및 추가 요청
       final account = await kakao.UserApi.instance.me();
 
       final kakaoEmail = account.kakaoAccount?.email;
@@ -181,7 +179,6 @@ class _LoginPageState extends State<LoginPage> {
 
       final kakaoNickname = account.kakaoAccount?.profile?.nickname ?? '닉네임 없음';
 
-      // Step 4: Firebase Custom Token 생성 요청
       final kakaoAccessToken = token.accessToken;
       final response = await http.post(
         Uri.parse('https://us-central1-food-for-later.cloudfunctions.net/createFirebaseToken'),
@@ -197,12 +194,9 @@ class _LoginPageState extends State<LoginPage> {
             .signInWithCustomToken(firebaseCustomToken);
 
         if (userCredential.user != null) {
-          print('Firestore에 사용자 추가 시작');
           await addUserToFirestore(userCredential.user!, nickname: kakaoNickname, email: kakaoEmail);
-          print('Firestore에 사용자 추가 성공');
         }
 
-        // 화면 전환 추가 (예: 홈 화면으로 이동)
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/home'); // '/home'은 실제 홈 화면의 라우트 이름으로 변경
         }
@@ -216,10 +210,9 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
+
   Future<void> _naverLogin() async {
     try {
-      await FlutterNaverLogin.logOut();
-      print("로그아웃 완료");
       final NaverLoginResult res = await FlutterNaverLogin.logIn();
       if (res.status == NaverLoginStatus.loggedIn) {
         NaverAccessToken token = await FlutterNaverLogin.currentAccessToken;
@@ -234,7 +227,6 @@ class _LoginPageState extends State<LoginPage> {
               email: res.account.email,
             );
 
-            // 로그인 성공 후 홈 화면으로 이동
             Navigator.pushReplacementNamed(context, '/home');
           }
         }

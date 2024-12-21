@@ -220,14 +220,8 @@ class _AccountInformationState extends State<AccountInformation> {
 
   // 새 비밀번호 이메일 전송 함수 예시 (실제 API나 SMTP 설정이 필요)
   Future<void> _sendEmailWithNewPassword(
-      String email, String newPassword) async {
-    // if (email.isEmpty) {
-    //   print('Error: email is empty.');
-    //   return; // 이메일이 비어 있다면 함수 종료
-    // }
-    final serviceId = 'service_ywv72ps';
-    final templateId = 'template_sqijmdh';
-    final userId = 'DS6fXKVLzGOG-3fAQ';
+      String email,
+      String newPassword) async {
     final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
 
     // EmailJS API로 요청할 데이터 정의
@@ -238,22 +232,17 @@ class _AccountInformationState extends State<AccountInformation> {
         'Content-Type': 'application/json',
       },
       body: json.encode({
-        'service_id': serviceId,
-        'template_id': templateId,
-        'user_id': userId,
+        'service_id': dotenv.env['EMAILJS_SERVICE_ID'],
+        'template_id': dotenv.env['EMAILJS_TEMPLATE_ID'],
+        'user_id': dotenv.env['EMAILJS_USER_ID'],
         'template_params': {
           'to_email': email,
           'message': '임시 비밀번호: ${newPassword}',
         },
       }),
     );
-
     if (response.statusCode == 200) {
       print('이메일 전송 성공');
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      print('email $email');
     } else {
       print('이메일 전송 실패: ${response.body}');
     }
@@ -279,8 +268,7 @@ class _AccountInformationState extends State<AccountInformation> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text('임시 비밀번호 보내기',
-
-                style: TextStyle(color: theme.colorScheme.onSurface)),
+            style: TextStyle(color: theme.colorScheme.onSurface)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -308,7 +296,6 @@ class _AccountInformationState extends State<AccountInformation> {
                       password: _passwordController.text
                           .trim(), // 사용자가 입력한 현재 비밀번호로 설정
                     );
-                    // 비밀번호 입력 확인
                     if (_passwordController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('현재 비밀번호를 입력해주세요.')),
@@ -318,12 +305,10 @@ class _AccountInformationState extends State<AccountInformation> {
                     await user.reauthenticateWithCredential(credential);
                     await user.updatePassword(newPassword);
                     await _sendEmailWithNewPassword(user.email!, newPassword);
-
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('비밀번호가 이메일로 전송되었습니다.')),
                       );
-                      print('newPassword $newPassword');
                       Navigator.pop(context); // 다이얼로그 닫기
                     }
                   } on FirebaseAuthException catch (e) {
